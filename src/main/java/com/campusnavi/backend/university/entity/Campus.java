@@ -26,4 +26,13 @@ public class Campus {
 
     @Column(nullable = false)
     private String domain;
+
+    public static Campus create(University university, String name, String code, String domain) {
+        Campus campus = new Campus();
+        campus.university = university;
+        campus.name = name;
+        campus.code = code;
+        campus.domain = domain;
+        return campus;
+    }
 }

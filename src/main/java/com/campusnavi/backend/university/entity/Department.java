@@ -21,7 +21,7 @@ public class Department {
     @Column(nullable = false)
     private String name;
 
-    public static Department of(Campus campus, String name) {
+    public static Department create(Campus campus, String name) {
         Department department = new Department();
         department.campus = campus;
         department.name = name;

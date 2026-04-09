@@ -16,4 +16,10 @@ public class University {
 
     @Column(nullable = false)
     private String name;
+
+    public static University create(String name) {
+        University university = new University();
+        university.name = name;
+        return university;
+    }
 }
