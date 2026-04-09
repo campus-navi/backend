@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class Department {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -21,7 +21,11 @@ public class Department {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String college;
+    public static Department of(Campus campus, String name) {
+        Department department = new Department();
+        department.campus = campus;
+        department.name = name;
+        return department;
+    }
 
 }
