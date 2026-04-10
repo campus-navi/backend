@@ -19,13 +19,17 @@ import java.util.UUID;
 @Slf4j
 public class MdcLoggingFilter extends OncePerRequestFilter {
 
+    private static final String TRACE_ID = "traceId";
+    private static final String METHOD = "method";
+    private static final String URI = "uri";
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        MDC.put("traceId", UUID.randomUUID().toString().substring(0,8));
-        MDC.put("method", request.getMethod());
-        MDC.put("uri", request.getRequestURI());
+        MDC.put(TRACE_ID, UUID.randomUUID().toString().substring(0,8));
+        MDC.put(METHOD, request.getMethod());
+        MDC.put(URI, request.getRequestURI());
         long startTime = System.currentTimeMillis();
         try {
             log.info("HTTP Request");

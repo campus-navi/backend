@@ -18,7 +18,13 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"a007"),
 
     //대학 조회 관련
-    CAMPUS_NOT_FOUND(HttpStatus.NOT_FOUND,"b001");
+    CAMPUS_NOT_FOUND(HttpStatus.NOT_FOUND,"b001"),
+
+    //JWT 관련
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_001"),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_002"),
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED,"JWT_003"),
+    BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_004");
 
 
     private final HttpStatus status;
