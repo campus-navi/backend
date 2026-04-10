@@ -27,3 +27,7 @@ app:
   cors:
     allowed-origins:
       - allowed-origin
+
+  email:
+    from: ${AWS_SES_FROM}
+    aws-region: ${AWS_REGION}

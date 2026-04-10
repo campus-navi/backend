@@ -11,6 +11,15 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
 
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 springdoc:
   swagger-ui:
     enabled: true
@@ -24,3 +33,6 @@ app:
   cors:
     allowed-origins:
     - http://localhost:3000
+
+  email:
+    from: ${MAIL_FROM}
