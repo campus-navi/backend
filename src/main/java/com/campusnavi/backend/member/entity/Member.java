@@ -7,15 +7,13 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SoftDelete;
-import org.hibernate.annotations.SoftDeleteType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SoftDelete(strategy = SoftDeleteType.TIMESTAMP, columnName = "deleted_at")
 public class Member extends BaseEntity {
 
     @Id
@@ -55,6 +53,8 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.PERSIST)
     private List<MemberDepartment> memberDepartments;
 
+    private LocalDateTime deletedAt;
+
     public static Member join(String email, String username, String password, String nickname,
                               Long universityId, Campus campus, Integer admissionYear) {
         Member member = new Member();
@@ -73,5 +73,10 @@ public class Member extends BaseEntity {
     public void addDepartment(Department department){
         MemberDepartment memberDepartment = MemberDepartment.create(this,department);
         memberDepartments.add(memberDepartment);
+    }
+
+    public void softDelete(){
+        this.status = MemberStatus.WITHDRAWN;
+        this.deletedAt = LocalDateTime.now();
     }
 }
