@@ -17,16 +17,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class JwtProvider {
 
     private final JwtProperties jwtProperties;
-    private SecretKey secretKey;
+    private final SecretKey secretKey;
     private static final String ROLE = "role";
     private static final String TYPE = "type";
 
-    @PostConstruct
-    private void init() {
+    public JwtProvider(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
         this.secretKey = Keys.hmacShaKeyFor(
                 jwtProperties.secret().getBytes(StandardCharsets.UTF_8)
         );
