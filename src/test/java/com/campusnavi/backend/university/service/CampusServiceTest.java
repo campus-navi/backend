@@ -9,6 +9,7 @@ import com.campusnavi.backend.university.entity.Department;
 import com.campusnavi.backend.university.entity.University;
 import com.campusnavi.backend.university.repository.CampusRepository;
 import com.campusnavi.backend.university.repository.DepartmentRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,19 +34,25 @@ class CampusServiceTest {
     private CampusService campusService;
 
     @Test
-    void getCampusList_캠퍼스존재시_DTO목록반환() {
+    @DisplayName("캠퍼스가 존재하면 캠퍼스 DTO목록 반환")
+    void getCampusListSuccess() {
+        //given
         University university = University.create("테스트대학교");
         Campus campus = Campus.create(university, "서울캠퍼스", "TEST_SEOUL", "test.ac.kr");
         given(campusRepository.findAllByOrderByNameAsc()).willReturn(List.of(campus));
 
+        //when
         List<CampusSummaryResponse> result = campusService.getCampusList();
 
+        //then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().name()).isEqualTo("서울캠퍼스");
     }
 
     @Test
-    void getDepartmentList_유효한캠퍼스ID_학과목록반환() {
+    @DisplayName("유효한 캠퍼스 ID를 받으면 학과 DTO 목록 반환")
+    void getDepartmentListSuccess() {
+        //given
         Long campusId = 1L;
         University university = University.create("테스트대학교");
         Campus campus = Campus.create(university, "서울캠퍼스", "TEST_SEOUL", "test.ac.kr");
@@ -53,17 +60,22 @@ class CampusServiceTest {
         given(campusRepository.existsById(campusId)).willReturn(true);
         given(departmentRepository.findByCampusIdOrderByNameAsc(campusId)).willReturn(List.of(dept));
 
+        //when
         List<DepartmentSummaryResponse> result = campusService.getDepartmentList(campusId);
 
+        //then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().name()).isEqualTo("컴퓨터공학과");
     }
 
     @Test
-    void getDepartmentList_존재하지않는캠퍼스ID_BusinessException발생() {
+    @DisplayName("존재하지 않는 캠퍼스 ID를 받으면 BusinessException발생")
+    void getDepartmentListNotFoundByCampusId() {
+        //given
         Long campusId = 99L;
         given(campusRepository.existsById(campusId)).willReturn(false);
 
+        //when, then
         assertThatThrownBy(() -> campusService.getDepartmentList(campusId))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
