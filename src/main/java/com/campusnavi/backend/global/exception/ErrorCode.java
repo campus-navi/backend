@@ -24,7 +24,11 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_001"),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_002"),
     INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED,"JWT_003"),
-    BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_004");
+    BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_004"),
+
+    //이메일 발송 관련
+    EMAIL_SEND_FAIL(HttpStatus.INTERNAL_SERVER_ERROR,"EMAIL_001");
+
 
 
     private final HttpStatus status;
