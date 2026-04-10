@@ -41,6 +41,12 @@ dependencies {
     //Cache
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
+    //Mail (SMTP - local)
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
+    //Mail (SES - dev/prod)
+    implementation("software.amazon.awssdk:ses:2.31.19")
+
     //Util
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
