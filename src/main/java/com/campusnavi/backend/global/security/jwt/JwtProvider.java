@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -42,38 +43,30 @@ public class JwtProvider {
                 .compact();
     }
 
-    public Claims validateToken(String token, TokenType expectedType) {
+    public AccessTokenPayload parseAndValidateAccessToken(String token) {
         Claims claims = parseToken(token);
-        validateTokenType(token, expectedType);
-        return claims;
-    }
-
-    public Long extractMemberId(String token) {
-        return Long.parseLong(parseToken(token).getSubject());
-    }
-
-    public MemberRole extractMemberRole(String token) {
-        String role = parseToken(token).get(ROLE, String.class);
-        if (role == null) {
-            throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN);
+        if (!Objects.equals(claims.get(TYPE, String.class), TokenType.ACCESS.name())) {
+            throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN_TYPE);
         }
-        return MemberRole.valueOf(role);
+        Long memberId = Long.parseLong(claims.getSubject());
+        MemberRole role = MemberRole.valueOf(claims.get(ROLE, String.class));
+        String jti = claims.getId();
+        return new AccessTokenPayload(memberId,role.name(),jti);
     }
 
-    public String extractJti(String token) {
-        return parseToken(token).getId();
+    public RefreshTokenPayload parseAndValidateRefreshToken(String token) {
+        Claims claims = parseToken(token);
+        if (!Objects.equals(claims.get(TYPE, String.class), TokenType.REFRESH.name())) {
+            throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN_TYPE);
+        }
+        Long memberId = Long.parseLong(claims.getSubject());
+        String jti = claims.getId();
+        return new RefreshTokenPayload(memberId,jti);
     }
 
     public long getRemainingTtl(String token) {
         long remaining = parseToken(token).getExpiration().getTime();
         return remaining - System.currentTimeMillis();
-    }
-
-    private void validateTokenType(String token, TokenType expectedType) {
-       String actualType = parseToken(token).get(TYPE, String.class);
-       if (!expectedType.name().equals(actualType)) {
-           throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN_TYPE);
-       }
     }
 
     private Claims parseToken(String token) {

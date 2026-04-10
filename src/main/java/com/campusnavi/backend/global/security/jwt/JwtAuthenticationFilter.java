@@ -1,6 +1,7 @@
 package com.campusnavi.backend.global.security.jwt;
 
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
+import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -40,16 +41,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (token != null){
 
-                jwtProvider.validateToken(token, TokenType.ACCESS);
-
-                Long memberId = jwtProvider.extractMemberId(token);
-                String role = jwtProvider.extractMemberRole(token).name();
-
+                AccessTokenPayload payload = jwtProvider.parseAndValidateAccessToken(token);
+                Long memberId = payload.memberId();
+                String role = payload.role();
                 MDC.put(MDC_MEMBER_ID, memberId.toString());
+
+                AuthMember authMember = new AuthMember(memberId,role);
 
                 Authentication authentication =
                         new UsernamePasswordAuthenticationToken(
-                                memberId,
+                                authMember,
                                 null,
                                 List.of(new SimpleGrantedAuthority("ROLE_" + role)));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
