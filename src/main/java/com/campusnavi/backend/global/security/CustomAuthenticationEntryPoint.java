@@ -1,6 +1,7 @@
 package com.campusnavi.backend.global.security;
 
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.response.ApiResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,9 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          @NonNull HttpServletResponse response,
                          @NonNull AuthenticationException authException) throws IOException, ServletException {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        if (authException instanceof JwtAuthenticationException){
+            errorCode = ((JwtAuthenticationException) authException).getErrorCode();
+        }
 
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
