@@ -27,8 +27,13 @@ public enum ErrorCode {
     BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_004"),
 
     //이메일 발송 관련
-    EMAIL_SEND_FAIL(HttpStatus.INTERNAL_SERVER_ERROR,"EMAIL_001");
+    EMAIL_SEND_FAIL(HttpStatus.INTERNAL_SERVER_ERROR,"EMAIL_001"),
 
+    //회원가입 관련
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT,"AUTH_001"),
+    DOMAIN_MISMATCH(HttpStatus.BAD_REQUEST,"AUTH_002"),
+    EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS,"AUTH_003"),
+    IP_BLOCKED(HttpStatus.TOO_MANY_REQUESTS,"AUTH_004");
 
 
     private final HttpStatus status;
