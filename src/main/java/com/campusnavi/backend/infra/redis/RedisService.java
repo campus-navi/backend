@@ -31,4 +31,12 @@ public class RedisService {
     public boolean hasKey(String key) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
+
+    public Long increment(String key) {
+        return redisTemplate.opsForValue().increment(key);
+    }
+
+    public void expire(String key, Duration expiration) {
+        redisTemplate.expire(key, expiration);
+    }
 }
