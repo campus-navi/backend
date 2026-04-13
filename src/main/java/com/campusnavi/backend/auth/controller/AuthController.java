@@ -1,6 +1,8 @@
 package com.campusnavi.backend.auth.controller;
 
 import com.campusnavi.backend.auth.dto.EmailSendRequest;
+import com.campusnavi.backend.auth.dto.EmailVerifyRequest;
+import com.campusnavi.backend.auth.dto.VerifiedTokenResponse;
 import com.campusnavi.backend.auth.service.EmailVerificationService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,5 +26,11 @@ public class AuthController {
         String ip = request.getRemoteAddr();
         emailVerificationService.sendEmailVerification(sendRequest, ip);
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<ApiResponse<VerifiedTokenResponse>> verifyEmailCode(@RequestBody EmailVerifyRequest verifyRequest) {
+        VerifiedTokenResponse response = emailVerificationService.verifyEmailCode(verifyRequest);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
