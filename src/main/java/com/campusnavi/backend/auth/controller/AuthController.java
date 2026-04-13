@@ -85,4 +85,16 @@ public class AuthController {
                 .header(HttpHeaders.AUTHORIZATION,token.accessToken())
                 .body(ApiResponse.ok());
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
+            @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        authService.logout(accessToken, refreshToken);
+
+        ResponseCookie responseCookie = cookieProvider.expireRefreshTokenCookie();
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
+                .body(ApiResponse.ok());
+    }
 }
