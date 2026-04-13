@@ -2,11 +2,13 @@ package com.campusnavi.backend.auth.controller;
 
 import com.campusnavi.backend.auth.dto.EmailSendRequest;
 import com.campusnavi.backend.auth.dto.EmailVerifyRequest;
+import com.campusnavi.backend.auth.dto.SignUpRequest;
 import com.campusnavi.backend.auth.dto.VerifiedTokenResponse;
 import com.campusnavi.backend.auth.service.AuthService;
 import com.campusnavi.backend.auth.service.EmailVerificationService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +44,12 @@ public class AuthController {
     @GetMapping("/check-nickname")
     public ResponseEntity<ApiResponse<Void>> checkNickname(@RequestParam String nickname) {
         authService.checkDuplicateNickname(nickname);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<Void>> signUp(@RequestBody @Valid SignUpRequest request){
+        authService.signUp(request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }
