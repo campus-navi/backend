@@ -22,7 +22,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/email/send")
-    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody EmailSendRequest sendRequest, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody @Valid EmailSendRequest sendRequest, HttpServletRequest request) {
         // TODO: 배포 환경 확정 후 X-Forwarded-For, X-Real-IP 헤더 처리 추가
         String ip = request.getRemoteAddr();
         emailVerificationService.sendEmailVerification(sendRequest, ip);
@@ -30,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<ApiResponse<VerifiedTokenResponse>> verifyEmailCode(@RequestBody EmailVerifyRequest verifyRequest) {
+    public ResponseEntity<ApiResponse<VerifiedTokenResponse>> verifyEmailCode(@RequestBody @Valid EmailVerifyRequest verifyRequest) {
         VerifiedTokenResponse response = emailVerificationService.verifyEmailCode(verifyRequest);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
