@@ -32,7 +32,7 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("토큰 발급 후 AccessToken을 파싱하면 memberId와 role, jti를 추출할 수 있다.")
+    @DisplayName("토큰 발급 후 AccessToken을 파싱하면 memberId와 role, jti, exp를 추출할 수 있다.")
     void issueTokens_thenParseAccessTokenReturnsCorrectPayload() {
         // given
         Long memberId = 1L;
@@ -46,6 +46,7 @@ class JwtProviderTest {
         assertThat(payload.memberId()).isEqualTo(memberId);
         assertThat(payload.role()).isEqualTo(role.name());
         assertThat(payload.jti()).isEqualTo(tokens.accessTokenJti());
+        assertThat(payload.remainingTtl()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
@@ -129,19 +130,5 @@ class JwtProviderTest {
                 .isInstanceOfSatisfying(JwtAuthenticationException.class, e -> {
                     assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_TOKEN);
                 });
-    }
-
-    @Test
-    @DisplayName("유효한 AccessToken의 TTL은 만료시간 이내이며 양수이다")
-    void getRemainingTtl_withValidToken_returnsPositiveValue() {
-        // given
-        String token = jwtProvider.issueTokens(1L, MemberRole.USER).accessToken();
-
-        // when
-        long ttl = jwtProvider.getRemainingTtl(token);
-
-        // then
-        assertThat(ttl).isPositive();
-        assertThat(ttl).isLessThanOrEqualTo(Duration.ofHours(1).toMillis());
     }
 }

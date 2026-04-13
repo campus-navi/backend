@@ -5,6 +5,7 @@ import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
 import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
+import com.campusnavi.backend.infra.redis.RedisService;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,13 +32,16 @@ class JwtAuthenticationFilterTest {
     private CustomAuthenticationEntryPoint entryPoint;
 
     @Mock
+    private RedisService redisService;
+
+    @Mock
     private FilterChain filterChain;
 
     private JwtAuthenticationFilter filter;
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(jwtProvider, entryPoint);
+        filter = new JwtAuthenticationFilter(jwtProvider, entryPoint, redisService);
         SecurityContextHolder.clearContext();
     }
 
@@ -81,7 +85,7 @@ class JwtAuthenticationFilterTest {
         String token = "valid.jwt.token";
         Long memberId = 1L;
         String role = "USER";
-        AccessTokenPayload payload = new AccessTokenPayload(memberId, role, "random.jti");
+        AccessTokenPayload payload = new AccessTokenPayload(memberId, role, "random.jti",100L);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer " + token);

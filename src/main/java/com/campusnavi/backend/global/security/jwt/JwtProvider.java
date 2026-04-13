@@ -48,7 +48,8 @@ public class JwtProvider {
         Long memberId = Long.parseLong(claims.getSubject());
         MemberRole role = MemberRole.valueOf(claims.get(ROLE, String.class));
         String jti = claims.getId();
-        return new AccessTokenPayload(memberId,role.name(),jti);
+        long remainingTtl = claims.getExpiration().getTime() - System.currentTimeMillis();
+        return new AccessTokenPayload(memberId,role.name(),jti,Math.max(0, remainingTtl));
     }
 
     public RefreshTokenPayload parseAndValidateRefreshToken(String token) {
@@ -59,11 +60,6 @@ public class JwtProvider {
         Long memberId = Long.parseLong(claims.getSubject());
         String jti = claims.getId();
         return new RefreshTokenPayload(memberId,jti);
-    }
-
-    public long getRemainingTtl(String token) {
-        long remaining = parseToken(token).getExpiration().getTime();
-        return remaining - System.currentTimeMillis();
     }
 
     private Claims parseToken(String token) {
