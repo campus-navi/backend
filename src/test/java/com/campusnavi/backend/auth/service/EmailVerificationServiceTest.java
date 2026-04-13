@@ -1,6 +1,8 @@
 package com.campusnavi.backend.auth.service;
 
 import com.campusnavi.backend.auth.dto.EmailSendRequest;
+import com.campusnavi.backend.auth.dto.EmailVerifyRequest;
+import com.campusnavi.backend.auth.dto.VerifiedTokenResponse;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.infra.email.EmailSender;
@@ -42,7 +44,9 @@ class EmailVerificationServiceTest {
 
     private static final String IP = "127.0.0.1";
     private static final String EMAIL = "example@test.ac.kr";
+    private static final String CODE = "123456";
     private static final EmailSendRequest REQUEST = new EmailSendRequest(1L, EMAIL);
+    private static final EmailVerifyRequest VERIFY_REQUEST = new EmailVerifyRequest(EMAIL, CODE);
 
     @Test
     @DisplayName("정상요청이면 인증코드와 쿨다운을 저장하고 이메일을 발송한다")
@@ -168,5 +172,44 @@ class EmailVerificationServiceTest {
         assertThatThrownBy(() -> emailVerificationService.sendEmailVerification(REQUEST, IP))
                 .isInstanceOfSatisfying(BusinessException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(ErrorCode.DOMAIN_MISMATCH));
+    }
+
+    @Test
+    @DisplayName("코드가 일치하면 기존 코드를 삭제하고 verifiedToken을 저장한 뒤 반환한다")
+    void verifyEmailCode_success() {
+        // given
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn(CODE);
+
+        // when
+        VerifiedTokenResponse response = emailVerificationService.verifyEmailCode(VERIFY_REQUEST);
+
+        // then
+        then(redisService).should().delete(RedisKeys.emailCode(EMAIL));
+        then(redisService).should().set(eq(RedisKeys.emailVerified(response.verifiedToken())), eq(EMAIL), any());
+        assertThat(response.verifiedToken()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("Redis에 코드가 없으면 EMAIL_CODE_NOT_FOUND 예외가 발생한다")
+    void verifyEmailCode_codeNotFound() {
+        // given
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn(null);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_CODE_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("코드가 불일치하면 EMAIL_CODE_INVALID 예외가 발생한다")
+    void verifyEmailCode_codeInvalid() {
+        // given
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn("999999");
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_CODE_INVALID));
     }
 }
