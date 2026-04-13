@@ -39,8 +39,10 @@ public enum ErrorCode {
     IP_BLOCKED(HttpStatus.TOO_MANY_REQUESTS,"AUTH_004"),
     EMAIL_CODE_NOT_FOUND(HttpStatus.GONE,"AUTH_005"),
     EMAIL_CODE_INVALID(HttpStatus.BAD_REQUEST,"AUTH_006"),
-    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,"AUTH_009");
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,"AUTH_009"),
 
+    //로그인 관련
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED,"AUTH_010");
 
     private final HttpStatus status;
     private final String code;

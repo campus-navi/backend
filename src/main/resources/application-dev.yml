@@ -28,3 +28,7 @@ app:
   email:
     from: ${AWS_SES_FROM}
     aws-region: ${AWS_REGION}
+
+  cookie:
+    secure: true
+    same-site: none
