@@ -19,6 +19,7 @@ public enum ErrorCode {
 
     //대학 조회 관련
     CAMPUS_NOT_FOUND(HttpStatus.NOT_FOUND,"b001"),
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"b002"),
 
     //JWT 관련
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED,"JWT_001"),
@@ -37,7 +38,8 @@ public enum ErrorCode {
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS,"AUTH_003"),
     IP_BLOCKED(HttpStatus.TOO_MANY_REQUESTS,"AUTH_004"),
     EMAIL_CODE_NOT_FOUND(HttpStatus.GONE,"AUTH_005"),
-    EMAIL_CODE_INVALID(HttpStatus.BAD_REQUEST,"AUTH_006");
+    EMAIL_CODE_INVALID(HttpStatus.BAD_REQUEST,"AUTH_006"),
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,"AUTH_009");
 
 
     private final HttpStatus status;
