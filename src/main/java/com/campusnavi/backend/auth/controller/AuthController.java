@@ -3,15 +3,13 @@ package com.campusnavi.backend.auth.controller;
 import com.campusnavi.backend.auth.dto.EmailSendRequest;
 import com.campusnavi.backend.auth.dto.EmailVerifyRequest;
 import com.campusnavi.backend.auth.dto.VerifiedTokenResponse;
+import com.campusnavi.backend.auth.service.AuthService;
 import com.campusnavi.backend.auth.service.EmailVerificationService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final EmailVerificationService emailVerificationService;
+    private final AuthService authService;
 
     @PostMapping("/email/send")
     public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody EmailSendRequest sendRequest, HttpServletRequest request) {
@@ -32,5 +31,17 @@ public class AuthController {
     public ResponseEntity<ApiResponse<VerifiedTokenResponse>> verifyEmailCode(@RequestBody EmailVerifyRequest verifyRequest) {
         VerifiedTokenResponse response = emailVerificationService.verifyEmailCode(verifyRequest);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/check-username")
+    public ResponseEntity<ApiResponse<Void>> checkUsername(@RequestParam String username) {
+        authService.checkDuplicateUsername(username);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ApiResponse<Void>> checkNickname(@RequestParam String nickname) {
+        authService.checkDuplicateNickname(nickname);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }
