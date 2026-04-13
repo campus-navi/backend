@@ -2,12 +2,12 @@ package com.campusnavi.backend.infra.redis;
 
 public final class RedisKeys {
 
-    public static String refreshToken(Long memberId){
-        return "auth:refresh:" + memberId;
+    public static String refreshToken(String jti){
+        return "auth:refresh:" + jti;
     }
 
-    public static String blacklist(String accessToken){
-        return "auth:blacklist:" + accessToken;
+    public static String blacklist(String jti){
+        return "auth:blacklist:" + jti;
     }
 
     public static String emailCode(String email){

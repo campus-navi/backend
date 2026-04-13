@@ -5,8 +5,6 @@ import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.member.entity.MemberRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
