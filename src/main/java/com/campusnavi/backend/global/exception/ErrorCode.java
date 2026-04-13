@@ -33,7 +33,9 @@ public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT,"AUTH_001"),
     DOMAIN_MISMATCH(HttpStatus.BAD_REQUEST,"AUTH_002"),
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS,"AUTH_003"),
-    IP_BLOCKED(HttpStatus.TOO_MANY_REQUESTS,"AUTH_004");
+    IP_BLOCKED(HttpStatus.TOO_MANY_REQUESTS,"AUTH_004"),
+    EMAIL_CODE_NOT_FOUND(HttpStatus.GONE,"AUTH_005"),
+    EMAIL_CODE_INVALID(HttpStatus.BAD_REQUEST,"AUTH_006");
 
 
     private final HttpStatus status;
