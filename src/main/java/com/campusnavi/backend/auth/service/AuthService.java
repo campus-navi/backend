@@ -70,10 +70,7 @@ public class AuthService {
 
         redisService.delete(RedisKeys.emailVerified(request.verifiedToken()));
 
-        //회원가입시 즉시 로그인
-        IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
-        redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
-        return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
+        return issueTokens(member);
     }
 
     public TokenResponse login(LoginRequest request) {
@@ -84,6 +81,31 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
+        return issueTokens(member);
+    }
+
+    public TokenResponse reissue(String refreshToken) {
+        if (refreshToken == null) {
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
+
+        String storedToken = redisService.get(RedisKeys.refreshToken(payload.jti()));
+
+        if (storedToken == null || !storedToken.equals(refreshToken)) {
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Member member = memberRepository.findById(payload.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        redisService.delete(RedisKeys.refreshToken(payload.jti()));
+
+        return issueTokens(member);
+    }
+
+    private TokenResponse issueTokens(Member member) {
         IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
         redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
         return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
