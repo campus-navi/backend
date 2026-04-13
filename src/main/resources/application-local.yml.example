@@ -36,3 +36,7 @@ app:
 
   email:
     from: ${MAIL_FROM}
+
+  cookie:
+    secure: false
+    same-site: Lax
