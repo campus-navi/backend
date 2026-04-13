@@ -1,9 +1,12 @@
 package com.campusnavi.backend.global.security.jwt;
 
+import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
 import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
+import com.campusnavi.backend.infra.redis.RedisKeys;
+import com.campusnavi.backend.infra.redis.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final CustomAuthenticationEntryPoint entryPoint;
+    private final RedisService redisService;
 
 
     @Override
@@ -43,6 +47,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (token != null){
 
                 AccessTokenPayload payload = jwtProvider.parseAndValidateAccessToken(token);
+
+                if (redisService.hasKey(RedisKeys.blacklist(payload.jti()))){
+                    throw new JwtAuthenticationException(ErrorCode.BLACKLISTED_TOKEN);
+                }
+
                 Long memberId = payload.memberId();
                 String role = payload.role();
                 MDC.put(MDC_MEMBER_ID, memberId.toString());
