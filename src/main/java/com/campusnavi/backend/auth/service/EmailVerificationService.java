@@ -1,6 +1,8 @@
 package com.campusnavi.backend.auth.service;
 
 import com.campusnavi.backend.auth.dto.EmailSendRequest;
+import com.campusnavi.backend.auth.dto.EmailVerifyRequest;
+import com.campusnavi.backend.auth.dto.VerifiedTokenResponse;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.infra.email.EmailSender;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class EmailVerificationService {
     private final MemberRepository memberRepository;
 
     private static final Duration EMAIL_CODE_EXPIRATION = Duration.ofMinutes(5);
+    private static final Duration VERIFIED_TOKEN_EXPIRATION = Duration.ofMinutes(10);
     private static final Duration EMAIL_COOLDOWN_EXPIRATION = Duration.ofMinutes(1);
     private static final int MAX_REQUESTS_PER_IP = 5;
     private static final Duration IP_COUNT_TTL = Duration.ofHours(1);
@@ -72,6 +76,25 @@ public class EmailVerificationService {
         redisService.set(RedisKeys.emailCooldown(email), "cooldown", EMAIL_COOLDOWN_EXPIRATION);
 
         emailSender.send(email, template.subject(), template.content());
+    }
+
+    public VerifiedTokenResponse verifyEmailCode(EmailVerifyRequest request) {
+        String email = request.email();
+        String storedCode = redisService.get(RedisKeys.emailCode(email));
+
+        if (storedCode == null) {
+            throw new BusinessException(ErrorCode.EMAIL_CODE_NOT_FOUND);
+        }
+        if (!storedCode.equals(request.code())) {
+            throw new BusinessException(ErrorCode.EMAIL_CODE_INVALID);
+        }
+
+        redisService.delete(RedisKeys.emailCode(email));
+
+        String verifiedToken = UUID.randomUUID().toString();
+        redisService.set(RedisKeys.emailVerified(verifiedToken), email, VERIFIED_TOKEN_EXPIRATION);
+
+        return new VerifiedTokenResponse(verifiedToken);
     }
 
     private Integer generateCode() {
