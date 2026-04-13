@@ -5,8 +5,10 @@ import com.campusnavi.backend.auth.dto.SignUpRequest;
 import com.campusnavi.backend.auth.dto.TokenResponse;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.jwt.JwtProperties;
 import com.campusnavi.backend.global.security.jwt.JwtProvider;
+import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
 import com.campusnavi.backend.global.security.jwt.dto.IssuedTokens;
 import com.campusnavi.backend.global.security.jwt.dto.RefreshTokenPayload;
 import com.campusnavi.backend.infra.redis.RedisKeys;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -105,9 +109,41 @@ public class AuthService {
         return issueTokens(member);
     }
 
+    public void logout(String accessToken, String refreshToken) {
+
+        blacklistAccessToken(accessToken);
+        deleteRefreshToken(refreshToken);
+    }
+
     private TokenResponse issueTokens(Member member) {
         IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
         redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
         return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
+    }
+
+    private void blacklistAccessToken(String accessToken){
+        if (accessToken == null || accessToken.isBlank() || !accessToken.startsWith("Bearer ")) {
+            return;
+        }
+        try {
+            accessToken = accessToken.substring(7);
+            AccessTokenPayload payload = jwtProvider.parseAndValidateAccessToken(accessToken);
+            if (payload.remainingTtl() <= 0){
+                return;
+            }
+            redisService.set(RedisKeys.blacklist(payload.jti()), "logout", Duration.ofMillis(payload.remainingTtl()));
+        } catch (JwtAuthenticationException ignored){
+        }
+    }
+
+    private void deleteRefreshToken(String refreshToken){
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+        try {
+            RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
+            redisService.delete(RedisKeys.refreshToken(payload.jti()));
+        } catch (JwtAuthenticationException ignored){
+        }
     }
 }
