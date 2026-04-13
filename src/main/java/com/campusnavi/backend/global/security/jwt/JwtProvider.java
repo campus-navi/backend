@@ -2,6 +2,9 @@ package com.campusnavi.backend.global.security.jwt;
 
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
+import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
+import com.campusnavi.backend.global.security.jwt.dto.IssuedTokens;
+import com.campusnavi.backend.global.security.jwt.dto.RefreshTokenPayload;
 import com.campusnavi.backend.member.entity.MemberRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -29,15 +32,12 @@ public class JwtProvider {
         );
     }
 
-    public String generateAccessToken(Long memberId, MemberRole role) {
-        return buildBaseToken(memberId, TokenType.ACCESS, jwtProperties.accessTokenExpiration())
-                .claim(ROLE, role.name())
-                .compact();
-    }
-
-    public String generateRefreshToken(Long memberId) {
-        return buildBaseToken(memberId, TokenType.REFRESH, jwtProperties.refreshTokenExpiration())
-                .compact();
+    public IssuedTokens issueTokens(Long memberId, MemberRole role) {
+        String accessTokenJti = UUID.randomUUID().toString();
+        String refreshTokenJti = UUID.randomUUID().toString();
+        String accessToken = generateAccessToken(memberId, role, accessTokenJti, jwtProperties.accessTokenExpiration());
+        String refreshToken = generateRefreshToken(memberId, refreshTokenJti, jwtProperties.refreshTokenExpiration());
+        return new IssuedTokens(accessToken, refreshToken, accessTokenJti, refreshTokenJti);
     }
 
     public AccessTokenPayload parseAndValidateAccessToken(String token) {
@@ -80,16 +80,32 @@ public class JwtProvider {
         }
     }
 
-    private JwtBuilder buildBaseToken(Long memberId, TokenType type, Duration expiration) {
+    private String generateAccessToken(Long memberId, MemberRole role, String jti, Duration expiration){
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration.toMillis());
 
         return Jwts.builder()
-                .id(UUID.randomUUID().toString())
+                .id(jti)
                 .subject(memberId.toString())
                 .issuedAt(now)
                 .expiration(expiry)
-                .claim(TYPE, type.name())
-                .signWith(secretKey);
+                .claim(ROLE, role.name())
+                .claim(TYPE, TokenType.ACCESS.name())
+                .signWith(secretKey)
+                .compact();
+    }
+
+    private String generateRefreshToken(Long memberId, String jti, Duration expiration){
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expiration.toMillis());
+
+        return Jwts.builder()
+                .id(jti)
+                .subject(memberId.toString())
+                .issuedAt(now)
+                .expiration(expiry)
+                .claim(TYPE, TokenType.REFRESH.name())
+                .signWith(secretKey)
+                .compact();
     }
 }

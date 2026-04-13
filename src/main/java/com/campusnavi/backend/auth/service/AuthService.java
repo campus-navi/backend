@@ -7,7 +7,8 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.jwt.JwtProperties;
 import com.campusnavi.backend.global.security.jwt.JwtProvider;
-import com.campusnavi.backend.global.security.jwt.RefreshTokenPayload;
+import com.campusnavi.backend.global.security.jwt.dto.IssuedTokens;
+import com.campusnavi.backend.global.security.jwt.dto.RefreshTokenPayload;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
@@ -70,30 +71,21 @@ public class AuthService {
         redisService.delete(RedisKeys.emailVerified(request.verifiedToken()));
 
         //회원가입시 즉시 로그인
-        String accessToken = jwtProvider.generateAccessToken(member.getId(), member.getRole());
-        String refreshToken = jwtProvider.generateRefreshToken(member.getId());
-
-        RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
-        redisService.set(RedisKeys.refreshToken(payload.jti()), refreshToken, jwtProperties.refreshTokenExpiration());
-
-        return new TokenResponse(accessToken, refreshToken);
+        IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
+        redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
+        return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
     public TokenResponse login(LoginRequest request) {
         Member member = memberRepository.findByUsername(request.username())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
-        Long memberId = member.getId();
         if (!passwordEncoder.matches(request.password(), member.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        String accessToken = jwtProvider.generateAccessToken(memberId, member.getRole());
-        String refreshToken = jwtProvider.generateRefreshToken(memberId);
-
-        RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
-        redisService.set(RedisKeys.refreshToken(payload.jti()), refreshToken, jwtProperties.refreshTokenExpiration());
-
-        return new TokenResponse(accessToken, refreshToken);
+        IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
+        redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
+        return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
     }
 }
