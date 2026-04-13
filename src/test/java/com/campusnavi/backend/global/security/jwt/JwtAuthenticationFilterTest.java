@@ -4,6 +4,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
+import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

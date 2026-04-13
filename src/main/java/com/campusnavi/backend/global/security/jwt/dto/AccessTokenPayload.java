@@ -1,4 +1,4 @@
-package com.campusnavi.backend.global.security.jwt;
+package com.campusnavi.backend.global.security.jwt.dto;
 
 public record AccessTokenPayload(
         Long memberId,
