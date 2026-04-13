@@ -2,7 +2,7 @@ package com.campusnavi.backend.global.security;
 
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
-import com.campusnavi.backend.global.response.ApiResponse;
+import com.campusnavi.backend.global.response.ErrorResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,7 +36,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
-        ApiResponse<Void> body = ApiResponse.error(errorCode.getCode());
+        ErrorResponse body = ErrorResponse.of(errorCode.getCode());
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }
