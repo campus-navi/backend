@@ -7,6 +7,7 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.jwt.JwtProperties;
 import com.campusnavi.backend.global.security.jwt.JwtProvider;
+import com.campusnavi.backend.global.security.jwt.dto.IssuedTokens;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
@@ -142,8 +143,8 @@ class AuthServiceTest {
             given(campus.getUniversity()).willReturn(university);
             given(university.getId()).willReturn(1L);
             given(passwordEncoder.encode(PASSWORD)).willReturn("encoded-password");
-            given(jwtProvider.generateAccessToken(any(), any())).willReturn("access-token");
-            given(jwtProvider.generateRefreshToken(any())).willReturn("refresh-token");
+            given(jwtProvider.issueTokens(any(), any())).willReturn(
+                    new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
             given(jwtProperties.refreshTokenExpiration()).willReturn(Duration.ofDays(14));
 
             // when
@@ -250,8 +251,8 @@ class AuthServiceTest {
             given(member.getPassword()).willReturn(ENCODED_PASSWORD);
             given(member.getRole()).willReturn(MemberRole.USER);
             given(passwordEncoder.matches(PASSWORD, ENCODED_PASSWORD)).willReturn(true);
-            given(jwtProvider.generateAccessToken(1L, MemberRole.USER)).willReturn("access-token");
-            given(jwtProvider.generateRefreshToken(1L)).willReturn("refresh-token");
+            given(jwtProvider.issueTokens(1L, MemberRole.USER)).willReturn(
+                    new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
             given(jwtProperties.refreshTokenExpiration()).willReturn(Duration.ofDays(14));
 
             // when
@@ -283,7 +284,6 @@ class AuthServiceTest {
             Member member = mock(Member.class);
 
             given(memberRepository.findByUsername(USERNAME)).willReturn(Optional.of(member));
-            given(member.getId()).willReturn(1L);
             given(member.getPassword()).willReturn(ENCODED_PASSWORD);
             given(passwordEncoder.matches("wrongpassword", ENCODED_PASSWORD)).willReturn(false);
 
