@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -51,7 +52,7 @@ public class Member extends BaseEntity {
     private MemberStatus status;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.PERSIST)
-    private List<MemberDepartment> memberDepartments;
+    private List<MemberDepartment> memberDepartments = new ArrayList<>();
 
     private LocalDateTime deletedAt;
 
