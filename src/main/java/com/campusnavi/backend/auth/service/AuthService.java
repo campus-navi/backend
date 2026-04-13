@@ -110,7 +110,6 @@ public class AuthService {
     }
 
     public void logout(String accessToken, String refreshToken) {
-
         blacklistAccessToken(accessToken);
         deleteRefreshToken(refreshToken);
     }
