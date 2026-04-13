@@ -7,6 +7,7 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.jwt.JwtProperties;
 import com.campusnavi.backend.global.security.jwt.JwtProvider;
+import com.campusnavi.backend.global.security.jwt.RefreshTokenPayload;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
@@ -71,7 +72,9 @@ public class AuthService {
         //회원가입시 즉시 로그인
         String accessToken = jwtProvider.generateAccessToken(member.getId(), member.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(member.getId());
-        redisService.set(RedisKeys.refreshToken(member.getId()), refreshToken, jwtProperties.refreshTokenExpiration());
+
+        RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
+        redisService.set(RedisKeys.refreshToken(payload.jti()), refreshToken, jwtProperties.refreshTokenExpiration());
 
         return new TokenResponse(accessToken, refreshToken);
     }
@@ -87,7 +90,9 @@ public class AuthService {
 
         String accessToken = jwtProvider.generateAccessToken(memberId, member.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(memberId);
-        redisService.set(RedisKeys.refreshToken(memberId), refreshToken, jwtProperties.refreshTokenExpiration());
+
+        RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(refreshToken);
+        redisService.set(RedisKeys.refreshToken(payload.jti()), refreshToken, jwtProperties.refreshTokenExpiration());
 
         return new TokenResponse(accessToken, refreshToken);
     }
