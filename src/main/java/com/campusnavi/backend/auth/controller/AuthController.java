@@ -73,4 +73,16 @@ public class AuthController {
                 .header(HttpHeaders.AUTHORIZATION,token.accessToken())
                 .body(ApiResponse.ok());
     }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<Void>> reissue(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        TokenResponse token = authService.reissue(refreshToken);
+
+        ResponseCookie responseCookie = cookieProvider.setRefreshTokenCookie(token.refreshToken());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
+                .header(HttpHeaders.AUTHORIZATION,token.accessToken())
+                .body(ApiResponse.ok());
+    }
 }
