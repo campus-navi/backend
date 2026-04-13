@@ -3,6 +3,7 @@ package com.campusnavi.backend.global.security.jwt;
 import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
+import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
