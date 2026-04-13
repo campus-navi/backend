@@ -1,8 +1,12 @@
 package com.campusnavi.backend.auth.service;
 
+import com.campusnavi.backend.auth.dto.LoginRequest;
 import com.campusnavi.backend.auth.dto.SignUpRequest;
+import com.campusnavi.backend.auth.dto.TokenResponse;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.jwt.JwtProperties;
+import com.campusnavi.backend.global.security.jwt.JwtProvider;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
@@ -24,26 +28,28 @@ public class AuthService {
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
     private final DepartmentRepository departmentRepository;
+    private final JwtProvider jwtProvider;
+    private final JwtProperties jwtProperties;
 
-    public void checkDuplicateUsername(String username){
-        if (memberRepository.existsByUsername(username)){
+    public void checkDuplicateUsername(String username) {
+        if (memberRepository.existsByUsername(username)) {
             throw new BusinessException(ErrorCode.DUPLICATE_USERNAME);
         }
     }
 
-    public void checkDuplicateNickname(String nickname){
-        if (memberRepository.existsByNickname(nickname)){
+    public void checkDuplicateNickname(String nickname) {
+        if (memberRepository.existsByNickname(nickname)) {
             throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
         }
     }
 
     @Transactional
-    public void signUp(SignUpRequest request){
+    public TokenResponse signUp(SignUpRequest request) {
         String email = redisService.get(RedisKeys.emailVerified(request.verifiedToken()));
-        if (email == null){
+        if (email == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
-        if (memberRepository.existsByEmail(email)){
+        if (memberRepository.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
         checkDuplicateUsername(request.username());
@@ -61,5 +67,28 @@ public class AuthService {
         memberRepository.save(member);
 
         redisService.delete(RedisKeys.emailVerified(request.verifiedToken()));
+
+        //회원가입시 즉시 로그인
+        String accessToken = jwtProvider.generateAccessToken(member.getId(), member.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(member.getId());
+        redisService.set(RedisKeys.refreshToken(member.getId()), refreshToken, jwtProperties.refreshTokenExpiration());
+
+        return new TokenResponse(accessToken, refreshToken);
+    }
+
+    public TokenResponse login(LoginRequest request) {
+        Member member = memberRepository.findByUsername(request.username())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        Long memberId = member.getId();
+        if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        String accessToken = jwtProvider.generateAccessToken(memberId, member.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(memberId);
+        redisService.set(RedisKeys.refreshToken(memberId), refreshToken, jwtProperties.refreshTokenExpiration());
+
+        return new TokenResponse(accessToken, refreshToken);
     }
 }
