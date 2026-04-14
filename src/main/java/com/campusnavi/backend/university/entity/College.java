@@ -23,14 +23,10 @@ public class College {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String code;
-
-    public static College create(Campus campus, String name, String code) {
+    public static College create(Campus campus, String name) {
         College college = new College();
         college.campus = campus;
         college.name = name;
-        college.code = code;
         return college;
     }
 }
