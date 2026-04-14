@@ -1,0 +1,1 @@
+ALTER TABLE college DROP COLUMN code;
