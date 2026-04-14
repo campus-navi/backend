@@ -5,9 +5,12 @@ import com.campusnavi.backend.auth.dto.SignUpRequest;
 import com.campusnavi.backend.auth.dto.TokenResponse;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.exception.JwtAuthenticationException;
 import com.campusnavi.backend.global.security.jwt.JwtProperties;
 import com.campusnavi.backend.global.security.jwt.JwtProvider;
+import com.campusnavi.backend.global.security.jwt.dto.AccessTokenPayload;
 import com.campusnavi.backend.global.security.jwt.dto.IssuedTokens;
+import com.campusnavi.backend.global.security.jwt.dto.RefreshTokenPayload;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
@@ -33,9 +36,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -145,7 +150,6 @@ class AuthServiceTest {
             given(passwordEncoder.encode(PASSWORD)).willReturn("encoded-password");
             given(jwtProvider.issueTokens(any(), any())).willReturn(
                     new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
-            given(jwtProperties.refreshTokenExpiration()).willReturn(Duration.ofDays(14));
 
             // when
             TokenResponse result = authService.signUp(request);
@@ -153,6 +157,7 @@ class AuthServiceTest {
             // then
             then(memberRepository).should().save(any());
             then(redisService).should().delete(RedisKeys.emailVerified(VERIFIED_TOKEN));
+            then(redisService).should().set(eq(RedisKeys.refreshToken("refresh-jti")), eq("refresh-token"), any());
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
         }
@@ -234,6 +239,216 @@ class AuthServiceTest {
     }
 
     @Nested
+    @DisplayName("토큰 재발급")
+    class Reissue {
+
+        private static final String REFRESH_TOKEN = "valid-refresh-token";
+        private static final String REFRESH_JTI = "refresh-jti";
+        private static final Long MEMBER_ID = 1L;
+
+        @Test
+        @DisplayName("정상 요청이면 기존 토큰을 삭제하고 새 TokenResponse를 반환한다")
+        void success() {
+            // given
+            RefreshTokenPayload payload = new RefreshTokenPayload(MEMBER_ID, REFRESH_JTI);
+            Member member = mock(Member.class);
+
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(payload);
+            given(redisService.get(RedisKeys.refreshToken(REFRESH_JTI))).willReturn(REFRESH_TOKEN);
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
+            given(member.getId()).willReturn(MEMBER_ID);
+            given(member.getRole()).willReturn(MemberRole.USER);
+            given(jwtProvider.issueTokens(MEMBER_ID, MemberRole.USER)).willReturn(
+                    new IssuedTokens("new-access-token", "new-refresh-token", "new-access-jti", "new-refresh-jti"));
+
+            // when
+            TokenResponse result = authService.reissue(REFRESH_TOKEN);
+
+            // then
+            then(redisService).should().delete(RedisKeys.refreshToken(REFRESH_JTI));
+            then(redisService).should().set(eq(RedisKeys.refreshToken("new-refresh-jti")), eq("new-refresh-token"), any());
+            assertThat(result.accessToken()).isEqualTo("new-access-token");
+            assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
+        }
+
+        @Test
+        @DisplayName("refreshToken이 null이면 INVALID_REFRESH_TOKEN 예외가 발생한다")
+        void nullRefreshToken() {
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(null))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN));
+        }
+
+        @Test
+        @DisplayName("Redis에 저장된 토큰이 없으면 INVALID_REFRESH_TOKEN 예외가 발생한다")
+        void storedTokenNotFound() {
+            // given
+            RefreshTokenPayload payload = new RefreshTokenPayload(MEMBER_ID, REFRESH_JTI);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(payload);
+            given(redisService.get(RedisKeys.refreshToken(REFRESH_JTI))).willReturn(null);
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(REFRESH_TOKEN))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN));
+        }
+
+        @Test
+        @DisplayName("Redis에 저장된 토큰과 일치하지 않으면 INVALID_REFRESH_TOKEN 예외가 발생한다")
+        void storedTokenMismatch() {
+            // given
+            RefreshTokenPayload payload = new RefreshTokenPayload(MEMBER_ID, REFRESH_JTI);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(payload);
+            given(redisService.get(RedisKeys.refreshToken(REFRESH_JTI))).willReturn("different-token");
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(REFRESH_TOKEN))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN));
+        }
+
+        @Test
+        @DisplayName("회원이 존재하지 않으면 INVALID_REFRESH_TOKEN 예외가 발생한다")
+        void memberNotFound() {
+            // given
+            RefreshTokenPayload payload = new RefreshTokenPayload(MEMBER_ID, REFRESH_JTI);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(payload);
+            given(redisService.get(RedisKeys.refreshToken(REFRESH_JTI))).willReturn(REFRESH_TOKEN);
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(REFRESH_TOKEN))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN));
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class Logout {
+
+        private static final String ACCESS_TOKEN = "Bearer valid-access-token";
+        private static final String REFRESH_TOKEN = "valid-refresh-token";
+        private static final String ACCESS_JTI = "access-jti";
+        private static final String REFRESH_JTI = "refresh-jti";
+        private static final long REMAINING_TTL = 3_600_000L;
+
+        @Test
+        @DisplayName("유효한 토큰이면 accessToken을 블랙리스트에 등록하고 refreshToken을 삭제한다")
+        void success() {
+            // given
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
+
+            given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(refreshPayload);
+
+            // when
+            assertThatCode(() -> authService.logout(ACCESS_TOKEN, REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(redisService).should().set(RedisKeys.blacklist(ACCESS_JTI), "logout", Duration.ofMillis(REMAINING_TTL));
+            then(redisService).should().delete(RedisKeys.refreshToken(REFRESH_JTI));
+        }
+
+        @Test
+        @DisplayName("accessToken이 null이면 블랙리스트에 등록하지 않는다")
+        void nullAccessToken() {
+            // given
+            RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(refreshPayload);
+
+            // when
+            assertThatCode(() -> authService.logout(null, REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(redisService).should(never()).set(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("accessToken에 Bearer 접두사가 없으면 블랙리스트에 등록하지 않는다")
+        void accessTokenWithoutBearerPrefix() {
+            // given
+            RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(refreshPayload);
+
+            // when
+            assertThatCode(() -> authService.logout("no-prefix-token", REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(redisService).should(never()).set(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("accessToken의 remainingTtl이 0 이하이면 블랙리스트에 등록하지 않는다")
+        void accessTokenExpired() {
+            // given
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, 0L);
+            RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
+
+            given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(refreshPayload);
+
+            // when
+            assertThatCode(() -> authService.logout(ACCESS_TOKEN, REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(redisService).should(never()).set(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("accessToken 파싱 중 JwtAuthenticationException이 발생해도 예외 없이 처리된다")
+        void accessTokenParseException() {
+            // given
+            RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
+
+            given(jwtProvider.parseAndValidateAccessToken("valid-access-token"))
+                    .willThrow(new JwtAuthenticationException(ErrorCode.INVALID_TOKEN));
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN)).willReturn(refreshPayload);
+
+            // when & then
+            assertThatCode(() -> authService.logout(ACCESS_TOKEN, REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+            then(redisService).should(never()).set(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("refreshToken이 null이면 refreshToken을 삭제하지 않는다")
+        void nullRefreshToken() {
+            // given
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
+
+            // when
+            assertThatCode(() -> authService.logout(ACCESS_TOKEN, null))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(redisService).should(never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("refreshToken 파싱 중 JwtAuthenticationException이 발생해도 예외 없이 처리된다")
+        void refreshTokenParseException() {
+            // given
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
+            given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN))
+                    .willThrow(new JwtAuthenticationException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+            // when & then
+            assertThatCode(() -> authService.logout(ACCESS_TOKEN, REFRESH_TOKEN))
+                    .doesNotThrowAnyException();
+            then(redisService).should(never()).delete(any());
+        }
+    }
+
+    @Nested
     @DisplayName("로그인")
     class Login {
 
@@ -253,12 +468,12 @@ class AuthServiceTest {
             given(passwordEncoder.matches(PASSWORD, ENCODED_PASSWORD)).willReturn(true);
             given(jwtProvider.issueTokens(1L, MemberRole.USER)).willReturn(
                     new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
-            given(jwtProperties.refreshTokenExpiration()).willReturn(Duration.ofDays(14));
 
             // when
             TokenResponse result = authService.login(request);
 
             // then
+            then(redisService).should().set(eq(RedisKeys.refreshToken("refresh-jti")), eq("refresh-token"), any());
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
         }

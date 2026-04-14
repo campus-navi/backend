@@ -8,6 +8,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.util.cookie.RefreshTokenCookieProvider;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -385,6 +386,69 @@ class AuthControllerTest {
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_NICKNAME.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("토큰 재발급")
+    class Reissue {
+
+        @Test
+        @DisplayName("유효한 refreshToken 쿠키가 있으면 200과 Authorization, Set-Cookie 헤더를 반환한다")
+        void success() throws Exception {
+            given(authService.reissue("valid-refresh-token"))
+                    .willReturn(new TokenResponse("new-access-token", "new-refresh-token"));
+            given(cookieProvider.setRefreshTokenCookie("new-refresh-token"))
+                    .willReturn(ResponseCookie.from("refreshToken", "new-refresh-token").httpOnly(true).path("/").build());
+
+            mockMvc.perform(post("/api/v1/auth/reissue")
+                            .cookie(new Cookie("refreshToken", "valid-refresh-token")))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Authorization", "new-access-token"))
+                    .andExpect(header().string("Set-Cookie", containsString("refreshToken=new-refresh-token")))
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("refreshToken 쿠키가 없거나 유효하지 않으면 401을 반환한다")
+        void invalidRefreshToken() throws Exception {
+            given(authService.reissue(null))
+                    .willThrow(new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+            mockMvc.perform(post("/api/v1/auth/reissue"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_REFRESH_TOKEN.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class Logout {
+
+        @Test
+        @DisplayName("유효한 토큰이 있으면 200과 만료된 Set-Cookie 헤더를 반환한다")
+        void success() throws Exception {
+            given(cookieProvider.expireRefreshTokenCookie())
+                    .willReturn(ResponseCookie.from("refreshToken", "").maxAge(0).path("/").build());
+
+            mockMvc.perform(post("/api/v1/auth/logout")
+                            .header("Authorization", "Bearer valid-access-token")
+                            .cookie(new Cookie("refreshToken", "valid-refresh-token")))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("토큰이 없어도 200을 반환한다")
+        void noTokens() throws Exception {
+            given(cookieProvider.expireRefreshTokenCookie())
+                    .willReturn(ResponseCookie.from("refreshToken", "").maxAge(0).path("/").build());
+
+            mockMvc.perform(post("/api/v1/auth/logout"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
         }
     }
 
