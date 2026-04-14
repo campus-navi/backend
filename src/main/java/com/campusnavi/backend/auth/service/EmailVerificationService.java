@@ -31,9 +31,11 @@ public class EmailVerificationService {
     private static final Duration EMAIL_CODE_EXPIRATION = Duration.ofMinutes(5);
     private static final Duration VERIFIED_TOKEN_EXPIRATION = Duration.ofMinutes(10);
     private static final Duration EMAIL_COOLDOWN_EXPIRATION = Duration.ofMinutes(1);
+    private static final int MAX_VERIFY_ATTEMPTS = 5;
+    private static final Duration VERIFY_BLOCK_DURATION = Duration.ofMinutes(30);
     private static final int MAX_REQUESTS_PER_IP = 5;
-    private static final Duration IP_COUNT_TTL = Duration.ofHours(1);
-    private static final Duration IP_BLOCK_DURATION = Duration.ofHours(24);
+    private static final Duration IP_COUNT_TTL = Duration.ofMinutes(10);
+    private static final Duration IP_BLOCK_DURATION = Duration.ofMinutes(30);
 
     public void sendEmailVerification(EmailSendRequest request, String ip) {
         if (redisService.hasKey(RedisKeys.emailBlockIp(ip))) {
@@ -51,6 +53,10 @@ public class EmailVerificationService {
         }
 
         String email = request.email();
+
+        if (redisService.hasKey(RedisKeys.emailVerifyBlock(email))) {
+            throw new BusinessException(ErrorCode.EMAIL_VERIFY_BLOCKED);
+        }
 
         if (redisService.hasKey(RedisKeys.emailCooldown(email))) {
             throw new BusinessException(ErrorCode.EMAIL_SEND_COOLDOWN);
@@ -80,12 +86,26 @@ public class EmailVerificationService {
 
     public VerifiedTokenResponse verifyEmailCode(EmailVerifyRequest request) {
         String email = request.email();
+
+        if (redisService.hasKey(RedisKeys.emailVerifyBlock(email))) {
+            throw new BusinessException(ErrorCode.EMAIL_VERIFY_BLOCKED);
+        }
+
         String storedCode = redisService.get(RedisKeys.emailCode(email));
 
         if (storedCode == null) {
             throw new BusinessException(ErrorCode.EMAIL_CODE_NOT_FOUND);
         }
         if (!storedCode.equals(request.code())) {
+            Long failCount = redisService.increment(RedisKeys.emailVerifyFail(email));
+            if (failCount == 1) {
+                redisService.expire(RedisKeys.emailVerifyFail(email), EMAIL_CODE_EXPIRATION);
+            }
+            if (failCount >= MAX_VERIFY_ATTEMPTS) {
+                redisService.set(RedisKeys.emailVerifyBlock(email), "blocked", VERIFY_BLOCK_DURATION);
+                redisService.delete(RedisKeys.emailVerifyFail(email));
+                throw new BusinessException(ErrorCode.EMAIL_VERIFY_BLOCKED);
+            }
             throw new BusinessException(ErrorCode.EMAIL_CODE_INVALID);
         }
 
