@@ -30,5 +30,12 @@ public final class RedisKeys {
         return "auth:email:block:" + ip;
     }
 
+    public static String emailVerifyFail(String email) {
+        return "auth:email:verify:fail:" + email;
+    }
+
+    public static String emailVerifyBlock(String email) {
+        return "auth:email:verify:block:" + email;
+    }
 
 }

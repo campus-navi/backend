@@ -57,6 +57,7 @@ class EmailVerificationServiceTest {
 
         given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
         given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.hasKey(RedisKeys.emailCooldown(EMAIL))).willReturn(false);
         given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
         given(campusRepository.findById(1L)).willReturn(Optional.of(campus));
@@ -111,6 +112,7 @@ class EmailVerificationServiceTest {
 
         given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
         given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.hasKey(RedisKeys.emailCooldown(EMAIL))).willReturn(true);
 
         // when & then
@@ -127,6 +129,7 @@ class EmailVerificationServiceTest {
 
         given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
         given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.hasKey(RedisKeys.emailCooldown(EMAIL))).willReturn(false);
         given(memberRepository.existsByEmail(EMAIL)).willReturn(true);
 
@@ -144,6 +147,7 @@ class EmailVerificationServiceTest {
 
         given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
         given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.hasKey(RedisKeys.emailCooldown(EMAIL))).willReturn(false);
         given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
         given(campusRepository.findById(1L)).willReturn(Optional.empty());
@@ -163,6 +167,7 @@ class EmailVerificationServiceTest {
 
         given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
         given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.hasKey(RedisKeys.emailCooldown(EMAIL))).willReturn(false);
         given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
         given(campusRepository.findById(1L)).willReturn(Optional.of(campus));
@@ -178,6 +183,7 @@ class EmailVerificationServiceTest {
     @DisplayName("코드가 일치하면 기존 코드를 삭제하고 verifiedToken을 저장한 뒤 반환한다")
     void verifyEmailCode_success() {
         // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn(CODE);
 
         // when
@@ -193,6 +199,7 @@ class EmailVerificationServiceTest {
     @DisplayName("Redis에 코드가 없으면 EMAIL_CODE_NOT_FOUND 예외가 발생한다")
     void verifyEmailCode_codeNotFound() {
         // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn(null);
 
         // when & then
@@ -205,11 +212,88 @@ class EmailVerificationServiceTest {
     @DisplayName("코드가 불일치하면 EMAIL_CODE_INVALID 예외가 발생한다")
     void verifyEmailCode_codeInvalid() {
         // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
         given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn("999999");
+        given(redisService.increment(RedisKeys.emailVerifyFail(EMAIL))).willReturn(2L);
 
         // when & then
         assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
                 .isInstanceOfSatisfying(BusinessException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_CODE_INVALID));
+    }
+
+    @Test
+    @DisplayName("이메일이 차단된 상태에서 코드 검증 시 EMAIL_VERIFY_BLOCKED 예외가 발생한다")
+    void verifyEmailCode_emailBlocked() {
+        // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFY_BLOCKED));
+    }
+
+    @Test
+    @DisplayName("코드 불일치가 4회면 카운터가 증가하고 EMAIL_CODE_INVALID 예외가 발생한다")
+    void verifyEmailCode_failCountUnderLimit() {
+        // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn("999999");
+        given(redisService.increment(RedisKeys.emailVerifyFail(EMAIL))).willReturn(4L);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_CODE_INVALID));
+
+        then(redisService).should(never()).set(eq(RedisKeys.emailVerifyBlock(EMAIL)), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("코드 불일치가 5회에 달하면 차단 키를 생성하고 EMAIL_VERIFY_BLOCKED 예외가 발생한다")
+    void verifyEmailCode_failCountReachLimit() {
+        // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn("999999");
+        given(redisService.increment(RedisKeys.emailVerifyFail(EMAIL))).willReturn(5L);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFY_BLOCKED));
+
+        then(redisService).should().set(eq(RedisKeys.emailVerifyBlock(EMAIL)), eq("blocked"), any());
+        then(redisService).should().delete(RedisKeys.emailVerifyFail(EMAIL));
+    }
+
+    @Test
+    @DisplayName("첫 번째 코드 불일치 시 실패 카운터 키에 TTL을 설정한다")
+    void verifyEmailCode_firstFailSetsTtl() {
+        // given
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(false);
+        given(redisService.get(RedisKeys.emailCode(EMAIL))).willReturn("999999");
+        given(redisService.increment(RedisKeys.emailVerifyFail(EMAIL))).willReturn(1L);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.verifyEmailCode(VERIFY_REQUEST))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_CODE_INVALID));
+
+        then(redisService).should().expire(eq(RedisKeys.emailVerifyFail(EMAIL)), any());
+    }
+
+    @Test
+    @DisplayName("이메일이 차단된 상태에서 인증코드 발송 요청시 EMAIL_VERIFY_BLOCKED 예외가 발생한다")
+    void sendEmailVerification_emailVerifyBlocked() {
+        // given
+        given(redisService.hasKey(RedisKeys.emailBlockIp(IP))).willReturn(false);
+        given(redisService.increment(RedisKeys.emailRequestIp(IP))).willReturn(1L);
+        given(redisService.hasKey(RedisKeys.emailVerifyBlock(EMAIL))).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> emailVerificationService.sendEmailVerification(REQUEST, IP))
+                .isInstanceOfSatisfying(BusinessException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFY_BLOCKED));
     }
 }
