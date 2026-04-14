@@ -18,10 +18,10 @@ public class Campus {
     @JoinColumn(name = "university_id")
     private University university;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String code;
 
     @Column(nullable = false)
