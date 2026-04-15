@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
         name = "member_department",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "department_id"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "department_id"}, name = "uq_member_department"))
 public class MemberDepartment {
 
     @Id
