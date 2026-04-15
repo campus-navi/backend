@@ -15,7 +15,7 @@ public class Campus {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "university_id")
+    @JoinColumn(name = "university_id", nullable = false)
     private University university;
 
     @Column(nullable = false, unique = true)

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "department", uniqueConstraints = @UniqueConstraint(columnNames = {"campus_id", "name"}, name = "uq_campus_dempartment_name"))
+@Table(name = "department", uniqueConstraints = @UniqueConstraint(columnNames = {"campus_id", "name"}, name = "uq_campus_department_name"))
 public class Department {
 
     @Id
@@ -16,7 +16,7 @@ public class Department {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campus_id")
+    @JoinColumn(name = "campus_id", nullable = false)
     private Campus campus;
 
     @ManyToOne(fetch = FetchType.LAZY)
