@@ -47,6 +47,9 @@ dependencies {
     //Mail (SES - dev/prod)
     implementation("software.amazon.awssdk:ses:2.31.19")
 
+    //Storage (S3 - dev/prod)
+    implementation("software.amazon.awssdk:s3:2.31.19")
+
     //Util
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
