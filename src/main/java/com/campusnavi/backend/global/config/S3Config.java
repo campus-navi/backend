@@ -42,7 +42,9 @@ public class S3Config {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(properties.accessKey(), properties.secretKey());
 
         S3Presigner.Builder builder = S3Presigner.builder().region(Region.of(properties.region()))
-                .credentialsProvider(StaticCredentialsProvider.create(credentials));
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(properties.pathStyleAccess()).build());
 
         if (StringUtils.hasText(properties.endPoint())) {
             builder.endpointOverride(URI.create(properties.endPoint()));
