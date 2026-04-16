@@ -32,14 +32,15 @@ class CampusControllerTest {
     @DisplayName("캠퍼스 조회에 성공하면 DTO와 함께 200반환")
     void getCampusListSuccess() throws Exception {
         //given
-        CampusSummaryResponse response = new CampusSummaryResponse(1L,"서울캠퍼스");
+        CampusSummaryResponse response = new CampusSummaryResponse(1L,"서울캠퍼스","test.ac.kr");
         given(campusService.getCampusList()).willReturn(List.of(response));
 
         //when, then
         mockMvc.perform(get("/api/v1/campuses"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].name").value("서울캠퍼스"));
+                .andExpect(jsonPath("$.data[0].name").value("서울캠퍼스"))
+                .andExpect(jsonPath("$.data[0].domain").value("test.ac.kr"));
     }
 
     @Test
