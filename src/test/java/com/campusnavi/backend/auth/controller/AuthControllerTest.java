@@ -75,7 +75,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -88,7 +88,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -101,7 +101,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
     }
 
@@ -136,7 +136,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -149,7 +149,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -162,7 +162,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
     }
 
@@ -201,7 +201,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -214,7 +214,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -227,7 +227,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -240,7 +240,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -253,7 +253,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -266,7 +266,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -279,7 +279,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -292,7 +292,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -306,7 +306,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.EMAIL_NOT_VERIFIED.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.EMAIL_NOT_VERIFIED.name()));
         }
 
         @Test
@@ -320,7 +320,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_EMAIL.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_EMAIL.name()));
         }
 
         @Test
@@ -334,7 +334,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.DEPARTMENT_NOT_FOUND.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.DEPARTMENT_NOT_FOUND.name()));
         }
     }
 
@@ -362,7 +362,7 @@ class AuthControllerTest {
                             .param("username", USERNAME))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_USERNAME.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_USERNAME.name()));
         }
 
         @Test
@@ -385,7 +385,7 @@ class AuthControllerTest {
                             .param("nickname", NICKNAME))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_NICKNAME.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_NICKNAME.name()));
         }
     }
 
@@ -418,7 +418,7 @@ class AuthControllerTest {
             mockMvc.perform(post("/api/v1/auth/reissue"))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_REFRESH_TOKEN.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_REFRESH_TOKEN.name()));
         }
     }
 
@@ -483,7 +483,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -496,7 +496,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
 
         @Test
@@ -510,7 +510,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_CREDENTIALS.getCode()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_CREDENTIALS.name()));
         }
     }
 }
