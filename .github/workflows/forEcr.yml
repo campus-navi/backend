@@ -11,7 +11,7 @@ on:
       - "gradlew"
       - ".github/workflows/forEcr.yml"
       - "gradle/**"
-      - "setting.gradle.kts"
+      - "settings.gradle.kts"
 
 permissions:
   id-token: write
