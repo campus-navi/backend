@@ -32,18 +32,20 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("토큰 발급 후 AccessToken을 파싱하면 memberId와 role, jti, exp를 추출할 수 있다.")
+    @DisplayName("토큰 발급 후 AccessToken을 파싱하면 memberId,universityId와 role, jti, exp를 추출할 수 있다.")
     void issueTokens_thenParseAccessTokenReturnsCorrectPayload() {
         // given
         Long memberId = 1L;
+        Long universityId = 1L;
         MemberRole role = MemberRole.USER;
 
         // when
-        IssuedTokens tokens = jwtProvider.issueTokens(memberId, role);
+        IssuedTokens tokens = jwtProvider.issueTokens(memberId, universityId, role);
         AccessTokenPayload payload = jwtProvider.parseAndValidateAccessToken(tokens.accessToken());
 
         // then
         assertThat(payload.memberId()).isEqualTo(memberId);
+        assertThat(payload.universityId()).isEqualTo(universityId);
         assertThat(payload.role()).isEqualTo(role.name());
         assertThat(payload.jti()).isEqualTo(tokens.accessTokenJti());
         assertThat(payload.remainingTtl()).isGreaterThanOrEqualTo(0);
@@ -54,9 +56,10 @@ class JwtProviderTest {
     void issueTokens_thenParseRefreshTokenReturnsCorrectPayload() {
         // given
         Long memberId = 2L;
+        Long universityId = 2L;
 
         // when
-        IssuedTokens tokens = jwtProvider.issueTokens(memberId, MemberRole.USER);
+        IssuedTokens tokens = jwtProvider.issueTokens(memberId, universityId, MemberRole.USER);
         RefreshTokenPayload payload = jwtProvider.parseAndValidateRefreshToken(tokens.refreshToken());
 
         // then
@@ -68,7 +71,7 @@ class JwtProviderTest {
     @DisplayName("issueTokens가 반환하는 accessTokenJti와 refreshTokenJti는 서로 다르다.")
     void issueTokens_accessJtiAndRefreshJtiAreDifferent() {
         // when
-        IssuedTokens tokens = jwtProvider.issueTokens(1L, MemberRole.USER);
+        IssuedTokens tokens = jwtProvider.issueTokens(1L, 1L, MemberRole.USER);
 
         // then
         assertThat(tokens.accessTokenJti()).isNotEqualTo(tokens.refreshTokenJti());
@@ -78,7 +81,7 @@ class JwtProviderTest {
     @DisplayName("RefreshToken을 AccessToken으로 파싱하면 INVALID_TOKEN_TYPE 예외가 발생한다")
     void parseAccessToken_withRefreshToken_throwsInvalidTokenType() {
         // given
-        String refreshToken = jwtProvider.issueTokens(1L, MemberRole.USER).refreshToken();
+        String refreshToken = jwtProvider.issueTokens(1L, 1L, MemberRole.USER).refreshToken();
 
         // when, then
         assertThatThrownBy(() -> jwtProvider.parseAndValidateAccessToken(refreshToken))
@@ -91,7 +94,7 @@ class JwtProviderTest {
     @DisplayName("AccessToken을 RefreshToken으로 파싱하면 INVALID_TOKEN_TYPE 예외가 발생한다")
     void parseRefreshToken_withAccessToken_throwsInvalidTokenType() {
         // given
-        String accessToken = jwtProvider.issueTokens(1L, MemberRole.USER).accessToken();
+        String accessToken = jwtProvider.issueTokens(1L,1L, MemberRole.USER).accessToken();
 
         // when, then
         assertThatThrownBy(() -> jwtProvider.parseAndValidateRefreshToken(accessToken))
@@ -110,7 +113,7 @@ class JwtProviderTest {
                 Duration.ofDays(7)
         );
         JwtProvider expiredJwtProvider = new JwtProvider(expired);
-        String expiredToken = expiredJwtProvider.issueTokens(1L, MemberRole.USER).accessToken();
+        String expiredToken = expiredJwtProvider.issueTokens(1L, 1L, MemberRole.USER).accessToken();
 
         // when, then
         assertThatThrownBy(() -> jwtProvider.parseAndValidateAccessToken(expiredToken))

@@ -115,7 +115,7 @@ public class AuthService {
     }
 
     private TokenResponse issueTokens(Member member) {
-        IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getRole());
+        IssuedTokens tokens = jwtProvider.issueTokens(member.getId(), member.getUniversityId(), member.getRole());
         redisService.set(RedisKeys.refreshToken(tokens.refreshTokenJti()), tokens.refreshToken(), jwtProperties.refreshTokenExpiration());
         return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
     }

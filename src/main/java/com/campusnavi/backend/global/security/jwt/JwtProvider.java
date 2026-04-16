@@ -24,6 +24,7 @@ public class JwtProvider {
     private final SecretKey secretKey;
     private static final String ROLE = "role";
     private static final String TYPE = "type";
+    private static final String UNIVERSITY_ID = "universityId";
 
     public JwtProvider(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
@@ -32,10 +33,10 @@ public class JwtProvider {
         );
     }
 
-    public IssuedTokens issueTokens(Long memberId, MemberRole role) {
+    public IssuedTokens issueTokens(Long memberId, Long universityId, MemberRole role) {
         String accessTokenJti = UUID.randomUUID().toString();
         String refreshTokenJti = UUID.randomUUID().toString();
-        String accessToken = generateAccessToken(memberId, role, accessTokenJti, jwtProperties.accessTokenExpiration());
+        String accessToken = generateAccessToken(memberId, universityId, role, accessTokenJti, jwtProperties.accessTokenExpiration());
         String refreshToken = generateRefreshToken(memberId, refreshTokenJti, jwtProperties.refreshTokenExpiration());
         return new IssuedTokens(accessToken, refreshToken, accessTokenJti, refreshTokenJti);
     }
@@ -46,10 +47,11 @@ public class JwtProvider {
             throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN_TYPE);
         }
         Long memberId = Long.parseLong(claims.getSubject());
+        Long universityId = claims.get(UNIVERSITY_ID, Long.class);
         MemberRole role = MemberRole.valueOf(claims.get(ROLE, String.class));
         String jti = claims.getId();
         long remainingTtl = claims.getExpiration().getTime() - System.currentTimeMillis();
-        return new AccessTokenPayload(memberId,role.name(),jti,Math.max(0, remainingTtl));
+        return new AccessTokenPayload(memberId, universityId, role.name(), jti, Math.max(0, remainingTtl));
     }
 
     public RefreshTokenPayload parseAndValidateRefreshToken(String token) {
@@ -76,7 +78,7 @@ public class JwtProvider {
         }
     }
 
-    private String generateAccessToken(Long memberId, MemberRole role, String jti, Duration expiration){
+    private String generateAccessToken(Long memberId, Long universityId, MemberRole role, String jti, Duration expiration){
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration.toMillis());
 
@@ -87,6 +89,7 @@ public class JwtProvider {
                 .expiration(expiry)
                 .claim(ROLE, role.name())
                 .claim(TYPE, TokenType.ACCESS.name())
+                .claim(UNIVERSITY_ID, universityId)
                 .signWith(secretKey)
                 .compact();
     }
