@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+.gradle
+.env
+.env.*
+application-local.yml
+src/main/resources/application-local.yml
+.DS_Store
+README.md
