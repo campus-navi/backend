@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = payload.role();
                 MDC.put(MDC_MEMBER_ID, memberId.toString());
 
-                AuthMember authMember = new AuthMember(memberId,role);
+                AuthMember authMember = new AuthMember(memberId, role, payload.universityId());
 
                 Authentication authentication =
                         new UsernamePasswordAuthenticationToken(

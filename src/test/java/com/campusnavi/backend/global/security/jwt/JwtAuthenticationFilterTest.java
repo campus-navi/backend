@@ -85,7 +85,7 @@ class JwtAuthenticationFilterTest {
         String token = "valid.jwt.token";
         Long memberId = 1L;
         String role = "USER";
-        AccessTokenPayload payload = new AccessTokenPayload(memberId, role, "random.jti",100L);
+        AccessTokenPayload payload = new AccessTokenPayload(memberId, null, role, "random.jti", 100L);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer " + token);

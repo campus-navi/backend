@@ -148,7 +148,7 @@ class AuthServiceTest {
             given(campus.getUniversity()).willReturn(university);
             given(university.getId()).willReturn(1L);
             given(passwordEncoder.encode(PASSWORD)).willReturn("encoded-password");
-            given(jwtProvider.issueTokens(any(), any())).willReturn(
+            given(jwtProvider.issueTokens(any(), any(),any())).willReturn(
                     new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
 
             // when
@@ -258,7 +258,8 @@ class AuthServiceTest {
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
             given(member.getId()).willReturn(MEMBER_ID);
             given(member.getRole()).willReturn(MemberRole.USER);
-            given(jwtProvider.issueTokens(MEMBER_ID, MemberRole.USER)).willReturn(
+            given(member.getUniversityId()).willReturn(1L);
+            given(jwtProvider.issueTokens(MEMBER_ID, 1L, MemberRole.USER)).willReturn(
                     new IssuedTokens("new-access-token", "new-refresh-token", "new-access-jti", "new-refresh-jti"));
 
             // when
@@ -338,7 +339,7 @@ class AuthServiceTest {
         @DisplayName("유효한 토큰이면 accessToken을 블랙리스트에 등록하고 refreshToken을 삭제한다")
         void success() {
             // given
-            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, null, "USER", ACCESS_JTI, REMAINING_TTL);
             RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
 
             given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
@@ -387,7 +388,7 @@ class AuthServiceTest {
         @DisplayName("accessToken의 remainingTtl이 0 이하이면 블랙리스트에 등록하지 않는다")
         void accessTokenExpired() {
             // given
-            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, 0L);
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, null, "USER", ACCESS_JTI, 0L);
             RefreshTokenPayload refreshPayload = new RefreshTokenPayload(1L, REFRESH_JTI);
 
             given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
@@ -421,7 +422,7 @@ class AuthServiceTest {
         @DisplayName("refreshToken이 null이면 refreshToken을 삭제하지 않는다")
         void nullRefreshToken() {
             // given
-            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, null, "USER", ACCESS_JTI, REMAINING_TTL);
             given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
 
             // when
@@ -436,7 +437,7 @@ class AuthServiceTest {
         @DisplayName("refreshToken 파싱 중 JwtAuthenticationException이 발생해도 예외 없이 처리된다")
         void refreshTokenParseException() {
             // given
-            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, "USER", ACCESS_JTI, REMAINING_TTL);
+            AccessTokenPayload accessPayload = new AccessTokenPayload(1L, null, "USER", ACCESS_JTI, REMAINING_TTL);
             given(jwtProvider.parseAndValidateAccessToken("valid-access-token")).willReturn(accessPayload);
             given(jwtProvider.parseAndValidateRefreshToken(REFRESH_TOKEN))
                     .willThrow(new JwtAuthenticationException(ErrorCode.INVALID_REFRESH_TOKEN));
@@ -465,8 +466,9 @@ class AuthServiceTest {
             given(member.getId()).willReturn(1L);
             given(member.getPassword()).willReturn(ENCODED_PASSWORD);
             given(member.getRole()).willReturn(MemberRole.USER);
+            given(member.getUniversityId()).willReturn(1L);
             given(passwordEncoder.matches(PASSWORD, ENCODED_PASSWORD)).willReturn(true);
-            given(jwtProvider.issueTokens(1L, MemberRole.USER)).willReturn(
+            given(jwtProvider.issueTokens(1L, 1L, MemberRole.USER)).willReturn(
                     new IssuedTokens("access-token", "refresh-token", "access-jti", "refresh-jti"));
 
             // when
