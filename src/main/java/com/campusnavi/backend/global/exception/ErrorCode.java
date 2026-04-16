@@ -52,7 +52,10 @@ public enum ErrorCode {
     FILE_SIZE_EXCEEDED(HttpStatus.CONTENT_TOO_LARGE),
 
     //회원 관련
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND);
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    //커뮤니티 관련
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 }

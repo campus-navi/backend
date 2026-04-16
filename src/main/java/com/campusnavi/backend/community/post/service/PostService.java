@@ -2,18 +2,21 @@ package com.campusnavi.backend.community.post.service;
 
 import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
+import com.campusnavi.backend.community.post.dto.PostResponse;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
 import com.campusnavi.backend.community.post.repository.PostRepository;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.infra.storage.S3StorageService;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -34,16 +37,41 @@ public class PostService {
                 request.title(), request.content(), request.isAnonymous());
 
         List<String> imageKeys = request.imageKeys();
+        postRepository.save(post);
 
         if (imageKeys != null) {
-            for (String imageKey : imageKeys) {
-                PostImage image = PostImage.create(post, imageKey, (short) imageKeys.indexOf(imageKey));
+            for (int i = 0; i < imageKeys.size(); i++) {
+                PostImage image = PostImage.create(post, imageKeys.get(i), (short) i);
                 imageRepository.save(image);
             }
         }
 
-        postRepository.save(post);
         return new PostCreateResponse(post.getId());
     }
+
+    public PostResponse getPost(Long postId, Long memberId) {
+        Post post = postRepository.findByIdWithMember(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        memberRepository.findById(memberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String nickname = post.getMember().getNickname();
+        if (post.isAnonymous()) {
+            nickname = "익명";
+        }
+
+        List<PostImage> images = imageRepository.findByPostIdOrderBySortOrderAsc(postId);
+        List<String> imageUrls = new ArrayList<>();
+        for (PostImage image : images) {
+            imageUrls.add(image.getS3Url());
+        }
+
+        boolean isMine = post.getMember().getId().equals(memberId);
+
+        return new PostResponse(nickname,post.getTitle(),post.getContent(), post.getCreatedAt(),
+                post.getLikeCount(),post.getCommentCount(),post.getScrapCount(),
+                imageUrls,false,false,isMine);
+    }
+
 
 }

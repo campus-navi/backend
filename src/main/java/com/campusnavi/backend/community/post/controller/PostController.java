@@ -2,8 +2,11 @@ package com.campusnavi.backend.community.post.controller;
 
 import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
+import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.response.ApiResponse;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,5 +25,12 @@ public class PostController {
             @RequestBody PostCreateRequest request,
             @AuthenticationPrincipal Long memberId) {
         return ResponseEntity.ok(ApiResponse.ok(postService.createPost(memberId, request)));
+    }
+
+    @GetMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostResponse>> getPost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal Long memberId) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.getPost(postId, memberId)));
     }
 }
