@@ -28,11 +28,11 @@ public class EmailVerificationService {
     private final RedisService redisService;
     private final MemberRepository memberRepository;
 
-    private static final Duration EMAIL_CODE_EXPIRATION = Duration.ofMinutes(5);
+    private static final Duration EMAIL_CODE_EXPIRATION = Duration.ofMinutes(10);
     private static final Duration VERIFIED_TOKEN_EXPIRATION = Duration.ofMinutes(10);
-    private static final Duration EMAIL_COOLDOWN_EXPIRATION = Duration.ofMinutes(1);
+    private static final Duration EMAIL_COOLDOWN_EXPIRATION = Duration.ofSeconds(10);
     private static final int MAX_VERIFY_ATTEMPTS = 5;
-    private static final Duration VERIFY_BLOCK_DURATION = Duration.ofMinutes(30);
+    private static final Duration VERIFY_BLOCK_DURATION = Duration.ofMinutes(10);
     private static final int MAX_REQUESTS_PER_IP = 5;
     private static final Duration IP_COUNT_TTL = Duration.ofMinutes(10);
     private static final Duration IP_BLOCK_DURATION = Duration.ofMinutes(30);
