@@ -18,35 +18,35 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e){
         ErrorCode code = e.getErrorCode();
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e){
         ErrorCode code = ErrorCode.INVALID_INPUT;
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e){
         ErrorCode code = ErrorCode.INVALID_JSON;
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e){
         ErrorCode code = ErrorCode.METHOD_NOT_ALLOWED;
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e){
         ErrorCode code = ErrorCode.INVALID_PARAM;
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(Exception.class)
@@ -54,6 +54,6 @@ public class GlobalExceptionHandler {
         ErrorCode code = ErrorCode.INTERNAL_SERVER_ERROR;
         log.error("Unhandled exception", e);
         return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode()));
+                .body(ErrorResponse.of(code.name()));
     }
 }

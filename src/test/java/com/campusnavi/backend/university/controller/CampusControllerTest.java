@@ -62,7 +62,7 @@ class CampusControllerTest {
         mockMvc.perform(get("/api/v1/campuses/abc/departments"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_PARAM.getCode()));
+                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_PARAM.name()));
     }
 
     @Test
@@ -77,6 +77,6 @@ class CampusControllerTest {
         mockMvc.perform(get("/api/v1/campuses/{campusId}/departments", campusId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ErrorCode.CAMPUS_NOT_FOUND.getCode()));
+                .andExpect(jsonPath("$.code").value(ErrorCode.CAMPUS_NOT_FOUND.name()));
     }
 }
