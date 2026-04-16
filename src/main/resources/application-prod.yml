@@ -44,3 +44,4 @@ app:
       secret-key: ${S3_SECRET_KEY}
       endpoint:
       path-style-access: ${S3_PATH_STYLE:false}
+      base-url: ${S3_BASE_URL}

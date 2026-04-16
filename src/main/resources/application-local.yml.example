@@ -50,3 +50,4 @@ app:
       secret-key: test
       endpoint: http://localhost:4566
       path-style-access: true
+      base-url: http://localhost:4566/campus-navi-local

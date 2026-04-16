@@ -9,5 +9,6 @@ public record StorageProperties(
         String accessKey,
         String secretKey,
         String endPoint,
-        boolean pathStyleAccess
+        boolean pathStyleAccess,
+        String baseUrl
 ) { }
