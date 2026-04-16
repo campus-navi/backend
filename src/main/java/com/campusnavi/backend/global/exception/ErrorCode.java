@@ -44,7 +44,12 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN),
 
     //로그인 관련
-    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED);
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
+
+    //파일 업로드 관련
+    INVALID_CONTENT_TYPE(HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAIL(HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_SIZE_EXCEEDED(HttpStatus.CONTENT_TOO_LARGE);
 
     private final HttpStatus status;
 }
