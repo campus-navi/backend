@@ -7,6 +7,7 @@ import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.CursorPageResponse;
+import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +24,14 @@ public class PostController {
     @PostMapping
     public ResponseEntity<ApiResponse<PostCreateResponse>> createPost(
             @RequestBody PostCreateRequest request,
-            @AuthenticationPrincipal Long memberId) {
-        return ResponseEntity.ok(ApiResponse.ok(postService.createPost(memberId, request)));
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.createPost(authMember, request)));
     }
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostResponse>> getPost(
             @PathVariable Long postId,
-            @AuthenticationPrincipal Long memberId) {
-        return ResponseEntity.ok(ApiResponse.ok(postService.getPost(postId, memberId)));
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.getPost(postId, authMember)));
     }
 }

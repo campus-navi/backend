@@ -9,6 +9,7 @@ import com.campusnavi.backend.community.post.repository.PostImageRepository;
 import com.campusnavi.backend.community.post.repository.PostRepository;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.infra.storage.S3StorageService;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.repository.MemberRepository;
@@ -29,8 +30,8 @@ public class PostService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public PostCreateResponse createPost(Long memberId, PostCreateRequest request) {
-        Member member = memberRepository.findById(memberId)
+    public PostCreateResponse createPost(AuthMember authMember, PostCreateRequest request) {
+        Member member = memberRepository.findById(authMember.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Post post = Post.create(member.getUniversityId(), member,
@@ -49,11 +50,9 @@ public class PostService {
         return new PostCreateResponse(post.getId());
     }
 
-    public PostResponse getPost(Long postId, Long memberId) {
-        Post post = postRepository.findByIdWithMember(postId)
+    public PostResponse getPost(Long postId, AuthMember authMember) {
+        Post post = postRepository.findByIdWithMember(postId,authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
-
-        memberRepository.findById(memberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         String nickname = post.getMember().getNickname();
         if (post.isAnonymous()) {
@@ -66,7 +65,7 @@ public class PostService {
             imageUrls.add(image.getS3Url());
         }
 
-        boolean isMine = post.getMember().getId().equals(memberId);
+        boolean isMine = post.getMember().getId().equals(authMember.memberId());
 
         return new PostResponse(nickname,post.getTitle(),post.getContent(), post.getCreatedAt(),
                 post.getLikeCount(),post.getCommentCount(),post.getScrapCount(),

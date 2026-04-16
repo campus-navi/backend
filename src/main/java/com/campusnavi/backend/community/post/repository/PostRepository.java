@@ -21,6 +21,12 @@ public interface PostRepository extends JpaRepository<Post,Long> {
                          @Param("cursorId") Long cursorId,
                          @Param("size") int size);
 
-    @Query("SELECT p FROM Post p JOIN FETCH p.member WHERE p.id = :id AND p.deletedAt IS NULL")
-    Optional<Post> findByIdWithMember(Long id);
+    @Query("""
+            SELECT p FROM Post p
+            JOIN FETCH p.member
+            WHERE p.id = :id
+            AND p.deletedAt IS NULL
+            AND p.universityId = :universityId
+            """)
+    Optional<Post> findByIdWithMember(Long id, Long universityId);
 }
