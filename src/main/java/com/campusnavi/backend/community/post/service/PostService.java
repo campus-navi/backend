@@ -1,0 +1,137 @@
+package com.campusnavi.backend.community.post.service;
+
+import com.campusnavi.backend.community.post.dto.PostCreateRequest;
+import com.campusnavi.backend.community.post.dto.PostCreateResponse;
+import com.campusnavi.backend.community.post.dto.PostPresignedUrlRequest;
+import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
+import com.campusnavi.backend.community.post.entity.Post;
+import com.campusnavi.backend.community.post.entity.PostImage;
+import com.campusnavi.backend.community.post.repository.PostImageRepository;
+import com.campusnavi.backend.community.post.repository.PostRepository;
+import com.campusnavi.backend.global.exception.BusinessException;
+import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
+import com.campusnavi.backend.infra.storage.S3StorageService;
+import com.campusnavi.backend.infra.storage.UploadType;
+import com.campusnavi.backend.member.entity.Member;
+import com.campusnavi.backend.member.repository.MemberRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PostService {
+
+    private final PostRepository postRepository;
+    private final PostImageRepository imageRepository;
+    private final MemberRepository memberRepository;
+    private final S3StorageService s3StorageService;
+
+    @Transactional
+    public PostCreateResponse createPost(AuthMember authMember, PostCreateRequest request) {
+        Member member = memberRepository.findById(authMember.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Post post = Post.create(member.getUniversityId(), member,
+                request.title(), request.content(), request.isAnonymous());
+
+        postRepository.save(post);
+        savePostImages(post, request.imageKeys());
+
+        return new PostCreateResponse(post.getId());
+    }
+
+    public PostResponse getPost(Long postId, AuthMember authMember) {
+        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        String nickname = post.getMember().getNickname();
+        if (post.isAnonymous()) {
+            nickname = "익명";
+        }
+
+        List<PostImage> images = imageRepository.findByPostIdOrderBySortOrderAsc(postId);
+        List<String> imageUrls = new ArrayList<>();
+        for (PostImage image : images) {
+            imageUrls.add(s3StorageService.resolveUrl(image.getImageKey()));
+        }
+
+        boolean isMine = post.getMember().getId().equals(authMember.memberId());
+
+        return new PostResponse(nickname, post.getTitle(), post.getContent(), post.getCreatedAt(),
+                post.getLikeCount(), post.getCommentCount(), post.getScrapCount(),
+                imageUrls, false, false, isMine);
+    }
+
+    @Transactional
+    public void updatePost(Long postId, AuthMember authMember, PostUpdateRequest request) {
+        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getMember().getId().equals(authMember.memberId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        post.update(request.title(), request.content(), request.isAnonymous());
+
+        if (request.imageKeys() != null) {
+            List<PostImage> existingImages = imageRepository.findByPostId(postId);
+            try {
+                for (PostImage image : existingImages) {
+                    s3StorageService.delete(image.getImageKey());
+                }
+            } catch (Exception e) {
+                log.error("S3 삭제처리중 예외발생 {}", e.getMessage());
+            }
+            imageRepository.deleteByPostId(postId);
+            savePostImages(post, request.imageKeys());
+        }
+    }
+
+    @Transactional
+    public void deletePost(Long postId, AuthMember authMember) {
+        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getMember().getId().equals(authMember.memberId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        List<PostImage> existingImages = imageRepository.findByPostId(postId);
+        try {
+            for (PostImage image : existingImages) {
+                s3StorageService.delete(image.getImageKey());
+            }
+        } catch (Exception e) {
+            log.error("S3 삭제처리중 예외 발생 {}", e.getMessage());
+        }
+
+        imageRepository.deleteByPostId(postId);
+        post.softDelete();
+    }
+
+    public PresignedUrlResponse generatePostPresignedUrl(PostPresignedUrlRequest request) {
+        if (!request.contentType().startsWith("image/")) {
+            throw new BusinessException(ErrorCode.INVALID_CONTENT_TYPE);
+        }
+        return s3StorageService.generatePresignedUrl(UploadType.POST_IMAGE, request.filename(), request.contentType(), request.size());
+    }
+
+    private void savePostImages(Post post, List<String> imageKeys) {
+        if (imageKeys == null || imageKeys.isEmpty()) return;
+        List<PostImage> images = new ArrayList<>();
+        for (int i = 0; i < imageKeys.size(); i++) {
+            images.add(PostImage.create(post, imageKeys.get(i), (short) i));
+        }
+        imageRepository.saveAll(images);
+    }
+}

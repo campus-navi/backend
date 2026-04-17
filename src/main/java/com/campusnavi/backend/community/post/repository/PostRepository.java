@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post,Long> {
     @Query("""
@@ -19,4 +20,13 @@ public interface PostRepository extends JpaRepository<Post,Long> {
     List<Post> findPosts(@Param("universityId") Long universityId,
                          @Param("cursorId") Long cursorId,
                          @Param("size") int size);
+
+    @Query("""
+            SELECT p FROM Post p
+            JOIN FETCH p.member
+            WHERE p.id = :id
+            AND p.deletedAt IS NULL
+            AND p.universityId = :universityId
+            """)
+    Optional<Post> findByIdWithMember(Long id, Long universityId);
 }

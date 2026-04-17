@@ -49,7 +49,13 @@ public enum ErrorCode {
     //파일 업로드 관련
     INVALID_CONTENT_TYPE(HttpStatus.BAD_REQUEST),
     FILE_UPLOAD_FAIL(HttpStatus.INTERNAL_SERVER_ERROR),
-    FILE_SIZE_EXCEEDED(HttpStatus.CONTENT_TOO_LARGE);
+    FILE_SIZE_EXCEEDED(HttpStatus.CONTENT_TOO_LARGE),
+
+    //회원 관련
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    //커뮤니티 관련
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 }

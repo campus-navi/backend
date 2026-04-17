@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 public enum UploadType {
 
     POST_IMAGE("posts/images/", "image/*", 10L * 1024 * 1024),   // 10MB
-    POST_VIDEO("posts/videos/", "video/*", 200L * 1024 * 1024),   // 200MB
     INFO_IMAGE("information/images/", "image/*", 10L * 1024 * 1024),   // 10MB
     INFO_ATTACH("information/attachments/", "*/*", 50L * 1024 * 1024);   // 50MB
 
