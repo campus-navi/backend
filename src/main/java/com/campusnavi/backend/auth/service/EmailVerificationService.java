@@ -47,7 +47,7 @@ public class EmailVerificationService {
         if (requestCount == 1) {
             redisService.expire(RedisKeys.emailRequestIp(ip), IP_COUNT_TTL);
         }
-        if (requestCount > MAX_REQUESTS_PER_IP) {
+        if (requestCount >= MAX_REQUESTS_PER_IP) {
             redisService.set(RedisKeys.emailBlockIp(ip), "blocked", IP_BLOCK_DURATION);
             throw new BusinessException(ErrorCode.IP_BLOCKED);
         }
