@@ -11,7 +11,9 @@ import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
+import com.campusnavi.backend.community.post.repository.PostLikeRepository;
 import com.campusnavi.backend.community.post.repository.PostRepository;
+import com.campusnavi.backend.community.post.repository.PostScrapRepository;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
@@ -28,7 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -38,6 +42,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostImageRepository imageRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final PostScrapRepository postScrapRepository;
     private final MemberRepository memberRepository;
     private final S3StorageService s3StorageService;
 
@@ -71,10 +77,12 @@ public class PostService {
         }
 
         boolean isMine = post.getMember().getId().equals(authMember.memberId());
+        boolean isLiked = postLikeRepository.findByMemberIdAndPostId(authMember.memberId(), postId).isPresent();
+        boolean isScraped = postScrapRepository.findByMemberIdAndPostId(authMember.memberId(), postId).isPresent();
 
         return new PostResponse(nickname, post.getTitle(), post.getContent(), post.getCreatedAt(),
                 post.getLikeCount(), post.getCommentCount(), post.getScrapCount(),
-                imageUrls, false, false, isMine);
+                imageUrls, isLiked, isScraped, isMine);
     }
 
     @Transactional
@@ -145,18 +153,25 @@ public class PostService {
                     : encodeCursor(last.getId(), null);
         }
 
-        List<PostSummaryResponse> summaries = result.stream().map(this::toSummary).toList();
+        List<Long> postIds = result.stream().map(Post::getId).toList();
+        Set<Long> likedIds = new HashSet<>(postLikeRepository.findLikedPostIds(authMember.memberId(), postIds));
+        Set<Long> scrapedIds = new HashSet<>(postScrapRepository.findScrapedPostIds(authMember.memberId(), postIds));
+
+        List<PostSummaryResponse> summaries = result.stream()
+                .map(post -> toSummary(post, likedIds.contains(post.getId()), scrapedIds.contains(post.getId())))
+                .toList();
         return CursorPageResponse.of(summaries, nextCursor, hasNext);
     }
 
-    private PostSummaryResponse toSummary(Post post) {
+    private PostSummaryResponse toSummary(Post post, boolean isLiked, boolean isScraped) {
         String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
         String preview = post.getContent().length() > 100
                 ? post.getContent().substring(0, 100)
                 : post.getContent();
         return new PostSummaryResponse(
                 post.getId(), nickname, post.getTitle(), preview,
-                post.getLikeCount(), post.getScrapCount(), post.getCommentCount(), post.getCreatedAt()
+                post.getLikeCount(), post.getScrapCount(), post.getCommentCount(), post.getCreatedAt(),
+                isLiked, isScraped
         );
     }
 

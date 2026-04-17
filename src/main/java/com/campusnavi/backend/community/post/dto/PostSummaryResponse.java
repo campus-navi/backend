@@ -10,6 +10,8 @@ public record PostSummaryResponse(
         int likeCount,
         int scrapCount,
         int commentCount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean isLiked,
+        boolean isScraped
 ) {
 }

@@ -10,7 +10,9 @@ import com.campusnavi.backend.community.post.dto.ViewType;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
+import com.campusnavi.backend.community.post.repository.PostLikeRepository;
 import com.campusnavi.backend.community.post.repository.PostRepository;
+import com.campusnavi.backend.community.post.repository.PostScrapRepository;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.response.CursorPageResponse;
@@ -54,6 +56,12 @@ class PostServiceTest {
 
     @Mock
     private PostImageRepository imageRepository;
+
+    @Mock
+    private PostLikeRepository postLikeRepository;
+
+    @Mock
+    private PostScrapRepository postScrapRepository;
 
     @Mock
     private MemberRepository memberRepository;
@@ -120,12 +128,37 @@ class PostServiceTest {
             given(member.getNickname()).willReturn("nick");
             given(post.isAnonymous()).willReturn(false);
             given(imageRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(postLikeRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
+            given(postScrapRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
 
             // when
             PostResponse response = postService.getPost(POST_ID, AUTH_MEMBER);
 
             // then
             assertThat(response.isMine()).isTrue();
+        }
+
+        @Test
+        @DisplayName("좋아요/스크랩한 게시글 조회 시 isLiked, isScraped가 true이다")
+        void likedAndScraped() {
+            // given
+            Post post = mock(Post.class);
+            Member member = mock(Member.class);
+            given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(post.getMember()).willReturn(member);
+            given(member.getId()).willReturn(MEMBER_ID);
+            given(member.getNickname()).willReturn("nick");
+            given(post.isAnonymous()).willReturn(false);
+            given(imageRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(postLikeRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.of(mock(com.campusnavi.backend.community.post.entity.PostLike.class)));
+            given(postScrapRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.of(mock(com.campusnavi.backend.community.post.entity.PostScrap.class)));
+
+            // when
+            PostResponse response = postService.getPost(POST_ID, AUTH_MEMBER);
+
+            // then
+            assertThat(response.isLiked()).isTrue();
+            assertThat(response.isScraped()).isTrue();
         }
 
         @Test
@@ -140,6 +173,8 @@ class PostServiceTest {
             given(member.getNickname()).willReturn("nick");
             given(post.isAnonymous()).willReturn(true);
             given(imageRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(postLikeRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
+            given(postScrapRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
 
             // when
             PostResponse response = postService.getPost(POST_ID, AUTH_MEMBER);
@@ -296,6 +331,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(3, false);
             given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts);
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
@@ -312,6 +348,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(21, false);
             given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts.subList(0, 20));
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
@@ -328,6 +365,8 @@ class PostServiceTest {
             // given
             String cursor = encode("50");
             given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), eq(50L), eq(21))).willReturn(List.of());
+            given(postLikeRepository.findLikedPostIds(MEMBER_ID, List.of())).willReturn(List.of());
+            given(postScrapRepository.findScrapedPostIds(MEMBER_ID, List.of())).willReturn(List.of());
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, cursor, 20);
@@ -343,6 +382,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(2, false);
             given(postRepository.findPopularPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts);
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.POPULAR, null, 20);
@@ -358,6 +398,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(2, false);
             given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), isNull(), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts);
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, null, 20);
@@ -373,6 +414,8 @@ class PostServiceTest {
             // given
             String cursor = encode("100:15");
             given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), eq(100L), eq(15), eq(21))).willReturn(List.of());
+            given(postLikeRepository.findLikedPostIds(MEMBER_ID, List.of())).willReturn(List.of());
+            given(postScrapRepository.findScrapedPostIds(MEMBER_ID, List.of())).willReturn(List.of());
 
             // when
             postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, cursor, 20);
@@ -387,6 +430,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(21, false);
             given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), isNull(), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts.subList(0, 20));
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, null, 20);
@@ -403,6 +447,7 @@ class PostServiceTest {
             // given
             List<Post> posts = mockPosts(1, true);
             given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+            stubInteractions(posts);
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
@@ -417,12 +462,19 @@ class PostServiceTest {
             // given
             Post post = mockPost(1L, false, "가".repeat(200), 0, 0);
             given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(List.of(post));
+            stubInteractions(List.of(post));
 
             // when
             CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
 
             // then
             assertThat(response.content().getFirst().contentPreview()).hasSize(100);
+        }
+
+        private void stubInteractions(List<Post> posts) {
+            List<Long> ids = posts.stream().map(Post::getId).toList();
+            given(postLikeRepository.findLikedPostIds(MEMBER_ID, ids)).willReturn(List.of());
+            given(postScrapRepository.findScrapedPostIds(MEMBER_ID, ids)).willReturn(List.of());
         }
 
         private List<Post> mockPosts(int count, boolean anonymous) {

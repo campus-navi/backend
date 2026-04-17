@@ -7,6 +7,7 @@ import com.campusnavi.backend.community.post.dto.PostResponse;
 import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
 import com.campusnavi.backend.community.post.dto.ViewType;
+import com.campusnavi.backend.community.post.service.PostInteractionService;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -44,12 +46,15 @@ class PostControllerTest {
     @MockitoBean
     private PostService postService;
 
+    @MockitoBean
+    private PostInteractionService postInteractionService;
+
     @Nested
     @DisplayName("게시글 목록 조회")
     class GetPosts {
 
         private final PostSummaryResponse summary = new PostSummaryResponse(
-                1L, "nick", "제목", "내용", 5, 3, 2, LocalDateTime.now()
+                1L, "nick", "제목", "내용", 5, 3, 2, LocalDateTime.now(), false, false
         );
 
         @Test
@@ -266,6 +271,114 @@ class PostControllerTest {
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.code").value(ErrorCode.FORBIDDEN.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("좋아요 추가")
+    class AddLike {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(postInteractionService).addLike(eq(1L), any());
+
+            mockMvc.perform(put("/api/v1/posts/1/likes"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 404를 반환한다")
+        void postNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND))
+                    .given(postInteractionService).addLike(eq(999L), any());
+
+            mockMvc.perform(put("/api/v1/posts/999/likes"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("좋아요 취소")
+    class RemoveLike {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(postInteractionService).removeLike(eq(1L), any());
+
+            mockMvc.perform(delete("/api/v1/posts/1/likes"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 404를 반환한다")
+        void postNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND))
+                    .given(postInteractionService).removeLike(eq(999L), any());
+
+            mockMvc.perform(delete("/api/v1/posts/999/likes"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 추가")
+    class AddScrap {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(postInteractionService).addScrap(eq(1L), any());
+
+            mockMvc.perform(put("/api/v1/posts/1/scraps"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 404를 반환한다")
+        void postNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND))
+                    .given(postInteractionService).addScrap(eq(999L), any());
+
+            mockMvc.perform(put("/api/v1/posts/999/scraps"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 취소")
+    class RemoveScrap {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(postInteractionService).removeScrap(eq(1L), any());
+
+            mockMvc.perform(delete("/api/v1/posts/1/scraps"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글이면 404를 반환한다")
+        void postNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.POST_NOT_FOUND))
+                    .given(postInteractionService).removeScrap(eq(999L), any());
+
+            mockMvc.perform(delete("/api/v1/posts/999/scraps"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()));
         }
     }
 
