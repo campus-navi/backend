@@ -71,7 +71,6 @@ class PostServiceTest {
             Member member = mock(Member.class);
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
             given(member.getUniversityId()).willReturn(UNIVERSITY_ID);
-            given(member.getNickname()).willReturn("nick");
 
             // when
             PostCreateResponse response = postService.createPost(AUTH_MEMBER, request);
