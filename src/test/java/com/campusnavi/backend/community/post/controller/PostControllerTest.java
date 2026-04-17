@@ -4,10 +4,13 @@ import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
 import com.campusnavi.backend.community.post.dto.PostPresignedUrlRequest;
 import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
+import com.campusnavi.backend.community.post.dto.ViewType;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +43,61 @@ class PostControllerTest {
 
     @MockitoBean
     private PostService postService;
+
+    @Nested
+    @DisplayName("게시글 목록 조회")
+    class GetPosts {
+
+        private final PostSummaryResponse summary = new PostSummaryResponse(
+                1L, "nick", "제목", "내용", 5, 3, 2, LocalDateTime.now()
+        );
+
+        @Test
+        @DisplayName("viewType 없이 요청하면 LATEST로 조회되고 200을 반환한다")
+        void defaultViewType() throws Exception {
+            given(postService.getPosts(any(), eq(ViewType.LATEST), any(), eq(20)))
+                    .willReturn(CursorPageResponse.of(List.of(summary), null, false));
+
+            mockMvc.perform(get("/api/v1/posts"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content[0].title").value("제목"))
+                    .andExpect(jsonPath("$.data.hasNext").value(false))
+                    .andExpect(jsonPath("$.data.nextCursor").isEmpty());
+        }
+
+        @Test
+        @DisplayName("viewType=POPULAR로 조회하면 200을 반환한다")
+        void popular() throws Exception {
+            given(postService.getPosts(any(), eq(ViewType.POPULAR), any(), eq(20)))
+                    .willReturn(CursorPageResponse.of(List.of(summary), "cursor", true));
+
+            mockMvc.perform(get("/api/v1/posts").param("viewType", "POPULAR"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasNext").value(true))
+                    .andExpect(jsonPath("$.data.nextCursor").value("cursor"));
+        }
+
+        @Test
+        @DisplayName("viewType=SCRAP과 cursor로 조회하면 200을 반환한다")
+        void scrap_withCursor() throws Exception {
+            given(postService.getPosts(any(), eq(ViewType.SCRAP), eq("encodedCursor"), eq(20)))
+                    .willReturn(CursorPageResponse.of(List.of(), null, false));
+
+            mockMvc.perform(get("/api/v1/posts")
+                            .param("viewType", "SCRAP")
+                            .param("cursor", "encodedCursor"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content").isEmpty());
+        }
+
+        @Test
+        @DisplayName("잘못된 viewType이면 400을 반환한다")
+        void invalidViewType() throws Exception {
+            mockMvc.perform(get("/api/v1/posts").param("viewType", "INVALID"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 
     @Nested
     @DisplayName("게시글 생성")
