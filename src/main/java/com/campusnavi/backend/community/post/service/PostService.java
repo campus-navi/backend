@@ -18,12 +18,14 @@ import com.campusnavi.backend.infra.storage.UploadType;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -81,13 +83,18 @@ public class PostService {
 
         post.update(request.title(), request.content(), request.isAnonymous());
 
-        List<PostImage> existingImages = imageRepository.findByPostId(postId);
-        for (PostImage image : existingImages) {
-            s3StorageService.delete(image.getImageKey());
+        if (request.imageKeys() != null) {
+            List<PostImage> existingImages = imageRepository.findByPostId(postId);
+            try {
+                for (PostImage image : existingImages) {
+                    s3StorageService.delete(image.getImageKey());
+                }
+            } catch (Exception e) {
+                log.error("S3 삭제처리중 예외발생 {}", e.getMessage());
+            }
+            imageRepository.deleteByPostId(postId);
+            savePostImages(post, request.imageKeys());
         }
-        imageRepository.deleteByPostId(postId);
-
-        savePostImages(post, request.imageKeys());
     }
 
     @Transactional
@@ -100,8 +107,12 @@ public class PostService {
         }
 
         List<PostImage> existingImages = imageRepository.findByPostId(postId);
-        for (PostImage image : existingImages) {
-            s3StorageService.delete(image.getImageKey());
+        try {
+            for (PostImage image : existingImages) {
+                s3StorageService.delete(image.getImageKey());
+            }
+        } catch (Exception e) {
+            log.error("S3 삭제처리중 예외 발생 {}", e.getMessage());
         }
 
         imageRepository.deleteByPostId(postId);
@@ -116,11 +127,11 @@ public class PostService {
     }
 
     private void savePostImages(Post post, List<String> imageKeys) {
-        if (imageKeys != null) {
-            for (int i = 0; i < imageKeys.size(); i++) {
-                PostImage image = PostImage.create(post, imageKeys.get(i), (short) i);
-                imageRepository.save(image);
-            }
+        if (imageKeys == null || imageKeys.isEmpty()) return;
+        List<PostImage> images = new ArrayList<>();
+        for (int i = 0; i < imageKeys.size(); i++) {
+            images.add(PostImage.create(post, imageKeys.get(i), (short) i));
         }
+        imageRepository.saveAll(images);
     }
 }
