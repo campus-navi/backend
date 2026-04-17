@@ -1,6 +1,7 @@
 package com.campusnavi.backend.community.post.controller;
 
 import com.campusnavi.backend.community.post.dto.*;
+import com.campusnavi.backend.community.post.service.PostInteractionService;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.CursorPageResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final PostInteractionService postInteractionService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<CursorPageResponse<PostSummaryResponse>>> getPosts(
@@ -62,6 +64,38 @@ public class PostController {
             @PathVariable Long postId,
             @AuthenticationPrincipal AuthMember authMember) {
         postService.deletePost(postId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PutMapping("/{postId}/likes")
+    public ResponseEntity<ApiResponse<Void>> addLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        postInteractionService.addLike(postId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @DeleteMapping("/{postId}/likes")
+    public ResponseEntity<ApiResponse<Void>> removeLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        postInteractionService.removeLike(postId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PutMapping("/{postId}/scraps")
+    public ResponseEntity<ApiResponse<Void>> addScrap(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        postInteractionService.addScrap(postId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @DeleteMapping("/{postId}/scraps")
+    public ResponseEntity<ApiResponse<Void>> removeScrap(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        postInteractionService.removeScrap(postId, authMember);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }
