@@ -90,6 +90,24 @@ public class PostService {
         savePostImages(post, request.imageKeys());
     }
 
+    @Transactional
+    public void deletePost(Long postId, AuthMember authMember) {
+        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getMember().getId().equals(authMember.memberId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        List<PostImage> existingImages = imageRepository.findByPostId(postId);
+        for (PostImage image : existingImages) {
+            s3StorageService.delete(image.getImageKey());
+        }
+
+        imageRepository.deleteByPostId(postId);
+        post.softDelete();
+    }
+
     public PresignedUrlResponse generatePostPresignedUrl(PostPresignedUrlRequest request) {
         if (!request.contentType().startsWith("image/")) {
             throw new BusinessException(ErrorCode.INVALID_CONTENT_TYPE);
