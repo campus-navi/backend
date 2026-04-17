@@ -1,14 +1,11 @@
 package com.campusnavi.backend.community.post.controller;
 
-import com.campusnavi.backend.community.post.dto.PostCreateRequest;
-import com.campusnavi.backend.community.post.dto.PostCreateResponse;
-import com.campusnavi.backend.community.post.dto.PostResponse;
-import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
+import com.campusnavi.backend.community.post.dto.*;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.response.ApiResponse;
-import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,7 +20,7 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PostCreateResponse>> createPost(
-            @RequestBody PostCreateRequest request,
+            @RequestBody @Valid PostCreateRequest request,
             @AuthenticationPrincipal AuthMember authMember) {
         return ResponseEntity.ok(ApiResponse.ok(postService.createPost(authMember, request)));
     }
@@ -33,5 +30,11 @@ public class PostController {
             @PathVariable Long postId,
             @AuthenticationPrincipal AuthMember authMember) {
         return ResponseEntity.ok(ApiResponse.ok(postService.getPost(postId, authMember)));
+    }
+
+    @PostMapping("/presigned-url")
+    public ResponseEntity<ApiResponse<PresignedUrlResponse>> generatePresignedUrl(
+            @RequestBody @Valid PostPresignedUrlRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.generatePostPresignedUrl(request)));
     }
 }
