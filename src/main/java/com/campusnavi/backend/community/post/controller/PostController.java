@@ -37,4 +37,13 @@ public class PostController {
             @RequestBody @Valid PostPresignedUrlRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(postService.generatePostPresignedUrl(request)));
     }
+
+    @PatchMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> updatePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember,
+            @RequestBody @Valid PostUpdateRequest request) {
+        postService.updatePost(postId, authMember, request);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
 }

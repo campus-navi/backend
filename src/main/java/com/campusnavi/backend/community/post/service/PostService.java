@@ -4,6 +4,7 @@ import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
 import com.campusnavi.backend.community.post.dto.PostPresignedUrlRequest;
 import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
@@ -67,6 +68,26 @@ public class PostService {
         return new PostResponse(nickname, post.getTitle(), post.getContent(), post.getCreatedAt(),
                 post.getLikeCount(), post.getCommentCount(), post.getScrapCount(),
                 imageUrls, false, false, isMine);
+    }
+
+    @Transactional
+    public void updatePost(Long postId, AuthMember authMember, PostUpdateRequest request) {
+        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getMember().getId().equals(authMember.memberId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        post.update(request.title(), request.content(), request.isAnonymous());
+
+        List<PostImage> existingImages = imageRepository.findByPostId(postId);
+        for (PostImage image : existingImages) {
+            s3StorageService.delete(image.getImageKey());
+        }
+        imageRepository.deleteByPostId(postId);
+
+        savePostImages(post, request.imageKeys());
     }
 
     public PresignedUrlResponse generatePostPresignedUrl(PostPresignedUrlRequest request) {
