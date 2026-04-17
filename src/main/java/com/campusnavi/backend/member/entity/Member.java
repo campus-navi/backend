@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -76,7 +77,12 @@ public class Member extends BaseEntity {
         memberDepartments.add(memberDepartment);
     }
 
-    public void softDelete(){
+    public void withdraw(){
+        String withdrawn = "[탈퇴된 회원" + id +"]";
+        this.username = withdrawn;
+        this.email = withdrawn + "@withdrawn";
+        this.nickname = withdrawn;
+        this.password = UUID.randomUUID().toString();
         this.status = MemberStatus.WITHDRAWN;
         this.deletedAt = LocalDateTime.now();
     }
