@@ -1,6 +1,5 @@
 package com.campusnavi.backend.community.post.service;
 
-import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostLike;
 import com.campusnavi.backend.community.post.entity.PostScrap;
 import com.campusnavi.backend.community.post.repository.PostLikeRepository;
@@ -26,7 +25,7 @@ public class PostInteractionService {
     private final MemberRepository memberRepository;
 
     public void addLike(Long postId, AuthMember authMember) {
-        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+        postRepository.findByIdWithMember(postId, authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
         Member member = memberRepository.findById(authMember.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -34,23 +33,23 @@ public class PostInteractionService {
         if (postLikeRepository.findByMemberIdAndPostId(member.getId(), postId).isPresent()) {
             return;
         }
-        postLikeRepository.save(PostLike.create(member, post));
-        post.increaseLikeCount();
+        postLikeRepository.save(PostLike.create(member, postRepository.getReferenceById(postId)));
+        postRepository.incrementLikeCount(postId);
     }
 
     public void removeLike(Long postId, AuthMember authMember) {
-        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+        postRepository.findByIdWithMember(postId, authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
         postLikeRepository.findByMemberIdAndPostId(authMember.memberId(), postId)
                 .ifPresent(like -> {
                     postLikeRepository.delete(like);
-                    post.decreaseLikeCount();
+                    postRepository.decrementLikeCount(postId);
                 });
     }
 
     public void addScrap(Long postId, AuthMember authMember) {
-        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+        postRepository.findByIdWithMember(postId, authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
         Member member = memberRepository.findById(authMember.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -58,18 +57,18 @@ public class PostInteractionService {
         if (postScrapRepository.findByMemberIdAndPostId(member.getId(), postId).isPresent()) {
             return;
         }
-        postScrapRepository.save(PostScrap.create(member, post));
-        post.increaseScrapCount();
+        postScrapRepository.save(PostScrap.create(member, postRepository.getReferenceById(postId)));
+        postRepository.incrementScrapCount(postId);
     }
 
     public void removeScrap(Long postId, AuthMember authMember) {
-        Post post = postRepository.findByIdWithMember(postId, authMember.universityId())
+        postRepository.findByIdWithMember(postId, authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
         postScrapRepository.findByMemberIdAndPostId(authMember.memberId(), postId)
                 .ifPresent(scrap -> {
                     postScrapRepository.delete(scrap);
-                    post.decreaseScrapCount();
+                    postRepository.decrementScrapCount(postId);
                 });
     }
 }

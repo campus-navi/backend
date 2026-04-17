@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -67,6 +68,7 @@ class PostInteractionServiceTest {
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
             given(member.getId()).willReturn(MEMBER_ID);
             given(postLikeRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
+            given(postRepository.getReferenceById(POST_ID)).willReturn(post);
 
             // when
             assertThatCode(() -> postInteractionService.addLike(POST_ID, AUTH_MEMBER))
@@ -74,7 +76,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postLikeRepository).should().save(any(PostLike.class));
-            then(post).should().increaseLikeCount();
+            then(postRepository).should().incrementLikeCount(POST_ID);
         }
 
         @Test
@@ -95,7 +97,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postLikeRepository).should(never()).save(any());
-            then(post).should(never()).increaseLikeCount();
+            then(postRepository).should(never()).incrementLikeCount(anyLong());
         }
 
         @Test
@@ -144,7 +146,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postLikeRepository).should().delete(existing);
-            then(post).should().decreaseLikeCount();
+            then(postRepository).should().decrementLikeCount(POST_ID);
         }
 
         @Test
@@ -161,7 +163,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postLikeRepository).should(never()).delete(any());
-            then(post).should(never()).decreaseLikeCount();
+            then(postRepository).should(never()).decrementLikeCount(anyLong());
         }
 
         @Test
@@ -191,6 +193,7 @@ class PostInteractionServiceTest {
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
             given(member.getId()).willReturn(MEMBER_ID);
             given(postScrapRepository.findByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(Optional.empty());
+            given(postRepository.getReferenceById(POST_ID)).willReturn(post);
 
             // when
             assertThatCode(() -> postInteractionService.addScrap(POST_ID, AUTH_MEMBER))
@@ -198,7 +201,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postScrapRepository).should().save(any(PostScrap.class));
-            then(post).should().increaseScrapCount();
+            then(postRepository).should().incrementScrapCount(POST_ID);
         }
 
         @Test
@@ -219,7 +222,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postScrapRepository).should(never()).save(any());
-            then(post).should(never()).increaseScrapCount();
+            then(postRepository).should(never()).incrementScrapCount(anyLong());
         }
 
         @Test
@@ -268,7 +271,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postScrapRepository).should().delete(existing);
-            then(post).should().decreaseScrapCount();
+            then(postRepository).should().decrementScrapCount(POST_ID);
         }
 
         @Test
@@ -285,7 +288,7 @@ class PostInteractionServiceTest {
 
             // then
             then(postScrapRepository).should(never()).delete(any());
-            then(post).should(never()).decreaseScrapCount();
+            then(postRepository).should(never()).decrementScrapCount(anyLong());
         }
 
         @Test

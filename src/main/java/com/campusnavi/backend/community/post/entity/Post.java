@@ -66,27 +66,11 @@ public class Post extends BaseEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public void increaseLikeCount() {
-        this.likeCount++;
-    }
-
-    public void increaseScrapCount() {
-        this.scrapCount++;
-    }
-
     public void increaseCommentCount() {
         this.commentCount++;
     }
 
-    public void decreaseLikeCount() {
-        this.likeCount = Math.max(0, this.likeCount-1);
-    }
-
-    public void decreaseScrapCount() {
-        this.scrapCount = Math.max(0, this.scrapCount-1);
-    }
-
     public void decreaseCommentCount() {
-        this.commentCount = Math.max(0, this.commentCount-1);
+        this.commentCount = Math.max(0, this.commentCount - 1);
     }
 }
