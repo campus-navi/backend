@@ -1,5 +1,6 @@
 package com.campusnavi.backend.community.post.entity;
 
+import com.campusnavi.backend.global.common.BaseCreatedAtEntity;
 import com.campusnavi.backend.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "post_id"}))
-public class PostLike {
+public class PostLike extends BaseCreatedAtEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
