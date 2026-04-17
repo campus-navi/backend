@@ -4,7 +4,10 @@ import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
 import com.campusnavi.backend.community.post.dto.PostPresignedUrlRequest;
 import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
+import com.campusnavi.backend.community.post.dto.ViewType;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
@@ -22,7 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 @Slf4j
@@ -117,6 +122,60 @@ public class PostService {
 
         imageRepository.deleteByPostId(postId);
         post.softDelete();
+    }
+
+    public CursorPageResponse<PostSummaryResponse> getPosts(AuthMember authMember, ViewType viewType, String cursor, int size) {
+        Long cursorId = decodeCursorId(cursor);
+        Integer cursorScrapCount = decodeCursorScrapCount(cursor);
+
+        List<Post> posts = switch (viewType) {
+            case LATEST -> postRepository.findLatestPosts(authMember.universityId(), cursorId, size + 1);
+            case POPULAR -> postRepository.findPopularPosts(authMember.universityId(), cursorId, size + 1);
+            case SCRAP -> postRepository.findScrapPosts(authMember.universityId(), cursorId, cursorScrapCount, size + 1);
+        };
+
+        boolean hasNext = posts.size() > size;
+        List<Post> result = hasNext ? posts.subList(0, size) : posts;
+
+        String nextCursor = null;
+        if (hasNext) {
+            Post last = result.getLast();
+            nextCursor = viewType == ViewType.SCRAP
+                    ? encodeCursor(last.getId(), last.getScrapCount())
+                    : encodeCursor(last.getId(), null);
+        }
+
+        List<PostSummaryResponse> summaries = result.stream().map(this::toSummary).toList();
+        return CursorPageResponse.of(summaries, nextCursor, hasNext);
+    }
+
+    private PostSummaryResponse toSummary(Post post) {
+        String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        String preview = post.getContent().length() > 100
+                ? post.getContent().substring(0, 100)
+                : post.getContent();
+        return new PostSummaryResponse(
+                post.getId(), nickname, post.getTitle(), preview,
+                post.getLikeCount(), post.getScrapCount(), post.getCommentCount(), post.getCreatedAt()
+        );
+    }
+
+    private String encodeCursor(Long postId, Integer scrapCount) {
+        String raw = scrapCount != null ? postId + ":" + scrapCount : String.valueOf(postId);
+        return Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private Long decodeCursorId(String cursor) {
+        if (cursor == null) return null;
+        String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
+        return Long.parseLong(raw.split(":")[0]);
+    }
+
+    private Integer decodeCursorScrapCount(String cursor) {
+        if (cursor == null) return null;
+        String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
+        String[] parts = raw.split(":");
+        return parts.length == 2 ? Integer.parseInt(parts[1]) : null;
     }
 
     public PresignedUrlResponse generatePostPresignedUrl(PostPresignedUrlRequest request) {

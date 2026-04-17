@@ -4,13 +4,16 @@ import com.campusnavi.backend.community.post.dto.PostCreateRequest;
 import com.campusnavi.backend.community.post.dto.PostCreateResponse;
 import com.campusnavi.backend.community.post.dto.PostPresignedUrlRequest;
 import com.campusnavi.backend.community.post.dto.PostResponse;
+import com.campusnavi.backend.community.post.dto.PostSummaryResponse;
 import com.campusnavi.backend.community.post.dto.PostUpdateRequest;
+import com.campusnavi.backend.community.post.dto.ViewType;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.entity.PostImage;
 import com.campusnavi.backend.community.post.repository.PostImageRepository;
 import com.campusnavi.backend.community.post.repository.PostRepository;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
 import com.campusnavi.backend.infra.storage.S3StorageService;
@@ -25,15 +28,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
@@ -273,6 +283,172 @@ class PostServiceTest {
             // then
             then(s3StorageService).should().delete("img-key");
             then(imageRepository).should().deleteByPostId(POST_ID);
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 목록 조회")
+    class GetPosts {
+
+        @Test
+        @DisplayName("LATEST - hasNext=false이면 nextCursor가 null이다")
+        void latest_firstPage_noNext() {
+            // given
+            List<Post> posts = mockPosts(3, false);
+            given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
+
+            // then
+            assertThat(response.content()).hasSize(3);
+            assertThat(response.hasNext()).isFalse();
+            assertThat(response.nextCursor()).isNull();
+        }
+
+        @Test
+        @DisplayName("LATEST - size+1개 조회되면 hasNext=true이고 nextCursor를 반환한다")
+        void latest_hasNext() {
+            // given
+            List<Post> posts = mockPosts(21, false);
+            given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
+
+            // then
+            assertThat(response.content()).hasSize(20);
+            assertThat(response.hasNext()).isTrue();
+            assertThat(response.nextCursor()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("LATEST 커서로 다음 페이지 조회 시 decodeCursorId를 repository에 전달한다")
+        void latest_withCursor() {
+            // given
+            String cursor = encode("50");
+            given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), eq(50L), eq(21))).willReturn(List.of());
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, cursor, 20);
+
+            // then
+            then(postRepository).should().findLatestPosts(UNIVERSITY_ID, 50L, 21);
+            assertThat(response.content()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("POPULAR 조회 시 findPopularPosts를 호출한다")
+        void popular() {
+            // given
+            List<Post> posts = mockPosts(2, false);
+            given(postRepository.findPopularPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.POPULAR, null, 20);
+
+            // then
+            then(postRepository).should().findPopularPosts(UNIVERSITY_ID, null, 21);
+            assertThat(response.content()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("SCRAP 첫 페이지 조회 시 cursorId=null, cursorScrapCount=null을 전달한다")
+        void scrap_firstPage() {
+            // given
+            List<Post> posts = mockPosts(2, false);
+            given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), isNull(), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, null, 20);
+
+            // then
+            then(postRepository).should().findScrapPosts(UNIVERSITY_ID, null, null, 21);
+            assertThat(response.content()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("SCRAP 커서 조회 시 복합 커서를 올바르게 디코딩해 전달한다")
+        void scrap_withCursor() {
+            // given
+            String cursor = encode("100:15");
+            given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), eq(100L), eq(15), eq(21))).willReturn(List.of());
+
+            // when
+            postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, cursor, 20);
+
+            // then
+            then(postRepository).should().findScrapPosts(UNIVERSITY_ID, 100L, 15, 21);
+        }
+
+        @Test
+        @DisplayName("SCRAP hasNext=true이면 nextCursor에 복합 커서가 인코딩된다")
+        void scrap_nextCursor_isComposite() {
+            // given
+            List<Post> posts = mockPosts(21, false);
+            given(postRepository.findScrapPosts(eq(UNIVERSITY_ID), isNull(), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.SCRAP, null, 20);
+
+            // then
+            assertThat(response.hasNext()).isTrue();
+            String decoded = new String(Base64.getDecoder().decode(response.nextCursor()), StandardCharsets.UTF_8);
+            assertThat(decoded).contains(":");
+        }
+
+        @Test
+        @DisplayName("익명 게시글이면 nickname이 '익명'으로 반환된다")
+        void anonymous_nickname() {
+            // given
+            List<Post> posts = mockPosts(1, true);
+            given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(posts);
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
+
+            // then
+            assertThat(response.content().getFirst().nickname()).isEqualTo("익명");
+        }
+
+        @Test
+        @DisplayName("content가 100자를 초과하면 contentPreview는 100자로 잘린다")
+        void contentPreview_truncated() {
+            // given
+            Post post = mockPost(1L, false, "가".repeat(200), 0, 0);
+            given(postRepository.findLatestPosts(eq(UNIVERSITY_ID), isNull(), eq(21))).willReturn(List.of(post));
+
+            // when
+            CursorPageResponse<PostSummaryResponse> response = postService.getPosts(AUTH_MEMBER, ViewType.LATEST, null, 20);
+
+            // then
+            assertThat(response.content().getFirst().contentPreview()).hasSize(100);
+        }
+
+        private List<Post> mockPosts(int count, boolean anonymous) {
+            return IntStream.rangeClosed(1, count)
+                    .mapToObj(i -> mockPost((long) i, anonymous, "내용" + i, i, i))
+                    .toList();
+        }
+
+        private Post mockPost(Long id, boolean anonymous, String content, int scrapCount, int likeCount) {
+            Post post = mock(Post.class);
+            Member member = mock(Member.class);
+            lenient().when(post.getId()).thenReturn(id);
+            lenient().when(post.getTitle()).thenReturn("제목" + id);
+            lenient().when(post.getContent()).thenReturn(content);
+            lenient().when(post.isAnonymous()).thenReturn(anonymous);
+            lenient().when(post.getMember()).thenReturn(member);
+            lenient().when(member.getNickname()).thenReturn("nick" + id);
+            lenient().when(post.getLikeCount()).thenReturn(likeCount);
+            lenient().when(post.getScrapCount()).thenReturn(scrapCount);
+            lenient().when(post.getCommentCount()).thenReturn(0);
+            lenient().when(post.getCreatedAt()).thenReturn(LocalDateTime.now());
+            return post;
+        }
+
+        private String encode(String raw) {
+            return Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
         }
     }
 

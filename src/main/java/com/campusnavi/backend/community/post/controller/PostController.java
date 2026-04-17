@@ -3,6 +3,7 @@ package com.campusnavi.backend.community.post.controller;
 import com.campusnavi.backend.community.post.dto.*;
 import com.campusnavi.backend.community.post.service.PostService;
 import com.campusnavi.backend.global.response.ApiResponse;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.infra.storage.PresignedUrlResponse;
 import jakarta.validation.Valid;
@@ -17,6 +18,15 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<CursorPageResponse<PostSummaryResponse>>> getPosts(
+            @RequestParam(defaultValue = "LATEST") ViewType viewType,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.getPosts(authMember, viewType, cursor, size)));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PostCreateResponse>> createPost(
