@@ -1,6 +1,7 @@
 package com.campusnavi.backend.community.comment.controller;
 
 import com.campusnavi.backend.community.comment.dto.CommentCreateRequest;
+import com.campusnavi.backend.community.comment.dto.CommentResponse;
 import com.campusnavi.backend.community.comment.dto.CommentUpdateRequest;
 import com.campusnavi.backend.community.comment.service.CommentService;
 import com.campusnavi.backend.global.response.ApiResponse;
@@ -11,12 +12,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/posts/{postId}/comments")
 public class CommentController {
 
     private final CommentService commentService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(commentService.getComments(postId, authMember)));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> createComment(
