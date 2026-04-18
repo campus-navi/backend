@@ -60,8 +60,9 @@ public class Comment extends BaseCreatedAtEntity {
         return comment;
     }
 
-    public void update(String content) {
+    public void update(String content, boolean isAnonymous) {
         this.content = content;
+        this.isAnonymous = isAnonymous;
     }
 
     public void softDelete() {

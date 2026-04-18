@@ -55,7 +55,9 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND),
 
     //커뮤니티 관련
-    POST_NOT_FOUND(HttpStatus.NOT_FOUND);
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST);
 
     private final HttpStatus status;
 }
