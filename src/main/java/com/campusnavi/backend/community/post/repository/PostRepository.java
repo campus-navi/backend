@@ -78,4 +78,12 @@ public interface PostRepository extends JpaRepository<Post,Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Post p SET p.scrapCount = GREATEST(p.scrapCount - 1, 0) WHERE p.id = :postId")
     void decrementScrapCount(@Param("postId") Long postId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Post p SET p.commentCount = p.commentCount + 1 WHERE p.id = :postId")
+    void incrementCommentCount(@Param("postId") Long postId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Post p SET p.commentCount = GREATEST(p.commentCount - 1, 0) WHERE p.id = :postId")
+    void decrementCommentCount(@Param("postId") Long postId);
 }
