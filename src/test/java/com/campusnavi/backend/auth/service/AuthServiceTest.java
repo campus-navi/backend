@@ -15,6 +15,7 @@ import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberRole;
+import com.campusnavi.backend.member.entity.MemberStatus;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import com.campusnavi.backend.university.entity.Campus;
 import com.campusnavi.backend.university.entity.Department;
@@ -465,6 +466,7 @@ class AuthServiceTest {
             given(memberRepository.findByUsername(USERNAME)).willReturn(Optional.of(member));
             given(member.getId()).willReturn(1L);
             given(member.getPassword()).willReturn(ENCODED_PASSWORD);
+            given(member.getStatus()).willReturn(MemberStatus.ACTIVE);
             given(member.getRole()).willReturn(MemberRole.USER);
             given(member.getUniversityId()).willReturn(1L);
             given(passwordEncoder.matches(PASSWORD, ENCODED_PASSWORD)).willReturn(true);
@@ -503,6 +505,24 @@ class AuthServiceTest {
             given(memberRepository.findByUsername(USERNAME)).willReturn(Optional.of(member));
             given(member.getPassword()).willReturn(ENCODED_PASSWORD);
             given(passwordEncoder.matches("wrongpassword", ENCODED_PASSWORD)).willReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_CREDENTIALS));
+        }
+
+        @Test
+        @DisplayName("탈퇴한 회원이면 INVALID_CREDENTIALS 예외가 발생한다")
+        void withdrawnMember() {
+            // given
+            LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
+            Member member = mock(Member.class);
+
+            given(memberRepository.findByUsername(USERNAME)).willReturn(Optional.of(member));
+            given(member.getPassword()).willReturn(ENCODED_PASSWORD);
+            given(member.getStatus()).willReturn(MemberStatus.WITHDRAWN);
+            given(passwordEncoder.matches(PASSWORD, ENCODED_PASSWORD)).willReturn(true);
 
             // when & then
             assertThatThrownBy(() -> authService.login(request))
