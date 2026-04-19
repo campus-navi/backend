@@ -4,6 +4,7 @@ import com.campusnavi.backend.community.comment.dto.CommentCreateRequest;
 import com.campusnavi.backend.community.comment.dto.CommentResponse;
 import com.campusnavi.backend.community.comment.dto.CommentUpdateRequest;
 import com.campusnavi.backend.community.comment.entity.Comment;
+import com.campusnavi.backend.community.comment.repository.CommentLikeRepository;
 import com.campusnavi.backend.community.comment.repository.CommentRepository;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.repository.PostRepository;
@@ -23,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -38,6 +40,9 @@ class CommentServiceTest {
 
     @Mock
     private CommentRepository commentRepository;
+
+    @Mock
+    private CommentLikeRepository commentLikeRepository;
 
     @Mock
     private PostRepository postRepository;
@@ -70,6 +75,7 @@ class CommentServiceTest {
             given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(parent));
             given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of(reply));
             given(reply.getParent()).willReturn(parent);
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L, 2L))).willReturn(List.of());
 
             // when
             List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
@@ -89,6 +95,7 @@ class CommentServiceTest {
             given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(comment));
             given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of());
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L))).willReturn(List.of());
 
             // when
             List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
@@ -107,6 +114,7 @@ class CommentServiceTest {
             given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(comment));
             given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of());
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L))).willReturn(List.of());
 
             // when
             List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
@@ -125,6 +133,7 @@ class CommentServiceTest {
             given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(comment));
             given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of());
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L))).willReturn(List.of());
 
             // when
             List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
@@ -132,6 +141,44 @@ class CommentServiceTest {
             // then
             assertThat(result.getFirst().content()).isEqualTo("삭제된 댓글입니다.");
             assertThat(result.getFirst().deleted()).isTrue();
+        }
+
+        @Test
+        @DisplayName("좋아요한 댓글의 isLiked가 true로 반환된다")
+        void isLikedTrue() {
+            // given
+            Post post = mockPost(999L);
+            Comment comment = mockComment(1L, 999L, "내용", false, null, null);
+
+            given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(comment));
+            given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of());
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L))).willReturn(List.of(1L));
+
+            // when
+            List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
+
+            // then
+            assertThat(result.getFirst().isLiked()).isTrue();
+        }
+
+        @Test
+        @DisplayName("좋아요하지 않은 댓글의 isLiked가 false로 반환된다")
+        void isLikedFalse() {
+            // given
+            Post post = mockPost(999L);
+            Comment comment = mockComment(1L, 999L, "내용", false, null, null);
+
+            given(postRepository.findByIdWithMember(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(commentRepository.findParentComments(POST_ID)).willReturn(List.of(comment));
+            given(commentRepository.findRepliesByParentId(List.of(1L))).willReturn(List.of());
+            given(commentLikeRepository.findLikedCommentIds(MEMBER_ID, List.of(1L))).willReturn(List.of());
+
+            // when
+            List<CommentResponse> result = commentService.getComments(POST_ID, AUTH_MEMBER);
+
+            // then
+            assertThat(result.getFirst().isLiked()).isFalse();
         }
 
         @Test

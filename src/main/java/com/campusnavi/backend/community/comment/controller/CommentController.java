@@ -3,6 +3,7 @@ package com.campusnavi.backend.community.comment.controller;
 import com.campusnavi.backend.community.comment.dto.CommentCreateRequest;
 import com.campusnavi.backend.community.comment.dto.CommentResponse;
 import com.campusnavi.backend.community.comment.dto.CommentUpdateRequest;
+import com.campusnavi.backend.community.comment.service.CommentInteractionService;
 import com.campusnavi.backend.community.comment.service.CommentService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.security.AuthMember;
@@ -20,6 +21,7 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
+    private final CommentInteractionService commentInteractionService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
@@ -63,6 +65,26 @@ public class CommentController {
             @PathVariable Long commentId,
             @AuthenticationPrincipal AuthMember authMember) {
         commentService.deleteComment(postId, commentId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PutMapping("/{commentId}/likes")
+    public ResponseEntity<ApiResponse<Void>> addLike(
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal AuthMember authMember
+    ){
+        commentInteractionService.addLike(postId, commentId, authMember);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @DeleteMapping("/{commentId}/likes")
+    public ResponseEntity<ApiResponse<Void>> removeLike(
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal AuthMember authMember
+    ){
+        commentInteractionService.removeLike(postId, commentId, authMember);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }
