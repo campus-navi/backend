@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record PostResponse(
+        Long id,
         String nickname,
         String title,
         String content,
@@ -12,6 +13,7 @@ public record PostResponse(
         int commentCount,
         int scrapCount,
         List<String> imageUrls,
+        boolean isAnonymous,
         boolean isLiked,
         boolean isScraped,
         boolean isMine

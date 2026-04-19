@@ -23,7 +23,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "인증", description = "회원가입, 로그인, 토큰 관리 API")
+@Tag(name = "2. 인증", description = "회원가입, 로그인, 토큰 관리 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")

@@ -80,9 +80,9 @@ public class PostService {
         boolean isLiked = postLikeRepository.findByMemberIdAndPostId(authMember.memberId(), postId).isPresent();
         boolean isScraped = postScrapRepository.findByMemberIdAndPostId(authMember.memberId(), postId).isPresent();
 
-        return new PostResponse(nickname, post.getTitle(), post.getContent(), post.getCreatedAt(),
+        return new PostResponse(post.getId(), nickname, post.getTitle(), post.getContent(), post.getCreatedAt(),
                 post.getLikeCount(), post.getCommentCount(), post.getScrapCount(),
-                imageUrls, isLiked, isScraped, isMine);
+                imageUrls, post.isAnonymous(), isLiked, isScraped, isMine);
     }
 
     @Transactional
