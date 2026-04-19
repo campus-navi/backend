@@ -14,6 +14,7 @@ import com.campusnavi.backend.global.security.jwt.dto.RefreshTokenPayload;
 import com.campusnavi.backend.infra.redis.RedisKeys;
 import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
+import com.campusnavi.backend.member.entity.MemberStatus;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import com.campusnavi.backend.university.entity.Campus;
 import com.campusnavi.backend.university.entity.Department;
@@ -82,6 +83,10 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        if (member.getStatus() == MemberStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
