@@ -4,6 +4,7 @@ import com.campusnavi.backend.community.comment.dto.CommentCreateRequest;
 import com.campusnavi.backend.community.comment.dto.CommentResponse;
 import com.campusnavi.backend.community.comment.dto.CommentUpdateRequest;
 import com.campusnavi.backend.community.comment.entity.Comment;
+import com.campusnavi.backend.community.comment.repository.CommentLikeRepository;
 import com.campusnavi.backend.community.comment.repository.CommentRepository;
 import com.campusnavi.backend.community.post.entity.Post;
 import com.campusnavi.backend.community.post.repository.PostRepository;
@@ -16,9 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ import java.util.stream.Collectors;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
 
@@ -47,21 +52,28 @@ public class CommentService {
         Map<Long, List<Comment>> replyMap = replies.stream()
                 .collect(Collectors.groupingBy(r -> r.getParent().getId()));
 
+        List<Long> allIds = Stream.concat(rootComments.stream(), replies.stream())
+                .map(Comment::getId)
+                .toList();
+        Set<Long> likedIds = new HashSet<>(commentLikeRepository.findLikedCommentIds(authMember.memberId(), allIds));
+
         return rootComments.stream()
-                .map(comment -> toResponse(comment, postAuthorId, authMember, replyMap))
+                .map(comment -> toResponse(comment, postAuthorId, authMember, replyMap, likedIds))
                 .toList();
     }
 
-    private CommentResponse toResponse(Comment comment, Long postAuthorId, AuthMember authMember, Map<Long, List<Comment>> replyMap) {
+    private CommentResponse toResponse(Comment comment, Long postAuthorId, AuthMember authMember,
+                                        Map<Long, List<Comment>> replyMap, Set<Long> likedIds) {
         Member member = comment.getMember();
         String nickname = comment.isAnonymous() ? "익명" : member.getNickname();
         boolean isAuthor = member.getId().equals(postAuthorId);
         boolean isMine = member.getId().equals(authMember.memberId());
         boolean isDeleted = comment.getDeletedAt() != null;
+        boolean isLiked = likedIds.contains(comment.getId());
 
         List<CommentResponse> replies = replyMap.getOrDefault(comment.getId(), List.of())
                 .stream()
-                .map(reply -> toResponse(reply, postAuthorId, authMember, replyMap))
+                .map(reply -> toResponse(reply, postAuthorId, authMember, replyMap, likedIds))
                 .toList();
 
         return new CommentResponse(
@@ -72,7 +84,7 @@ public class CommentService {
                 comment.getCreatedAt(),
                 comment.getLikeCount(),
                 comment.getReplyCount(),
-                false,
+                isLiked,
                 isMine,
                 isDeleted,
                 replies
