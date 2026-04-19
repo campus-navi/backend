@@ -3,6 +3,7 @@ package com.campusnavi.backend.community.comment.controller;
 import com.campusnavi.backend.community.comment.dto.CommentCreateRequest;
 import com.campusnavi.backend.community.comment.dto.CommentResponse;
 import com.campusnavi.backend.community.comment.dto.CommentUpdateRequest;
+import com.campusnavi.backend.community.comment.service.CommentInteractionService;
 import com.campusnavi.backend.community.comment.service.CommentService;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
@@ -37,6 +38,9 @@ class CommentControllerTest {
 
     @MockitoBean
     private CommentService commentService;
+
+    @MockitoBean
+    private CommentInteractionService commentInteractionService;
 
     private static final String BASE_URL = "/api/v1/posts/1/comments";
 
@@ -229,6 +233,36 @@ class CommentControllerTest {
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.code").value(ErrorCode.FORBIDDEN.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("댓글 좋아요 추가")
+    class AddLike {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(commentInteractionService).addLike(eq(1L), eq(1L), any());
+
+            mockMvc.perform(put(BASE_URL + "/1/likes"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("댓글 좋아요 제거")
+    class RemoveLike {
+
+        @Test
+        @DisplayName("유효한 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(commentInteractionService).removeLike(eq(1L), eq(1L), any());
+
+            mockMvc.perform(delete(BASE_URL + "/1/likes"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
         }
     }
 }
