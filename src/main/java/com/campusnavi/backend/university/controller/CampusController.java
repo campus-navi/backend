@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "캠퍼스", description = "캠퍼스 및 학과 조회 API")
+@Tag(name = "1. 캠퍼스", description = "캠퍼스 및 학과 조회 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/campuses")

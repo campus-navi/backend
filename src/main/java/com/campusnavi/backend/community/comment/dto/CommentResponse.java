@@ -13,7 +13,7 @@ public record CommentResponse(
         int replyCount,
         boolean isLiked,
         boolean isMine,
-        boolean deleted,
+        boolean isDeleted,
         List<CommentResponse> replies
 ) {
 }

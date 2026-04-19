@@ -3,7 +3,7 @@ package com.campusnavi.backend.community.post.dto;
 import java.time.LocalDateTime;
 
 public record PostSummaryResponse(
-        Long postId,
+        Long id,
         String nickname,
         String title,
         String contentPreview,
