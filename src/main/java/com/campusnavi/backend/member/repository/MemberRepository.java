@@ -1,7 +1,6 @@
 package com.campusnavi.backend.member.repository;
 
 import com.campusnavi.backend.member.entity.Member;
-import com.campusnavi.backend.member.entity.MemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
