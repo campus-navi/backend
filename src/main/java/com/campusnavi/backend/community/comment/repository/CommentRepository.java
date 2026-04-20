@@ -12,11 +12,11 @@ import java.util.Optional;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Comment c SET c.replyCount = c.replyCount + 1 WHERE c.id = :commentId")
-    void incrementCommentCount(@Param("commentId") Long commentId);
+    void incrementReplyCount(@Param("commentId") Long commentId);
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Comment c SET c.replyCount = GREATEST(c.replyCount - 1, 0) WHERE c.id = :commentId")
-    void decrementCommentCount(@Param("commentId") Long commentId);
+    void decrementReplyCount(@Param("commentId") Long commentId);
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Comment c SET c.likeCount = c.likeCount + 1 WHERE c.id = :commentId")
