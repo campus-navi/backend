@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -289,7 +288,7 @@ class CommentServiceTest {
             // then
             then(commentRepository).should().save(any(Comment.class));
             then(postRepository).should().incrementCommentCount(POST_ID);
-            then(commentRepository).should().incrementCommentCount(COMMENT_ID);
+            then(commentRepository).should().incrementReplyCount(COMMENT_ID);
         }
 
         @Test
@@ -438,7 +437,7 @@ class CommentServiceTest {
             // then
             then(reply).should().softDelete();
             then(postRepository).should().decrementCommentCount(POST_ID);
-            then(commentRepository).should().decrementCommentCount(300L);
+            then(commentRepository).should().decrementReplyCount(300L);
         }
 
         @Test

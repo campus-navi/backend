@@ -33,9 +33,6 @@ public class Comment extends BaseCreatedAtEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
-    @OneToMany(mappedBy = "parent")
-    private List<Comment> children = new ArrayList<>();
-
     @Column(nullable = false)
     private int replyCount = 0;
 

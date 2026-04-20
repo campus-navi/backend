@@ -124,7 +124,7 @@ public class CommentService {
 
         commentRepository.save(comment);
         postRepository.incrementCommentCount(postId);
-        commentRepository.incrementCommentCount(commentId);
+        commentRepository.incrementReplyCount(commentId);
     }
 
     @Transactional
@@ -151,7 +151,7 @@ public class CommentService {
         comment.softDelete();
         postRepository.decrementCommentCount(postId);
         if (comment.getParent() != null) {
-            commentRepository.decrementCommentCount(comment.getParent().getId());
+            commentRepository.decrementReplyCount(comment.getParent().getId());
         }
     }
 }
