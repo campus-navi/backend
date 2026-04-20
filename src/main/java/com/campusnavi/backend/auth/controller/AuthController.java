@@ -93,7 +93,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "회원가입 성공",
                     headers = {
-                            @Header(name = "Authorization", description = "Bearer {accessToken}", schema = @Schema(type = "string")),
+                            @Header(name = "Authorization", description = "{accessToken} (Bearer prefix 없는 raw JWT, 요청 시 직접 Bearer 붙여서 사용)", schema = @Schema(type = "string")),
                             @Header(name = "Set-Cookie", description = "refreshToken={refreshToken}; HttpOnly; Path=/", schema = @Schema(type = "string"))
                     }),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 유효성 오류",
@@ -121,7 +121,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공",
                     headers = {
-                            @Header(name = "Authorization", description = "Bearer {accessToken}", schema = @Schema(type = "string")),
+                            @Header(name = "Authorization", description = "{accessToken} (Bearer prefix 없는 raw JWT, 요청 시 직접 Bearer 붙여서 사용)", schema = @Schema(type = "string")),
                             @Header(name = "Set-Cookie", description = "refreshToken={refreshToken}; HttpOnly; Path=/", schema = @Schema(type = "string"))
                     }),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "아이디 또는 비밀번호 불일치",
@@ -143,7 +143,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "재발급 성공",
                     headers = {
-                            @Header(name = "Authorization", description = "Bearer {accessToken}", schema = @Schema(type = "string")),
+                            @Header(name = "Authorization", description = "{accessToken} (Bearer prefix 없는 raw JWT, 요청 시 직접 Bearer 붙여서 사용)", schema = @Schema(type = "string")),
                             @Header(name = "Set-Cookie", description = "refreshToken={refreshToken}; HttpOnly; Path=/", schema = @Schema(type = "string"))
                     }),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 Refresh Token",
