@@ -46,11 +46,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Setting of buildx #amd64 , arm 64 호환성 
+        uses: docker/setup-buildx-action@v3
+
+      - name: setting of qemu #Actions 환경이 amd64환경이기에 arm환경을 작동시키기위해선 qemu 에뮬레이션이 필요하다
+        uses: docker/setup-qemu-action@v3
+
       - name: Build, tag, and push image
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: campus-navi-backend-server
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+        uses: docker/build-push-action@v5
+        with:
+            context: .
+            push: true
+            platforms: linux/amd64, linux/arm64
+            tags: ${{ steps.login-ecr.outputs.registry }}/campus-navi-backend-server:${{ github.sha }}
