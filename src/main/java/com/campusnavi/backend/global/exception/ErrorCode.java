@@ -57,7 +57,10 @@ public enum ErrorCode {
     //커뮤니티 관련
     POST_NOT_FOUND(HttpStatus.NOT_FOUND),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND),
-    REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST);
+    REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST),
+
+    //관심사 관련
+    INTEREST_TAG_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 }

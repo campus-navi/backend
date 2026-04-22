@@ -1,0 +1,47 @@
+package com.campusnavi.backend.member.service;
+
+import com.campusnavi.backend.global.exception.BusinessException;
+import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.interest.entity.InterestTag;
+import com.campusnavi.backend.interest.repository.InterestTagRepository;
+import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
+import com.campusnavi.backend.member.entity.MemberInterest;
+import com.campusnavi.backend.member.repository.MemberInterestRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class MemberService {
+
+    private final MemberInterestRepository memberInterestRepository;
+    private final InterestTagRepository interestTagRepository;
+
+    @Transactional
+    public void updateMemberInterests(AuthMember authMember, MemberInterestUpdateRequest request) {
+        Long memberId = authMember.memberId();
+        List<Long> interestIds = request.interestIds();
+
+        memberInterestRepository.deleteAllByMemberId(memberId);
+
+        if (interestIds.isEmpty()) {
+            return;
+        }
+
+        List<InterestTag> tags = interestTagRepository.findAllById(interestIds);
+
+        if (tags.size() != interestIds.size()) {
+            throw new BusinessException(ErrorCode.INTEREST_TAG_NOT_FOUND);
+        }
+
+        List<MemberInterest> memberInterests = tags.stream()
+                .map(tag -> MemberInterest.create(memberId, tag))
+                .toList();
+
+        memberInterestRepository.saveAll(memberInterests);
+    }
+}
