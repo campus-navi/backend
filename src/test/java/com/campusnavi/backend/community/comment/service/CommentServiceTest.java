@@ -139,7 +139,7 @@ class CommentServiceTest {
 
             // then
             assertThat(result.getFirst().content()).isEqualTo("삭제된 댓글입니다.");
-            assertThat(result.getFirst().deleted()).isTrue();
+            assertThat(result.getFirst().isDeleted()).isTrue();
         }
 
         @Test

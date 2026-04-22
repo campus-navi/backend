@@ -77,7 +77,7 @@ class PostControllerTest {
             given(postService.getPosts(any(), eq(ViewType.POPULAR), any(), eq(20)))
                     .willReturn(CursorPageResponse.of(List.of(summary), "cursor", true));
 
-            mockMvc.perform(get("/api/v1/posts").param("viewType", "POPULAR"))
+            mockMvc.perform(get("/api/v1/posts").param("view", "POPULAR"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.hasNext").value(true))
                     .andExpect(jsonPath("$.data.nextCursor").value("cursor"));
@@ -90,7 +90,7 @@ class PostControllerTest {
                     .willReturn(CursorPageResponse.of(List.of(), null, false));
 
             mockMvc.perform(get("/api/v1/posts")
-                            .param("viewType", "SCRAP")
+                            .param("view", "SCRAP")
                             .param("cursor", "encodedCursor"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.content").isEmpty());
@@ -99,7 +99,7 @@ class PostControllerTest {
         @Test
         @DisplayName("잘못된 viewType이면 400을 반환한다")
         void invalidViewType() throws Exception {
-            mockMvc.perform(get("/api/v1/posts").param("viewType", "INVALID"))
+            mockMvc.perform(get("/api/v1/posts").param("view", "INVALID"))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -117,7 +117,7 @@ class PostControllerTest {
             mockMvc.perform(post("/api/v1/posts")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.id").value(1L));
         }
@@ -143,8 +143,8 @@ class PostControllerTest {
         @Test
         @DisplayName("유효한 요청이면 200과 게시글 정보를 반환한다")
         void success() throws Exception {
-            PostResponse response = new PostResponse("nick", "제목", "내용",
-                    LocalDateTime.now(), 0, 0, 0, List.of(), false, false, true);
+            PostResponse response = new PostResponse(1L, "nick", "제목", "내용",
+                    LocalDateTime.now(), 0, 0, 0, List.of(), false, false, false, true);
             given(postService.getPost(eq(1L), any())).willReturn(response);
 
             mockMvc.perform(get("/api/v1/posts/1"))
