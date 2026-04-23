@@ -13,7 +13,7 @@ public record SignUpRequest(
 
         @NotBlank
         @Size(min = 8, max = 16, message = "비밀번호는 8~16자 이내로 입력해주세요.")
-        @Pattern(regexp = "^[a-zA-Z\\d!@#$%^&*()]{8,16}$", message = "8~16자의 영문,숫자,특수문자를 사용해 주세요.")
+        @Pattern(regexp = "^[a-zA-Z\\d!@#$%^&*()]+$", message = "8~16자의 영문,숫자,특수문자를 사용해 주세요.")
         String password,
 
         @NotBlank
@@ -23,6 +23,10 @@ public record SignUpRequest(
         Long departmentId,
 
         @NotNull
-        Integer admissionYear
+        Integer admissionYear,
+
+        @NotNull
+        @Min(1) @Max(4)
+        Integer grade
 ) {
 }
