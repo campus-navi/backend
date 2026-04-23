@@ -173,11 +173,12 @@ class AuthControllerTest {
         private static final String VERIFIED_TOKEN = "token-uuid";
         private static final Long DEPT_ID = 1L;
         private static final Integer ADMISSION_YEAR = 2026;
+        private static final Integer GRADE = 1;
 
         @Test
         @DisplayName("유효한 요청이면 201과 Authorization, Set-Cookie 헤더를 반환한다")
         void success() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(authService.signUp(any())).willReturn(new TokenResponse("access-token", "refresh-token"));
             given(cookieProvider.setRefreshTokenCookie("refresh-token"))
                     .willReturn(ResponseCookie.from("refreshToken", "refresh-token").httpOnly(true).path("/").build());
@@ -194,7 +195,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("verifiedToken이 없으면 400을 반환한다")
         void blankVerifiedToken() throws Exception {
-            SignUpRequest request = new SignUpRequest("", USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest("", USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -207,7 +208,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("username이 최소 길이 미만이면 400을 반환한다")
         void usernameTooShort() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, "ab", PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, "ab", PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -220,7 +221,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("username에 허용되지 않는 문자가 있으면 400을 반환한다")
         void usernameInvalidPattern() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, "test-user!", PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, "test-user!", PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -233,7 +234,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("password가 최소 길이 미만이면 400을 반환한다")
         void passwordTooShort() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, "Pass1!", NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, "Pass1!", NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -246,7 +247,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("password에 허용되지 않는 문자가 있으면 400을 반환한다")
         void passwordInvalidPattern() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, "한글패스워드!!!", NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, "한글패스워드!!!", NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -259,7 +260,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("nickname이 없으면 400을 반환한다")
         void blankNickname() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, "", DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, "", DEPT_ID, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -272,7 +273,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("departmentId가 null이면 400을 반환한다")
         void nullDepartmentId() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, null, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, null, ADMISSION_YEAR, GRADE);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -285,7 +286,20 @@ class AuthControllerTest {
         @Test
         @DisplayName("admissionYear가 null이면 400을 반환한다")
         void nullAdmissionYear() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, null);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, null, GRADE);
+
+            mockMvc.perform(post("/api/v1/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("grade가 null이면 400을 반환한다")
+        void nullGrade() throws Exception {
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, null);
 
             mockMvc.perform(post("/api/v1/auth/signup")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -298,7 +312,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("이메일 인증이 안 된 토큰이면 403을 반환한다")
         void emailNotVerified() throws Exception {
-            SignUpRequest request = new SignUpRequest("invalid-token", USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest("invalid-token", USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(authService.signUp(any())).willThrow(new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED));
 
             mockMvc.perform(post("/api/v1/auth/signup")
@@ -312,7 +326,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("이미 가입된 이메일이면 409를 반환한다")
         void duplicateEmail() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(authService.signUp(any())).willThrow(new BusinessException(ErrorCode.DUPLICATE_EMAIL));
 
             mockMvc.perform(post("/api/v1/auth/signup")
@@ -326,7 +340,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("존재하지 않는 학과이면 404를 반환한다")
         void departmentNotFound() throws Exception {
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, 999L, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, 999L, ADMISSION_YEAR, GRADE);
             given(authService.signUp(any())).willThrow(new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
 
             mockMvc.perform(post("/api/v1/auth/signup")
