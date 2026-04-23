@@ -130,12 +130,13 @@ class AuthServiceTest {
         private static final String VERIFIED_TOKEN = "test-verified-uuid";
         private static final Long DEPT_ID = 1L;
         private static final Integer ADMISSION_YEAR = 2026;
+        private static final Integer GRADE = 1;
 
         @Test
         @DisplayName("정상 요청이면 회원을 저장하고 TokenResponse를 반환한다")
         void success() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             University university = mock(University.class);
             Campus campus = mock(Campus.class);
             Department department = mock(Department.class);
@@ -167,7 +168,7 @@ class AuthServiceTest {
         @DisplayName("verifiedToken이 Redis에 없으면 EMAIL_NOT_VERIFIED 예외가 발생한다")
         void verifiedTokenNotFound() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(redisService.get(RedisKeys.emailVerified(VERIFIED_TOKEN))).willReturn(null);
 
             // when & then
@@ -180,7 +181,7 @@ class AuthServiceTest {
         @DisplayName("이미 가입된 이메일이면 DUPLICATE_EMAIL 예외가 발생한다")
         void duplicateEmail() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(redisService.get(RedisKeys.emailVerified(VERIFIED_TOKEN))).willReturn(EMAIL);
             given(memberRepository.existsByEmail(EMAIL)).willReturn(true);
 
@@ -194,7 +195,7 @@ class AuthServiceTest {
         @DisplayName("이미 존재하는 username이면 DUPLICATE_USERNAME 예외가 발생한다")
         void duplicateUsername() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(redisService.get(RedisKeys.emailVerified(VERIFIED_TOKEN))).willReturn(EMAIL);
             given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
             given(memberRepository.existsByUsername(USERNAME)).willReturn(true);
@@ -209,7 +210,7 @@ class AuthServiceTest {
         @DisplayName("이미 존재하는 nickname이면 DUPLICATE_NICKNAME 예외가 발생한다")
         void duplicateNickname() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(redisService.get(RedisKeys.emailVerified(VERIFIED_TOKEN))).willReturn(EMAIL);
             given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
             given(memberRepository.existsByUsername(USERNAME)).willReturn(false);
@@ -225,7 +226,7 @@ class AuthServiceTest {
         @DisplayName("존재하지 않는 departmentId면 DEPARTMENT_NOT_FOUND 예외가 발생한다")
         void departmentNotFound() {
             // given
-            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR);
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, DEPT_ID, ADMISSION_YEAR, GRADE);
             given(redisService.get(RedisKeys.emailVerified(VERIFIED_TOKEN))).willReturn(EMAIL);
             given(memberRepository.existsByEmail(EMAIL)).willReturn(false);
             given(memberRepository.existsByUsername(USERNAME)).willReturn(false);

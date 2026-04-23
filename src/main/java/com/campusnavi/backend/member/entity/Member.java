@@ -44,6 +44,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Integer admissionYear;
 
+    @Column(nullable = false)
+    private Integer grade;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberRole role;
@@ -58,7 +61,7 @@ public class Member extends BaseEntity {
     private LocalDateTime deletedAt;
 
     public static Member join(String email, String username, String password, String nickname,
-                              Long universityId, Campus campus, Integer admissionYear) {
+                              Long universityId, Campus campus, Integer admissionYear, Integer grade) {
         Member member = new Member();
         member.email = email;
         member.username = username;
@@ -67,6 +70,7 @@ public class Member extends BaseEntity {
         member.universityId = universityId;
         member.campus = campus;
         member.admissionYear = admissionYear;
+        member.grade = grade;
         member.role = MemberRole.USER;
         member.status = MemberStatus.ACTIVE;
         return member;
