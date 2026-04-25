@@ -25,7 +25,7 @@ public class S3StorageService {
     private final S3Presigner s3Presigner;
     private final StorageProperties properties;
 
-    public void upload(UploadType type, String filename, InputStream inputStream, long size, String contentType) {
+    public String upload(UploadType type, String filename, InputStream inputStream, long size, String contentType) {
         validate(type, contentType, size);
         String key = generateKey(type, filename);
 
@@ -41,6 +41,7 @@ public class S3StorageService {
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAIL);
         }
+        return key;
     }
 
     public void delete(String key) {
