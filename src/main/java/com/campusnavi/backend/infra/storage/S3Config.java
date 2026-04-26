@@ -1,6 +1,5 @@
-package com.campusnavi.backend.global.config;
+package com.campusnavi.backend.infra.storage;
 
-import com.campusnavi.backend.infra.storage.StorageProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
