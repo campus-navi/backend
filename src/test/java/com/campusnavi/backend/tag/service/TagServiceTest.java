@@ -1,8 +1,8 @@
-package com.campusnavi.backend.interest.service;
+package com.campusnavi.backend.tag.service;
 
-import com.campusnavi.backend.interest.dto.InterestTagResponse;
-import com.campusnavi.backend.interest.entity.InterestTag;
-import com.campusnavi.backend.interest.repository.InterestTagRepository;
+import com.campusnavi.backend.tag.dto.TagResponse;
+import com.campusnavi.backend.tag.entity.Tag;
+import com.campusnavi.backend.tag.repository.TagRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,28 +18,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class InterestTagServiceTest {
+class TagServiceTest {
 
     @Mock
-    private InterestTagRepository interestTagRepository;
+    private TagRepository tagRepository;
 
     @InjectMocks
-    private InterestTagService interestTagService;
+    private TagService tagService;
 
     @Test
     @DisplayName("is_recommendable=true인 태그를 sort_order 오름차순으로 반환한다")
-    void getInterestTags_returnsSortedRecommendableTags() {
+    void getTags() {
         // given
-        InterestTag tag1 = mock(InterestTag.class);
-        InterestTag tag2 = mock(InterestTag.class);
+        Tag tag1 = mock(Tag.class);
+        Tag tag2 = mock(Tag.class);
         when(tag1.getId()).thenReturn(1L);
         when(tag1.getName()).thenReturn("장학금");
         when(tag2.getId()).thenReturn(2L);
         when(tag2.getName()).thenReturn("취업·채용");
-        given(interestTagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of(tag1, tag2));
+        given(tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of(tag1, tag2));
 
         // when
-        List<InterestTagResponse> result = interestTagService.getInterestTags();
+        List<TagResponse> result = tagService.getTags();
 
         // then
         assertThat(result).hasSize(2);
@@ -49,12 +49,12 @@ class InterestTagServiceTest {
 
     @Test
     @DisplayName("추천 가능한 태그가 없으면 빈 목록을 반환한다")
-    void getInterestTags_returnsEmptyList() {
+    void getEmptyTags() {
         // given
-        given(interestTagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of());
+        given(tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of());
 
         // when
-        List<InterestTagResponse> result = interestTagService.getInterestTags();
+        List<TagResponse> result = tagService.getTags();
 
         // then
         assertThat(result).isEmpty();

@@ -3,8 +3,8 @@ package com.campusnavi.backend.member.service;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.interest.entity.InterestTag;
-import com.campusnavi.backend.interest.repository.InterestTagRepository;
+import com.campusnavi.backend.tag.entity.Tag;
+import com.campusnavi.backend.tag.repository.TagRepository;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.entity.MemberInterest;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
@@ -19,7 +19,7 @@ import java.util.List;
 public class MemberService {
 
     private final MemberInterestRepository memberInterestRepository;
-    private final InterestTagRepository interestTagRepository;
+    private final TagRepository tagRepository;
 
     @Transactional
     public void updateMemberInterests(AuthMember authMember, MemberInterestUpdateRequest request) {
@@ -32,7 +32,7 @@ public class MemberService {
             return;
         }
 
-        List<InterestTag> tags = interestTagRepository.findAllById(interestIds);
+        List<Tag> tags = tagRepository.findAllById(interestIds);
 
         if (tags.size() != interestIds.size()) {
             throw new BusinessException(ErrorCode.INTEREST_TAG_NOT_FOUND);

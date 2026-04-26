@@ -3,8 +3,8 @@ package com.campusnavi.backend.member.service;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.interest.entity.InterestTag;
-import com.campusnavi.backend.interest.repository.InterestTagRepository;
+import com.campusnavi.backend.tag.entity.Tag;
+import com.campusnavi.backend.tag.repository.TagRepository;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +31,7 @@ class MemberServiceTest {
     private MemberInterestRepository memberInterestRepository;
 
     @Mock
-    private InterestTagRepository interestTagRepository;
+    private TagRepository tagRepository;
 
     @InjectMocks
     private MemberService memberService;
@@ -49,9 +49,9 @@ class MemberServiceTest {
             // given
             List<Long> interestIds = List.of(1L, 2L);
             MemberInterestUpdateRequest request = new MemberInterestUpdateRequest(interestIds);
-            InterestTag tag1 = mock(InterestTag.class);
-            InterestTag tag2 = mock(InterestTag.class);
-            given(interestTagRepository.findAllById(interestIds)).willReturn(List.of(tag1, tag2));
+            Tag tag1 = mock(Tag.class);
+            Tag tag2 = mock(Tag.class);
+            given(tagRepository.findAllById(interestIds)).willReturn(List.of(tag1, tag2));
 
             // when & then
             assertThatCode(() -> memberService.updateMemberInterests(AUTH_MEMBER, request))
@@ -79,7 +79,7 @@ class MemberServiceTest {
             // given
             List<Long> interestIds = List.of(1L, 999L);
             MemberInterestUpdateRequest request = new MemberInterestUpdateRequest(interestIds);
-            given(interestTagRepository.findAllById(interestIds)).willReturn(List.of(mock(InterestTag.class)));
+            given(tagRepository.findAllById(interestIds)).willReturn(List.of(mock(Tag.class)));
 
             // when & then
             assertThatThrownBy(() -> memberService.updateMemberInterests(AUTH_MEMBER, request))

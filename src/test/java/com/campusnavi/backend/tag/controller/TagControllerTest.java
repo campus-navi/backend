@@ -1,7 +1,7 @@
-package com.campusnavi.backend.interest.controller;
+package com.campusnavi.backend.tag.controller;
 
-import com.campusnavi.backend.interest.dto.InterestTagResponse;
-import com.campusnavi.backend.interest.service.InterestTagService;
+import com.campusnavi.backend.tag.dto.TagResponse;
+import com.campusnavi.backend.tag.service.TagService;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,27 +16,27 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ControllerSliceTest(controllers = InterestTagController.class)
-class InterestTagControllerTest {
+@ControllerSliceTest(controllers = TagController.class)
+class TagControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private InterestTagService interestTagService;
+    private TagService tagService;
 
     @Test
     @DisplayName("관심사 목록 조회에 성공하면 200과 태그 목록을 반환한다")
-    void getInterestTags_success() throws Exception {
+    void getTags() throws Exception {
         // given
-        List<InterestTagResponse> tags = List.of(
-                new InterestTagResponse(1L, "장학금"),
-                new InterestTagResponse(2L, "취업·채용")
+        List<TagResponse> tags = List.of(
+                new TagResponse(1L, "장학금"),
+                new TagResponse(2L, "취업·채용")
         );
-        given(interestTagService.getInterestTags()).willReturn(tags);
+        given(tagService.getTags()).willReturn(tags);
 
         // when & then
-        mockMvc.perform(get("/api/v1/interests"))
+        mockMvc.perform(get("/api/v1/tags"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(1L))
@@ -46,12 +46,12 @@ class InterestTagControllerTest {
 
     @Test
     @DisplayName("추천 가능한 태그가 없으면 200과 빈 목록을 반환한다")
-    void getInterestTags_empty() throws Exception {
+    void getEmptyTags() throws Exception {
         // given
-        given(interestTagService.getInterestTags()).willReturn(List.of());
+        given(tagService.getTags()).willReturn(List.of());
 
         // when & then
-        mockMvc.perform(get("/api/v1/interests"))
+        mockMvc.perform(get("/api/v1/tags"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty());

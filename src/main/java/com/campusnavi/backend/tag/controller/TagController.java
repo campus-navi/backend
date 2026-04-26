@@ -1,8 +1,8 @@
-package com.campusnavi.backend.interest.controller;
+package com.campusnavi.backend.tag.controller;
 
 import com.campusnavi.backend.global.response.ApiResponse;
-import com.campusnavi.backend.interest.dto.InterestTagResponse;
-import com.campusnavi.backend.interest.service.InterestTagService;
+import com.campusnavi.backend.tag.dto.TagResponse;
+import com.campusnavi.backend.tag.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,18 +14,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "6. 관심사", description = "관심사 태그 조회 API")
+@Tag(name = "5. 관심사", description = "관심사 태그 조회 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/interests")
-public class InterestTagController {
+@RequestMapping("/api/v1/tags")
+public class TagController {
 
-    private final InterestTagService interestTagService;
+    private final TagService tagService;
 
     @Operation(summary = "관심사 목록 조회", description = "온보딩·마이페이지에서 선택 가능한 관심사 목록을 반환한다.")
     @SecurityRequirement(name = "Authorization")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<InterestTagResponse>>> getInterestTags() {
-        return ResponseEntity.ok(ApiResponse.ok(interestTagService.getInterestTags()));
+    public ResponseEntity<ApiResponse<List<TagResponse>>> getTags() {
+        return ResponseEntity.ok(ApiResponse.ok(tagService.getTags()));
     }
 }
