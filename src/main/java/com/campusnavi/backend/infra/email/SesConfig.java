@@ -1,6 +1,5 @@
-package com.campusnavi.backend.global.config;
+package com.campusnavi.backend.infra.email;
 
-import com.campusnavi.backend.infra.email.EmailProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +10,7 @@ import software.amazon.awssdk.services.ses.SesClient;
 @Configuration
 @Profile("prod")
 @RequiredArgsConstructor
-public class AwsConfig {
+public class SesConfig {
 
     private final EmailProperties emailProperties;
 
