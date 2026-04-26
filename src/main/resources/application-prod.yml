@@ -18,6 +18,9 @@ springdoc:
   swagger-ui:
     enabled: false
 
+crawl:
+  enabled: true
+
 app:
   jwt:
     secret: ${JWT_SECRET}

@@ -27,6 +27,7 @@
     <!-- ===== 외부 라이브러리 로그 억제 ===== -->
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
 
     <!-- ===== 환경별 설정 ===== -->
     <springProfile name="local">
