@@ -1,4 +1,4 @@
-package com.campusnavi.backend.interest.entity;
+package com.campusnavi.backend.tag.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class InterestTag {
+public class Tag {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +26,8 @@ public class InterestTag {
     @Column(nullable = false)
     private boolean isRecommendable;
 
-    public static InterestTag create(String code, String name, short sortOrder, boolean isRecommendable) {
-        InterestTag tag = new InterestTag();
+    public static Tag create(String code, String name, short sortOrder, boolean isRecommendable) {
+        Tag tag = new Tag();
         tag.code = code;
         tag.name = name;
         tag.sortOrder = sortOrder;

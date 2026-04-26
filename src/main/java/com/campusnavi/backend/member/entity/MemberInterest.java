@@ -1,6 +1,6 @@
 package com.campusnavi.backend.member.entity;
 
-import com.campusnavi.backend.interest.entity.InterestTag;
+import com.campusnavi.backend.tag.entity.Tag;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "member_interest",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "interest_tag_id"}, name = "uq_member_interest"))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "tag_id"}, name = "uq_member_interest"))
 public class MemberInterest {
 
     @Id
@@ -21,13 +21,13 @@ public class MemberInterest {
     private Long memberId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interest_tag_id", nullable = false)
-    private InterestTag interestTag;
+    @JoinColumn(name = "tag_id", nullable = false)
+    private Tag tag;
 
-    public static MemberInterest create(Long memberId, InterestTag interestTag) {
+    public static MemberInterest create(Long memberId, Tag tag) {
         MemberInterest memberInterest = new MemberInterest();
         memberInterest.memberId = memberId;
-        memberInterest.interestTag = interestTag;
+        memberInterest.tag = tag;
         return memberInterest;
     }
 }
