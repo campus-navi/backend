@@ -50,6 +50,9 @@ dependencies {
     //Storage (S3 - dev/prod)
     implementation("software.amazon.awssdk:s3:2.31.19")
 
+    //Crawling
+    implementation("org.jsoup:jsoup:1.18.1")
+
     //Util
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

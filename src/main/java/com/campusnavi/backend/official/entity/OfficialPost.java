@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,15 +31,14 @@ public class OfficialPost extends BaseEntity {
 
     private Long departmentId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private OfficialCategory category;
-
     @Column(nullable = false, length = 200)
     private String originalId;
 
     @Column(nullable = false, length = 500)
     private String title;
+
+    @Column(nullable = false, length = 50)
+    private String publisher;
 
     @Column(columnDefinition = "TEXT")
     private String plainText;
@@ -49,7 +49,7 @@ public class OfficialPost extends BaseEntity {
     @Column(nullable = false, length = 500)
     private String sourceUrl;
 
-    private LocalDateTime publishedAt;
+    private LocalDate publishedAt;
 
     @Column(nullable = false)
     private LocalDateTime crawledAt;
@@ -58,17 +58,17 @@ public class OfficialPost extends BaseEntity {
     private boolean isActive = true;
 
     public static OfficialPost create(OfficialSource source, String originalId, String title,
-                                      String plainText, String htmlContent, String sourceUrl,
-                                      LocalDateTime publishedAt, LocalDateTime crawledAt) {
+                                      String publisher, String plainText, String htmlContent,
+                                      String sourceUrl, LocalDate publishedAt, LocalDateTime crawledAt) {
         OfficialPost post = new OfficialPost();
         post.source = source;
         post.universityId = source.getUniversityId();
         post.campusId = source.getCampusId();
         post.collegeId = source.getCollegeId();
         post.departmentId = source.getDepartmentId();
-        post.category = source.getCategory();
         post.originalId = originalId;
         post.title = title;
+        post.publisher = publisher;
         post.plainText = plainText;
         post.htmlContent = htmlContent;
         post.sourceUrl = sourceUrl;

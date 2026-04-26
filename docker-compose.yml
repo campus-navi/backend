@@ -18,5 +18,19 @@ services:
       - "${REDIS_PORT}:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
+  localstack:
+    image: localstack/localstack:3
+    container_name: app-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+      AWS_DEFAULT_REGION: ap-northeast-2
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./scripts/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+
+
 volumes:
   postgres_local_data:
+  localstack_data:

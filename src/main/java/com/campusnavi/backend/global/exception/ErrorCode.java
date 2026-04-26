@@ -60,7 +60,10 @@ public enum ErrorCode {
     REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST),
 
     //관심사 관련
-    INTEREST_TAG_NOT_FOUND(HttpStatus.NOT_FOUND);
+    INTEREST_TAG_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    //크롤링 관련
+    INVALID_PARSER_TYPE(HttpStatus.BAD_REQUEST);
 
     private final HttpStatus status;
 }
