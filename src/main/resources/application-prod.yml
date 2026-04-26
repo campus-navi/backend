@@ -18,10 +18,10 @@ springdoc:
   swagger-ui:
     enabled: false
 
-crawl:
-  enabled: true
-
 app:
+  crawl:
+    enabled: true
+
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: ${JWT_ACCESS_EXPIRATION}
@@ -48,3 +48,8 @@ app:
       endpoint:
       path-style-access: ${S3_PATH_STYLE:false}
       base-url: ${S3_BASE_URL}
+
+  ai:
+    server:
+      url: ${AI_SERVER_URL}
+      timeout: 30s

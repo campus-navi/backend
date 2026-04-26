@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "crawl.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "app.crawl.enabled", havingValue = "true")
 public class CrawlerScheduler {
 
     private final CrawlerOrchestratorService crawlerOrchestratorService;
