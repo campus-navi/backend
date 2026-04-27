@@ -24,12 +24,11 @@ app:
 
   jwt:
     secret: ${JWT_SECRET}
-    access-token-expiration: ${JWT_ACCESS_EXPIRATION}
-    refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}
+    access-token-expiration: ${JWT_ACCESS_EXPIRATION:30m}
+    refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:14d}
 
   cors:
-    allowed-origins:
-      - allowed-origin
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
   email:
     from: ${AWS_SES_FROM}
@@ -51,5 +50,9 @@ app:
 
   ai:
     server:
-      url: ${AI_SERVER_URL}
-      timeout: 30s
+      base-url: ${AI_SERVER_URL}
+      connect-timeout: 5s
+      response-timeout: 30s
+      connection-request-timeout: 5s
+      max-total: 100
+      max-per-route: 50
