@@ -74,7 +74,7 @@ class MemberServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 tagId가 포함되면 INTEREST_TAG_NOT_FOUND 예외가 발생한다")
+        @DisplayName("존재하지 않는 tagId가 포함되면 TAG_NOT_FOUND 예외가 발생한다")
         void tagNotFound() {
             // given
             List<Long> interestIds = List.of(1L, 999L);
@@ -84,7 +84,7 @@ class MemberServiceTest {
             // when & then
             assertThatThrownBy(() -> memberService.updateMemberInterests(AUTH_MEMBER, request))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
-                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTEREST_TAG_NOT_FOUND));
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.TAG_NOT_FOUND));
         }
     }
 }
