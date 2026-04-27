@@ -257,6 +257,63 @@ class CrawlerOrchestratorServiceTest {
     }
 
     @Nested
+    @DisplayName("Seed 크롤링")
+    class SeedCrawl {
+
+        @BeforeEach
+        void setUp() {
+            given(sourceRepository.findAllByIsActiveTrue()).willReturn(List.of(source));
+            given(parserFactory.getParser(any())).willReturn(parser);
+        }
+
+        @Test
+        @DisplayName("Seed 크롤링은 crawlAndSaveSeed를 호출한다")
+        void savesSeed() throws Exception {
+            // given
+            given(postRepository.findOriginalIdsBySourceId(any())).willReturn(new HashSet<>());
+            PostList newPost = new PostList("1", "새 게시물", null, "https://test.com/1",
+                    LocalDate.of(2024, 1, 15));
+            given(parser.fetchList(any(), eq(1))).willReturn(List.of(newPost));
+            given(parser.fetchList(any(), eq(2))).willReturn(List.of());
+
+            // when
+            orchestratorService.runSeed();
+
+            // then
+            then(crawlPostService).should().crawlAndSaveSeed(eq(source), eq(newPost), eq(parser));
+            then(crawlPostService).should(never()).crawlAndSave(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("일반 크롤링은 crawlAndSave를 호출한다")
+        void savesPost() throws Exception {
+            // given
+            given(postRepository.findOriginalIdsBySourceId(any())).willReturn(new HashSet<>());
+            PostList newPost = new PostList("1", "새 게시물", null, "https://test.com/1",
+                    LocalDate.of(2024, 1, 15));
+            given(parser.fetchList(any(), eq(1))).willReturn(List.of(newPost));
+            given(parser.fetchList(any(), eq(2))).willReturn(List.of());
+
+            // when
+            orchestratorService.runAll();
+
+            // then
+            then(crawlPostService).should().crawlAndSave(eq(source), eq(newPost), eq(parser));
+            then(crawlPostService).should(never()).crawlAndSaveSeed(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Seed 크롤링 중 예외가 발생해도 나머지 소스는 계속 처리한다")
+        void sourceFailure() {
+            // given
+            given(parserFactory.getParser(any())).willThrow(new RuntimeException("파서 오류"));
+
+            // when & then
+            assertThatCode(() -> orchestratorService.runSeed()).doesNotThrowAnyException();
+        }
+    }
+
+    @Nested
     @DisplayName("완료 처리")
     class CompletionHandling {
 

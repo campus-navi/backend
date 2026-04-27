@@ -25,18 +25,26 @@ public class CrawlerOrchestratorService {
     private final CrawlPostService crawlPostService;
 
     public void runAll() {
+        run(false);
+    }
+
+    public void runSeed() {
+        run(true);
+    }
+
+    public void run(boolean isSeed) {
         List<OfficialSource> sources = sourceRepository.findAllByIsActiveTrue();
         log.info("크롤링 대상 소스 수: {}", sources.size());
         for (OfficialSource source : sources) {
             try {
-                crawlSource(source);
+                crawlSource(source, isSeed);
             } catch (Exception e) {
                 log.error("소스 크롤링 실패 [{}]: {}", source.getName(), e.getMessage(), e);
             }
         }
     }
 
-    private void crawlSource(OfficialSource source) {
+    private void crawlSource(OfficialSource source, boolean isSeed) {
         log.debug("소스 크롤링 시작 [{}] lastCrawledAt={}", source.getName(), source.getLastCrawledAt());
         CrawlParser parser = parserFactory.getParser(source.getParserType());
         Set<String> existingIds = postRepository.findOriginalIdsBySourceId(source.getId());
@@ -51,13 +59,26 @@ public class CrawlerOrchestratorService {
             int nullDate = 0, tooOld = 0, duplicate = 0, saved = 0;
             boolean hasNewPost = false;
             for (PostList post : lists) {
-                if (post.publishedAt() == null) { nullDate++; continue; }
-                if (post.publishedAt().isBefore(lastCrawledAt)) { tooOld++; continue; }
-                if (existingIds.contains(post.originalId())) { duplicate++; continue; }
+                if (post.publishedAt() == null) {
+                    nullDate++;
+                    continue;
+                }
+                if (post.publishedAt().isBefore(lastCrawledAt)) {
+                    tooOld++;
+                    continue;
+                }
+                if (existingIds.contains(post.originalId())) {
+                    duplicate++;
+                    continue;
+                }
 
                 hasNewPost = true;
                 try {
-                    crawlPostService.crawlAndSave(source, post, parser);
+                    if (isSeed) {
+                        crawlPostService.crawlAndSaveSeed(source, post, parser);
+                    } else {
+                        crawlPostService.crawlAndSave(source, post, parser);
+                    }
                     existingIds.add(post.originalId());
                     saved++;
                 } catch (Exception e) {

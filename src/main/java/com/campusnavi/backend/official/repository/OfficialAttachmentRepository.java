@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface OfficialAttachmentRepository extends JpaRepository<OfficialAttachment,Long> {
     List<OfficialAttachment> findByPostId(Long postId);
+    List<OfficialAttachment> findByPostIdIn(List<Long> postIds);
 }

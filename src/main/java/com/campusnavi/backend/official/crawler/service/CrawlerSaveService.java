@@ -34,6 +34,22 @@ public class CrawlerSaveService {
                          String replacedHtml,
                          List<UploadedFile> images,
                          List<UploadedFile> attachments) {
+        save(source, item, detail, replacedHtml, images, attachments, true);
+    }
+
+    @Transactional
+    public void saveSeed(OfficialSource source, PostList item, PostDetail detail,
+                         String replacedHtml,
+                         List<UploadedFile> images,
+                         List<UploadedFile> attachments){
+        save(source, item, detail, replacedHtml, images, attachments, false);
+    }
+
+    private void save(OfficialSource source, PostList item, PostDetail detail,
+                      String replacedHtml,
+                      List<UploadedFile> images,
+                      List<UploadedFile> attachments,
+                      boolean publishEvent) {
         OfficialPost post = OfficialPost.create(
                 source,
                 item.originalId(),
@@ -62,7 +78,10 @@ public class CrawlerSaveService {
         }
 
         aiMetaRepository.save(OfficialPostAiMeta.pending(post));
-        eventPublisher.publishEvent(new OfficialPostSavedEvent(post.getId()));
+
+        if (publishEvent) {
+            eventPublisher.publishEvent(new OfficialPostSavedEvent(post.getId()));
+        }
     }
 
 }

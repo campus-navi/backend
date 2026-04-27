@@ -31,6 +31,14 @@ public class CrawlPostService {
     private final CrawlerSaveService crawlerSaveService;
 
     public void crawlAndSave(OfficialSource source, PostList list, CrawlParser parser) throws Exception {
+        doCrawlAndSave(source, list, parser, false);
+    }
+
+    public void crawlAndSaveSeed(OfficialSource source, PostList list, CrawlParser parser) throws Exception {
+        doCrawlAndSave(source, list, parser, true);
+    }
+
+    private void doCrawlAndSave(OfficialSource source, PostList list, CrawlParser parser, boolean isSeed) throws Exception {
         PostDetail post = parser.fetchDetail(list.detailUrl());
 
         List<UploadedFile> uploadedImages = uploadImages(post.images());
@@ -40,7 +48,12 @@ public class CrawlPostService {
         String replacedHtml = replaceImageUrls(post.rawHtml(), imageUrlMap);
         String sanitizedHtml = Jsoup.clean(replacedHtml, Safelist.relaxed());
 
-        crawlerSaveService.savePost(source, list, post, sanitizedHtml, uploadedImages, uploadedAttachments);
+        if (isSeed) {
+            crawlerSaveService.saveSeed(source, list, post, sanitizedHtml, uploadedImages, uploadedAttachments);
+        } else {
+            crawlerSaveService.savePost(source, list, post, sanitizedHtml, uploadedImages, uploadedAttachments);
+        }
+
     }
 
     private List<UploadedFile> uploadImages(List<FileInfo> images) throws Exception {
