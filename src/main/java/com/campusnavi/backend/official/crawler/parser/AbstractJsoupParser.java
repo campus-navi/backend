@@ -7,6 +7,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import javax.net.ssl.SSLException;
@@ -70,7 +72,9 @@ public abstract class AbstractJsoupParser implements CrawlParser {
             String resolved = resolveUrl(src, baseUrl);
             String filename = resolved.substring(resolved.lastIndexOf('/') + 1);
             if (filename.contains("?")) filename = filename.substring(0, filename.indexOf('?'));
-            result.add(new FileInfo(filename, resolved, guessContentType(filename)));
+            String contentType = guessContentType(filename);
+            if (!contentType.startsWith("image/")) continue;
+            result.add(new FileInfo(filename, resolved, contentType));
         }
         return result;
     }
@@ -79,6 +83,7 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         if (url.startsWith("http://") || url.startsWith("https://")) return url;
         if (url.startsWith("//")) return "https:" + url;
         if (url.startsWith("/")) return extractOrigin(baseUrl) + url;
+        if (url.startsWith("?")) return baseUrl.split("\\?")[0] + url;
         return baseUrl + "/" + url;
     }
 
@@ -136,6 +141,15 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         // HWP 에디터 전용 div 제거
         clone.select("div.hwp_editor_board_content").remove();
 
+        // 모든 셀이 비어있는 tr 제거 → 장식용 테이블 행 제거
+        for (Element tr : clone.select("tr")) {
+            if (tr.select("th, td").stream().allMatch(c -> c.text().isBlank())) {
+                tr.remove();
+            }
+        }
+        // tr 제거 후 비어있는 tbody/table 제거
+        clone.select("tbody:empty, table:empty").remove();
+
         String html = clone.html();
         html = html.replace("&nbsp;", " ");
         html = html.replace("\t", "");
@@ -144,6 +158,62 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         html = html.replaceAll("\\n{3,}", "\n\n");       // 3줄 이상 빈 줄 → 2줄
 
         return html.trim();
+    }
+
+    protected String toStructuredText(Element element) {
+        if (element == null) return "";
+        StringBuilder sb = new StringBuilder();
+        appendChildren(element, sb);
+        return sb.toString()
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+    }
+
+    private void appendChildren(Element el, StringBuilder sb) {
+        for (Node node : el.childNodes()) {
+            if (node instanceof TextNode tn) {
+                String text = tn.text();
+                if (!text.isBlank()) sb.append(text);
+            } else if (node instanceof Element child) {
+                handleElement(child, sb);
+            }
+        }
+    }
+
+    private void handleElement(Element el, StringBuilder sb) {
+        switch (el.tagName().toLowerCase()) {
+            case "table" -> appendTable(el, sb);
+            case "ul", "ol" -> appendList(el, sb);
+            case "br" -> sb.append("\n");
+            case "p", "div", "h1", "h2", "h3", "h4", "h5", "h6" -> {
+                appendChildren(el, sb);
+                sb.append("\n");
+            }
+            default -> appendChildren(el, sb);
+        }
+    }
+
+    private void appendTable(Element table, StringBuilder sb) {
+        sb.append("\n");
+        for (Element row : table.select("tr")) {
+            Elements cells = row.select("th, td");
+            if (cells.isEmpty()) continue;
+            if (cells.stream().allMatch(c -> c.text().isBlank())) continue;
+            sb.append("| ");
+            for (Element cell : cells) {
+                sb.append(cell.text().replace("|", "\\|")).append(" | ");
+            }
+            sb.append("\n");
+        }
+        sb.append("\n");
+    }
+
+    private void appendList(Element list, StringBuilder sb) {
+        sb.append("\n");
+        for (Element li : list.select("> li")) {
+            sb.append("• ").append(li.text()).append("\n");
+        }
+        sb.append("\n");
     }
 
     protected String guessContentType(String filename) {
