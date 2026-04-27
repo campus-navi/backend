@@ -35,7 +35,7 @@ public class MemberService {
         List<Tag> tags = tagRepository.findAllById(interestIds);
 
         if (tags.size() != interestIds.size()) {
-            throw new BusinessException(ErrorCode.INTEREST_TAG_NOT_FOUND);
+            throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
         }
 
         List<MemberInterest> memberInterests = tags.stream()
