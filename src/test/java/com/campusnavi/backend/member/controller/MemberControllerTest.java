@@ -88,7 +88,7 @@ class MemberControllerTest {
         void tagNotFound() throws Exception {
             // given
             MemberInterestUpdateRequest request = new MemberInterestUpdateRequest(List.of(1L, 999L));
-            willThrow(new BusinessException(ErrorCode.INTEREST_TAG_NOT_FOUND))
+            willThrow(new BusinessException(ErrorCode.TAG_NOT_FOUND))
                     .given(memberService).updateMemberInterests(any(), any());
 
             // when & then
@@ -97,7 +97,7 @@ class MemberControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.code").value(ErrorCode.INTEREST_TAG_NOT_FOUND.name()));
+                    .andExpect(jsonPath("$.code").value(ErrorCode.TAG_NOT_FOUND.name()));
         }
     }
 }
