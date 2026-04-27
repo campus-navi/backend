@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class AiMetaProcessorTest {
@@ -51,7 +52,7 @@ class AiMetaProcessorTest {
 
         @Test
         @DisplayName("이미지와 일반 첨부파일을 분리하여 AI 요청을 보낸다")
-        void separatesImageAndFileAttachments() {
+        void imageAndFileAttachments() {
             // given
             OfficialPost post = mock(OfficialPost.class);
             given(post.getId()).willReturn(POST_ID);
@@ -79,7 +80,7 @@ class AiMetaProcessorTest {
 
         @Test
         @DisplayName("첨부파일이 없으면 빈 리스트로 AI 요청을 보낸다")
-        void sendsEmptyListsWhenNoAttachments() {
+        void noAttachments() {
             // given
             OfficialPost post = mock(OfficialPost.class);
             given(post.getId()).willReturn(POST_ID);
@@ -101,7 +102,7 @@ class AiMetaProcessorTest {
 
         @Test
         @DisplayName("AI 응답을 받으면 saveResult를 호출한다")
-        void callsSaveResultOnSuccess() {
+        void savesResult() {
             // given
             OfficialPost post = mock(OfficialPost.class);
             OfficialAiResponse response = mock(OfficialAiResponse.class);
@@ -121,12 +122,100 @@ class AiMetaProcessorTest {
     }
 
     @Nested
+    @DisplayName("배치 요청 생성")
+    class BuildRequests {
+
+        @Test
+        @DisplayName("각 post의 attachment를 postId 기준으로 분배하여 요청을 생성한다")
+        void separatesAttachments() {
+            // given
+            OfficialPost post1 = mock(OfficialPost.class);
+            OfficialPost post2 = mock(OfficialPost.class);
+            given(post1.getId()).willReturn(1L);
+            given(post2.getId()).willReturn(2L);
+            given(post1.getStructuredText()).willReturn("본문1");
+            given(post2.getStructuredText()).willReturn("본문2");
+
+            OfficialAttachment img1 = OfficialAttachment.create(post1, "img1.png", "img/1.png", "image/png", true, (short) 0);
+            OfficialAttachment file2 = OfficialAttachment.create(post2, "file2.pdf", "file/2.pdf", "application/pdf", false, (short) 0);
+
+            given(attachmentRepository.findByPostIdIn(List.of(1L, 2L))).willReturn(List.of(img1, file2));
+            given(s3StorageService.resolveUrl("img/1.png")).willReturn("https://cdn/img/1.png");
+            given(s3StorageService.resolveUrl("file/2.pdf")).willReturn("https://cdn/file/2.pdf");
+
+            // when
+            List<OfficialAiRequest> requests = processor.buildRequests(List.of(post1, post2));
+
+            // then
+            assertThat(requests).hasSize(2);
+            assertThat(requests.getFirst().imageUrls()).containsExactly("https://cdn/img/1.png");
+            assertThat(requests.getFirst().attachmentUrls()).isEmpty();
+            assertThat(requests.get(1).imageUrls()).isEmpty();
+            assertThat(requests.get(1).attachmentUrls()).containsExactly("https://cdn/file/2.pdf");
+        }
+
+        @Test
+        @DisplayName("attachment가 없는 post는 빈 리스트로 요청을 생성한다")
+        void noAttachments() {
+            // given
+            OfficialPost post = mock(OfficialPost.class);
+            given(post.getId()).willReturn(1L);
+            given(post.getStructuredText()).willReturn("본문");
+
+            given(attachmentRepository.findByPostIdIn(List.of(1L))).willReturn(List.of());
+
+            // when
+            List<OfficialAiRequest> requests = processor.buildRequests(List.of(post));
+
+            // then
+            assertThat(requests).hasSize(1);
+            assertThat(requests.getFirst().imageUrls()).isEmpty();
+            assertThat(requests.getFirst().attachmentUrls()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("post 목록이 비어있으면 빈 리스트를 반환하고 attachment 조회를 수행한다")
+        void emptyPosts() {
+            // given
+            given(attachmentRepository.findByPostIdIn(List.of())).willReturn(List.of());
+
+            // when
+            List<OfficialAiRequest> requests = processor.buildRequests(List.of());
+
+            // then
+            assertThat(requests).isEmpty();
+            then(s3StorageService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("attachment 조회는 단일 쿼리로 수행한다")
+        void singleBatchQuery() {
+            // given
+            OfficialPost post1 = mock(OfficialPost.class);
+            OfficialPost post2 = mock(OfficialPost.class);
+            given(post1.getId()).willReturn(1L);
+            given(post2.getId()).willReturn(2L);
+            given(post1.getStructuredText()).willReturn("본문1");
+            given(post2.getStructuredText()).willReturn("본문2");
+
+            given(attachmentRepository.findByPostIdIn(List.of(1L, 2L))).willReturn(List.of());
+
+            // when
+            processor.buildRequests(List.of(post1, post2));
+
+            // then
+            then(attachmentRepository).should(never()).findByPostId(any());
+            then(attachmentRepository).should().findByPostIdIn(List.of(1L, 2L));
+        }
+    }
+
+    @Nested
     @DisplayName("실패 처리")
     class Failure {
 
         @Test
         @DisplayName("AI 서버 호출 중 예외가 발생하면 markFailed를 호출한다")
-        void callsMarkFailedOnAiClientException() {
+        void aiClientFailure() {
             // given
             OfficialPost post = mock(OfficialPost.class);
             given(post.getId()).willReturn(POST_ID);
@@ -146,7 +235,7 @@ class AiMetaProcessorTest {
 
         @Test
         @DisplayName("첨부파일 조회 중 예외가 발생하면 markFailed를 호출한다")
-        void callsMarkFailedOnRepositoryException() {
+        void repositoryFailure() {
             // given
             OfficialPost post = mock(OfficialPost.class);
             given(post.getId()).willReturn(POST_ID);
