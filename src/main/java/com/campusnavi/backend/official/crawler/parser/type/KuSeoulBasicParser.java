@@ -73,12 +73,12 @@ public class KuSeoulBasicParser extends AbstractJsoupParser {
 
             Element contentEl = doc.selectFirst("div.article-text");
             String rawHtml = sanitizeHtml(contentEl, baseUrl);
-            String plainText = contentEl != null ? contentEl.text() : "";
+            String structuredText = toStructuredText(contentEl);
 
             List<FileInfo> images = extractImages(contentEl, baseUrl);
             List<FileInfo> attachments = extractAttachments(doc, detailUrl);
 
-            return new PostDetail(title, plainText, rawHtml, images, attachments);
+            return new PostDetail(title, structuredText, rawHtml, images, attachments);
         } catch (Exception e) {
             throw new RuntimeException("상세페이지 파싱 실패: " + detailUrl, e);
         }
