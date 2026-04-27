@@ -37,35 +37,41 @@ public class CrawlerOrchestratorService {
     }
 
     private void crawlSource(OfficialSource source) {
-        log.info("소스 크롤링 시작 [{}]", source.getName());
+        log.debug("소스 크롤링 시작 [{}] lastCrawledAt={}", source.getName(), source.getLastCrawledAt());
         CrawlParser parser = parserFactory.getParser(source.getParserType());
         Set<String> existingIds = postRepository.findOriginalIdsBySourceId(source.getId());
         LocalDate lastCrawledAt = source.getLastCrawledAt();
+        int totalSaved = 0;
 
         for (int page = 1; ; page++) {
             List<PostList> lists = parser.fetchList(source.getListUrl(), page);
+            log.debug("  [{}] page={} 조회됨={}", source.getName(), page, lists.size());
             if (lists.isEmpty()) break;
 
+            int nullDate = 0, tooOld = 0, duplicate = 0, saved = 0;
             boolean hasNewPost = false;
             for (PostList post : lists) {
-                if (post.publishedAt() == null) continue;
-                if (post.publishedAt().isBefore(lastCrawledAt)) continue;
-                if (existingIds.contains(post.originalId())) continue;
+                if (post.publishedAt() == null) { nullDate++; continue; }
+                if (post.publishedAt().isBefore(lastCrawledAt)) { tooOld++; continue; }
+                if (existingIds.contains(post.originalId())) { duplicate++; continue; }
 
                 hasNewPost = true;
                 try {
                     crawlPostService.crawlAndSave(source, post, parser);
                     existingIds.add(post.originalId());
+                    saved++;
                 } catch (Exception e) {
                     log.error("게시물 크롤링 실패 [{}]: {}", post.title(), e.getMessage(), e);
                 }
             }
+            log.debug("  [{}] page={} 결과: 저장={} / 날짜없음={} / 날짜오래됨={} / 중복={}", source.getName(), page, saved, nullDate, tooOld, duplicate);
+            totalSaved += saved;
 
             if (!hasNewPost) break;
         }
 
         source.updateLastCrawledAt(LocalDate.now());
         sourceRepository.save(source);
-        log.info("소스 크롤링 완료 [{}]", source.getName());
+        log.debug("소스 크롤링 완료 [{}] 총 저장={}", source.getName(), totalSaved);
     }
 }
