@@ -53,6 +53,9 @@ dependencies {
     //Crawling
     implementation("org.jsoup:jsoup:1.18.1")
 
+    //HTTP Client
+    implementation("org.apache.httpcomponents.client5:httpclient5")
+
     //Util
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
