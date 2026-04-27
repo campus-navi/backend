@@ -56,3 +56,12 @@ app:
       connection-request-timeout: 5s
       max-total: 100
       max-per-route: 50
+
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      username: ${ADMIN_USERNAME:}
+      password: ${ADMIN_PASSWORD:}
+      email: ${ADMIN_EMAIL:}
+      nickname: ${ADMIN_NICKNAME:}
+      university-id: ${ADMIN_UNIVERSITY_ID:0}

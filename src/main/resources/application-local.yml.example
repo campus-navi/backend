@@ -25,6 +25,9 @@ springdoc:
     enabled: true
 
 app:
+  crawl:
+    enabled: false
+
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: ${JWT_ACCESS_EXPIRATION}
@@ -51,3 +54,21 @@ app:
       endpoint: http://localhost:4566
       path-style-access: true
       base-url: http://localhost:4566/campus-navi-local
+
+  ai:
+    server:
+      base-url: ${AI_SERVER_URL}
+      connect-timeout: 5s
+      response-timeout: 30s
+      connection-request-timeout: 5s
+      max-total: 100
+      max-per-route: 50
+
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+      username: ${ADMIN_USERNAME:}
+      password: ${ADMIN_PASSWORD:}
+      email: ${ADMIN_EMAIL:}
+      nickname: ${ADMIN_NICKNAME:}
+      university-id: ${ADMIN_UNIVERSITY_ID:0}
