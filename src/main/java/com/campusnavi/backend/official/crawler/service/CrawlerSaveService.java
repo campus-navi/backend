@@ -33,7 +33,7 @@ public class CrawlerSaveService {
                 item.originalId(),
                 detail.title(),
                 item.publisher(),
-                detail.plainText(),
+                detail.structuredText(),
                 replacedHtml,
                 item.detailUrl(),
                 item.publishedAt(),

@@ -4,7 +4,7 @@ import java.util.List;
 
 public record PostDetail(
         String title,
-        String plainText,
+        String structuredText,
         String rawHtml,
         List<FileInfo> images,
         List<FileInfo> attachments

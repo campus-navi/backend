@@ -41,7 +41,7 @@ public class OfficialPost extends BaseEntity {
     private String publisher;
 
     @Column(columnDefinition = "TEXT")
-    private String plainText;
+    private String structuredText;
 
     @Column(columnDefinition = "TEXT")
     private String htmlContent;
@@ -58,7 +58,7 @@ public class OfficialPost extends BaseEntity {
     private boolean isActive = true;
 
     public static OfficialPost create(OfficialSource source, String originalId, String title,
-                                      String publisher, String plainText, String htmlContent,
+                                      String publisher, String structuredText, String htmlContent,
                                       String sourceUrl, LocalDate publishedAt, LocalDateTime crawledAt) {
         OfficialPost post = new OfficialPost();
         post.source = source;
@@ -69,7 +69,7 @@ public class OfficialPost extends BaseEntity {
         post.originalId = originalId;
         post.title = title;
         post.publisher = publisher;
-        post.plainText = plainText;
+        post.structuredText = structuredText;
         post.htmlContent = htmlContent;
         post.sourceUrl = sourceUrl;
         post.publishedAt = publishedAt;
