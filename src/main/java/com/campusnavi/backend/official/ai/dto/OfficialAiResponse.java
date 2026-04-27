@@ -1,0 +1,29 @@
+package com.campusnavi.backend.official.ai.dto;
+
+
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+public record OfficialAiResponse(
+        String summary,
+        Integer targetGradeMin,
+        Integer targetGradeMax,
+        String tagCode,
+        List<String> keywords,
+        String contactPhone,
+        String contactEmail,
+        LocalDate startDate,
+        LocalTime startTime,
+        LocalDate endDate,
+        LocalTime endTime,
+        String requiredDocuments,
+        String applyMethod,
+        String eligibility,
+        String recruitmentCount
+) {
+}
