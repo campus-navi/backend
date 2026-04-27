@@ -219,6 +219,150 @@ class AbstractJsoupParserTest {
     }
 
     @Nested
+    @DisplayName("구조화 텍스트 변환")
+    class ToStructuredText {
+
+        @Test
+        @DisplayName("element가 null이면 빈 문자열을 반환한다")
+        void nullElement() {
+            // when & then
+            assertThat(parser.toStructuredText(null)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("p, div 태그이면 텍스트 뒤에 줄바꿈을 추가한다")
+        void blockElements() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><p>첫 번째</p><p>두 번째</p></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).isEqualTo("첫 번째\n두 번째");
+        }
+
+        @Test
+        @DisplayName("h1~h6 태그이면 텍스트 뒤에 줄바꿈을 추가한다")
+        void headingElements() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><h2>제목</h2><p>내용</p></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).isEqualTo("제목\n내용");
+        }
+
+        @Test
+        @DisplayName("br 태그이면 줄바꿈으로 변환한다")
+        void brTag() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div>첫 줄<br>둘째 줄</div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).isEqualTo("첫 줄\n둘째 줄");
+        }
+
+        @Test
+        @DisplayName("ul 태그이면 • 기호로 시작하는 목록으로 변환한다")
+        void unorderedList() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><ul><li>항목 A</li><li>항목 B</li></ul></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("• 항목 A");
+            assertThat(result).contains("• 항목 B");
+        }
+
+        @Test
+        @DisplayName("ol 태그이면 • 기호로 시작하는 목록으로 변환한다")
+        void orderedList() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><ol><li>첫째</li><li>둘째</li></ol></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("• 첫째");
+            assertThat(result).contains("• 둘째");
+        }
+
+        @Test
+        @DisplayName("table 태그이면 마크다운 표 형식으로 변환한다")
+        void table() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><th>이름</th><th>학번</th></tr><tr><td>홍길동</td><td>2024001</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("| 이름 | 학번 |");
+            assertThat(result).contains("| 홍길동 | 2024001 |");
+        }
+
+        @Test
+        @DisplayName("table 셀에 | 문자가 있으면 이스케이프 처리한다")
+        void tablePipeEscape() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><table><tr><td>A|B</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("A\\|B");
+        }
+
+        @Test
+        @DisplayName("모든 셀이 비어있는 tr이면 출력에서 제외한다")
+        void emptyTableRow() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><td></td><td></td></tr><tr><td>내용</td><td>값</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result.lines().filter(l -> l.startsWith("|"))).hasSize(1);
+            assertThat(result).contains("| 내용 | 값 |");
+        }
+
+        @Test
+        @DisplayName("3줄 이상 연속 빈 줄이면 2줄로 압축한다")
+        void collapseBlankLines() {
+            // given
+            Document doc = Jsoup.parseBodyFragment("<div><p>위</p><p></p><p></p><p>아래</p></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).doesNotContain("\n\n\n");
+        }
+    }
+
+    @Nested
     @DisplayName("이미지 추출")
     class ExtractImages {
 
