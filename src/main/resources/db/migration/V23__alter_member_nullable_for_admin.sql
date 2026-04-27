@@ -1,0 +1,3 @@
+ALTER TABLE member ALTER COLUMN campus_id      DROP NOT NULL;
+ALTER TABLE member ALTER COLUMN admission_year DROP NOT NULL;
+ALTER TABLE member ALTER COLUMN grade          DROP NOT NULL;

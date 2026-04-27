@@ -38,13 +38,13 @@ public class Member extends BaseEntity {
     private Long universityId;
 
     @ManyToOne
-    @JoinColumn(name = "campus_id",nullable = false)
+    @JoinColumn(name = "campus_id")
     private Campus campus;
 
-    @Column(nullable = false)
+    @Column
     private Integer admissionYear;
 
-    @Column(nullable = false)
+    @Column
     private Integer grade;
 
     @Enumerated(EnumType.STRING)
@@ -72,6 +72,19 @@ public class Member extends BaseEntity {
         member.admissionYear = admissionYear;
         member.grade = grade;
         member.role = MemberRole.USER;
+        member.status = MemberStatus.ACTIVE;
+        return member;
+    }
+
+    public static Member createAdmin(String email, String username, String password,
+                                     String nickname, Long universityId) {
+        Member member = new Member();
+        member.email = email;
+        member.username = username;
+        member.password = password;
+        member.nickname = nickname;
+        member.universityId = universityId;
+        member.role = MemberRole.ADMIN;
         member.status = MemberStatus.ACTIVE;
         return member;
     }
