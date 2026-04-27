@@ -164,7 +164,7 @@ class KuSejongBasicParserTest {
 
             // then
             assertThat(result.title()).isEqualTo("공지사항 상세 제목");
-            assertThat(result.plainText()).contains("본문 내용입니다.");
+            assertThat(result.structuredText()).contains("본문 내용입니다.");
         }
 
         @Test
@@ -219,7 +219,7 @@ class KuSejongBasicParserTest {
 
             // then
             assertThat(result.title()).isEmpty();
-            assertThat(result.plainText()).isEmpty();
+            assertThat(result.structuredText()).isEmpty();
             assertThat(result.images()).isEmpty();
             assertThat(result.attachments()).isEmpty();
         }
