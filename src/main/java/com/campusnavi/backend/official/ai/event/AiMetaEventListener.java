@@ -1,7 +1,7 @@
 package com.campusnavi.backend.official.ai.event;
 
 import com.campusnavi.backend.official.ai.service.AiMetaProcessor;
-import com.campusnavi.backend.official.domain.repository.OfficialPostRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

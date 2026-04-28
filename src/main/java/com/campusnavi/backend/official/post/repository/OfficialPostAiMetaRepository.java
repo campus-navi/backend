@@ -1,7 +1,7 @@
-package com.campusnavi.backend.official.domain.repository;
+package com.campusnavi.backend.official.post.repository;
 
 import com.campusnavi.backend.global.common.ProcessingStatus;
-import com.campusnavi.backend.official.domain.entity.OfficialPostAiMeta;
+import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

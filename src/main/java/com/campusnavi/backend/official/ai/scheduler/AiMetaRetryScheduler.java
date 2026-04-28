@@ -2,8 +2,8 @@ package com.campusnavi.backend.official.ai.scheduler;
 
 import com.campusnavi.backend.global.common.ProcessingStatus;
 import com.campusnavi.backend.official.ai.service.AiMetaProcessor;
-import com.campusnavi.backend.official.domain.entity.OfficialPostAiMeta;
-import com.campusnavi.backend.official.domain.repository.OfficialPostAiMetaRepository;
+import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
+import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

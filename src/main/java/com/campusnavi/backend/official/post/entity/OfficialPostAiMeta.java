@@ -1,4 +1,4 @@
-package com.campusnavi.backend.official.domain.entity;
+package com.campusnavi.backend.official.post.entity;
 
 import com.campusnavi.backend.global.common.BaseEntity;
 import com.campusnavi.backend.global.common.ProcessingStatus;
