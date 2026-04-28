@@ -1,4 +1,4 @@
-package com.campusnavi.backend.official.entity;
+package com.campusnavi.backend.official.domain.entity;
 
 import com.campusnavi.backend.global.common.BaseEntity;
 import jakarta.persistence.*;

@@ -1,6 +1,6 @@
-package com.campusnavi.backend.official.repository;
+package com.campusnavi.backend.official.domain.repository;
 
-import com.campusnavi.backend.official.entity.OfficialAttachment;
+import com.campusnavi.backend.official.domain.entity.OfficialAttachment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
