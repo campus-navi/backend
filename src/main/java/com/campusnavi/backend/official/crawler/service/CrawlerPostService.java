@@ -7,7 +7,7 @@ import com.campusnavi.backend.official.crawler.dto.PostDetail;
 import com.campusnavi.backend.official.crawler.dto.PostList;
 import com.campusnavi.backend.official.crawler.dto.UploadedFile;
 import com.campusnavi.backend.official.crawler.parser.CrawlParser;
-import com.campusnavi.backend.official.domain.entity.OfficialSource;
+import com.campusnavi.backend.official.source.entity.OfficialSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
