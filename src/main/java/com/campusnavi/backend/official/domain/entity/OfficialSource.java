@@ -1,4 +1,4 @@
-package com.campusnavi.backend.official.entity;
+package com.campusnavi.backend.official.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

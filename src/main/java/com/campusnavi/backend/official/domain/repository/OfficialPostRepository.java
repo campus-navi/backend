@@ -1,6 +1,6 @@
-package com.campusnavi.backend.official.repository;
+package com.campusnavi.backend.official.domain.repository;
 
-import com.campusnavi.backend.official.entity.OfficialPost;
+import com.campusnavi.backend.official.domain.entity.OfficialPost;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

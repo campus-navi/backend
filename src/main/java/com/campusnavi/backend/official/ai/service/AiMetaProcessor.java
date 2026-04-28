@@ -1,12 +1,12 @@
-package com.campusnavi.backend.official.ai;
+package com.campusnavi.backend.official.ai.service;
 
 import com.campusnavi.backend.infra.ai.AiClient;
 import com.campusnavi.backend.infra.storage.S3StorageService;
 import com.campusnavi.backend.official.ai.dto.OfficialAiRequest;
 import com.campusnavi.backend.official.ai.dto.OfficialAiResponse;
-import com.campusnavi.backend.official.entity.OfficialAttachment;
-import com.campusnavi.backend.official.entity.OfficialPost;
-import com.campusnavi.backend.official.repository.OfficialAttachmentRepository;
+import com.campusnavi.backend.official.domain.entity.OfficialAttachment;
+import com.campusnavi.backend.official.domain.entity.OfficialPost;
+import com.campusnavi.backend.official.domain.repository.OfficialAttachmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

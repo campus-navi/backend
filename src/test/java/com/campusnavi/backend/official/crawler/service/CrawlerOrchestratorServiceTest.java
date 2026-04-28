@@ -3,10 +3,10 @@ package com.campusnavi.backend.official.crawler.service;
 import com.campusnavi.backend.official.crawler.dto.PostList;
 import com.campusnavi.backend.official.crawler.parser.CrawlParser;
 import com.campusnavi.backend.official.crawler.parser.CrawlParserFactory;
-import com.campusnavi.backend.official.entity.OfficialSource;
-import com.campusnavi.backend.official.entity.SourceType;
-import com.campusnavi.backend.official.repository.OfficialPostRepository;
-import com.campusnavi.backend.official.repository.OfficialSourceRepository;
+import com.campusnavi.backend.official.domain.entity.OfficialSource;
+import com.campusnavi.backend.official.domain.entity.SourceType;
+import com.campusnavi.backend.official.domain.repository.OfficialPostRepository;
+import com.campusnavi.backend.official.domain.repository.OfficialSourceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,7 +45,7 @@ class CrawlerOrchestratorServiceTest {
     private CrawlParserFactory parserFactory;
 
     @Mock
-    private CrawlPostService crawlPostService;
+    private CrawlerPostService crawlerPostService;
 
     @InjectMocks
     private CrawlerOrchestratorService orchestratorService;
@@ -76,7 +76,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).shouldHaveNoInteractions();
+            then(crawlerPostService).shouldHaveNoInteractions();
         }
 
         @Test
@@ -114,7 +114,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).shouldHaveNoInteractions();
+            then(crawlerPostService).shouldHaveNoInteractions();
             then(parser).should(times(1)).fetchList(any(), anyInt());
         }
 
@@ -131,7 +131,7 @@ class CrawlerOrchestratorServiceTest {
 
             // then
             then(parser).should(times(1)).fetchList(any(), anyInt());
-            then(crawlPostService).shouldHaveNoInteractions();
+            then(crawlerPostService).shouldHaveNoInteractions();
         }
 
         @Test
@@ -174,7 +174,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(never()).crawlAndSave(any(), eq(oldPost), any());
+            then(crawlerPostService).should(never()).crawlAndSave(any(), eq(oldPost), any());
         }
 
         @Test
@@ -190,7 +190,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(times(1)).crawlAndSave(eq(source), eq(newPost), eq(parser));
+            then(crawlerPostService).should(times(1)).crawlAndSave(eq(source), eq(newPost), eq(parser));
         }
 
         @Test
@@ -204,7 +204,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(never()).crawlAndSave(any(), eq(nullDatePost), any());
+            then(crawlerPostService).should(never()).crawlAndSave(any(), eq(nullDatePost), any());
         }
 
         @Test
@@ -220,7 +220,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(never()).crawlAndSave(any(), eq(duplicatePost), any());
+            then(crawlerPostService).should(never()).crawlAndSave(any(), eq(duplicatePost), any());
         }
 
         @Test
@@ -235,7 +235,7 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(times(1)).crawlAndSave(any(), eq(post), any());
+            then(crawlerPostService).should(times(1)).crawlAndSave(any(), eq(post), any());
         }
 
         @Test
@@ -246,13 +246,13 @@ class CrawlerOrchestratorServiceTest {
             PostList post2 = new PostList("2", "게시물2", null, "https://test.com/2", LocalDate.of(2024, 1, 15));
             given(parser.fetchList(any(), eq(1))).willReturn(List.of(post1, post2));
             given(parser.fetchList(any(), eq(2))).willReturn(List.of());
-            willThrow(new RuntimeException("크롤링 오류")).given(crawlPostService).crawlAndSave(any(), eq(post1), any());
+            willThrow(new RuntimeException("크롤링 오류")).given(crawlerPostService).crawlAndSave(any(), eq(post1), any());
 
             // when
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should(times(1)).crawlAndSave(any(), eq(post2), any());
+            then(crawlerPostService).should(times(1)).crawlAndSave(any(), eq(post2), any());
         }
     }
 
@@ -280,8 +280,8 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runSeed();
 
             // then
-            then(crawlPostService).should().crawlAndSaveSeed(eq(source), eq(newPost), eq(parser));
-            then(crawlPostService).should(never()).crawlAndSave(any(), any(), any());
+            then(crawlerPostService).should().crawlAndSaveSeed(eq(source), eq(newPost), eq(parser));
+            then(crawlerPostService).should(never()).crawlAndSave(any(), any(), any());
         }
 
         @Test
@@ -298,8 +298,8 @@ class CrawlerOrchestratorServiceTest {
             orchestratorService.runAll();
 
             // then
-            then(crawlPostService).should().crawlAndSave(eq(source), eq(newPost), eq(parser));
-            then(crawlPostService).should(never()).crawlAndSaveSeed(any(), any(), any());
+            then(crawlerPostService).should().crawlAndSave(eq(source), eq(newPost), eq(parser));
+            then(crawlerPostService).should(never()).crawlAndSaveSeed(any(), any(), any());
         }
 
         @Test

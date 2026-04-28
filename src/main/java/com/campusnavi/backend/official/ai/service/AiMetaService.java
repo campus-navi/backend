@@ -1,8 +1,8 @@
-package com.campusnavi.backend.official.ai;
+package com.campusnavi.backend.official.ai.service;
 
 import com.campusnavi.backend.official.ai.dto.OfficialAiResponse;
-import com.campusnavi.backend.official.entity.OfficialPostAiMeta;
-import com.campusnavi.backend.official.repository.OfficialPostAiMetaRepository;
+import com.campusnavi.backend.official.domain.entity.OfficialPostAiMeta;
+import com.campusnavi.backend.official.domain.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.tag.entity.Tag;
 import com.campusnavi.backend.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
