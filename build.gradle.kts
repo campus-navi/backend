@@ -60,6 +60,13 @@ dependencies {
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
+    //QueryDSL
+    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.1")
+    annotationProcessor("io.github.openfeign.querydsl:querydsl-apt:7.1:jpa")
+
+    annotationProcessor("jakarta.persistence:jakarta.persistence-api")
+    annotationProcessor("jakarta.annotation:jakarta.annotation-api")
+
     //Test
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
