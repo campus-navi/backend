@@ -7,7 +7,7 @@ import com.campusnavi.backend.official.crawler.dto.PostDetail;
 import com.campusnavi.backend.official.crawler.dto.PostList;
 import com.campusnavi.backend.official.crawler.dto.UploadedFile;
 import com.campusnavi.backend.official.crawler.parser.CrawlParser;
-import com.campusnavi.backend.official.entity.OfficialSource;
+import com.campusnavi.backend.official.domain.entity.OfficialSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CrawlPostService {
+public class CrawlerPostService {
 
     private final S3StorageService s3StorageService;
     private final CrawlerSaveService crawlerSaveService;

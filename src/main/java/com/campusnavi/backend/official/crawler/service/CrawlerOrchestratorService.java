@@ -3,9 +3,9 @@ package com.campusnavi.backend.official.crawler.service;
 import com.campusnavi.backend.official.crawler.dto.PostList;
 import com.campusnavi.backend.official.crawler.parser.CrawlParser;
 import com.campusnavi.backend.official.crawler.parser.CrawlParserFactory;
-import com.campusnavi.backend.official.entity.OfficialSource;
-import com.campusnavi.backend.official.repository.OfficialPostRepository;
-import com.campusnavi.backend.official.repository.OfficialSourceRepository;
+import com.campusnavi.backend.official.domain.entity.OfficialSource;
+import com.campusnavi.backend.official.domain.repository.OfficialPostRepository;
+import com.campusnavi.backend.official.domain.repository.OfficialSourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class CrawlerOrchestratorService {
     private final OfficialSourceRepository sourceRepository;
     private final OfficialPostRepository postRepository;
     private final CrawlParserFactory parserFactory;
-    private final CrawlPostService crawlPostService;
+    private final CrawlerPostService crawlerPostService;
 
     public void runAll() {
         run(false);
@@ -75,9 +75,9 @@ public class CrawlerOrchestratorService {
                 hasNewPost = true;
                 try {
                     if (isSeed) {
-                        crawlPostService.crawlAndSaveSeed(source, post, parser);
+                        crawlerPostService.crawlAndSaveSeed(source, post, parser);
                     } else {
-                        crawlPostService.crawlAndSave(source, post, parser);
+                        crawlerPostService.crawlAndSave(source, post, parser);
                     }
                     existingIds.add(post.originalId());
                     saved++;
