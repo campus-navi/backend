@@ -18,7 +18,10 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -122,7 +125,7 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         }
 
         // 허용할 attribute만 남기고 나머지 전부 제거 (style, class, id, bgcolor, width 등)
-        Set<String> keepAttrs = Set.of("href", "src", "alt");
+        Set<String> keepAttrs = Set.of("href", "src", "alt", "colspan", "rowspan");
         for (Element el : clone.getAllElements()) {
             List<String> toRemove = el.attributes().asList().stream()
                     .map(Attribute::getKey)
@@ -194,18 +197,52 @@ public abstract class AbstractJsoupParser implements CrawlParser {
     }
 
     private void appendTable(Element table, StringBuilder sb) {
-        sb.append("\n");
-        for (Element row : table.select("tr")) {
-            Elements cells = row.select("th, td");
-            if (cells.isEmpty()) continue;
-            if (cells.stream().allMatch(c -> c.text().isBlank())) continue;
-            sb.append("| ");
+        Map<Integer, Map<Integer, String>> grid = new HashMap<>();
+        Set<String> occupied = new HashSet<>();
+
+        List<Element> rows = table.select("tr");
+        for (int rowIdx = 0; rowIdx < rows.size(); rowIdx++) {
+            Elements cells = rows.get(rowIdx).select("th, td");
+            int colIdx = 0;
             for (Element cell : cells) {
-                sb.append(cell.text().replace("|", "\\|")).append(" | ");
+                while (occupied.contains(rowIdx + "," + colIdx)) colIdx++;
+
+                String text = cell.text().replace("|", "\\|");
+                int rs = parseSpan(cell.attr("rowspan"));
+                int cs = parseSpan(cell.attr("colspan"));
+
+                for (int r = 0; r < rs; r++) {
+                    for (int c = 0; c < cs; c++) {
+                        grid.computeIfAbsent(rowIdx + r, k -> new HashMap<>()).put(colIdx + c, text);
+                        occupied.add((rowIdx + r) + "," + (colIdx + c));
+                    }
+                }
+                colIdx += cs;
+            }
+        }
+
+        sb.append("\n");
+        for (int rowIdx = 0; rowIdx < rows.size(); rowIdx++) {
+            Map<Integer, String> rowMap = grid.get(rowIdx);
+            if (rowMap == null || rowMap.values().stream().allMatch(String::isBlank)) continue;
+
+            int maxCol = rowMap.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+            sb.append("| ");
+            for (int c = 0; c <= maxCol; c++) {
+                sb.append(rowMap.getOrDefault(c, "")).append(" | ");
             }
             sb.append("\n");
         }
         sb.append("\n");
+    }
+
+    private int parseSpan(String attr) {
+        try {
+            int v = Integer.parseInt(attr);
+            return v > 0 ? v : 1;
+        } catch (NumberFormatException e) {
+            return 1;
+        }
     }
 
     private void appendList(Element list, StringBuilder sb) {

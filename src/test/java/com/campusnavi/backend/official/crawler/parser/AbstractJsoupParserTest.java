@@ -152,6 +152,38 @@ class AbstractJsoupParserTest {
         }
 
         @Test
+        @DisplayName("colspan, rowspan 속성은 유지된다")
+        void tableSpanAttributes() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><td colspan=\"3\" rowspan=\"2\">셀</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).contains("colspan=\"3\"");
+            assertThat(result).contains("rowspan=\"2\"");
+        }
+
+        @Test
+        @DisplayName("colspan이 있어도 style 등 허용되지 않은 속성은 제거된다")
+        void disallowedAttributesWithColspan() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><td colspan=\"2\" style=\"width:100px\">셀</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).contains("colspan=\"2\"");
+            assertThat(result).doesNotContain("style=");
+        }
+
+        @Test
         @DisplayName("href, src, alt이면 그대로 유지한다")
         void allowedAttributes() {
             // given
@@ -345,6 +377,63 @@ class AbstractJsoupParserTest {
             // then
             assertThat(result.lines().filter(l -> l.startsWith("|"))).hasSize(1);
             assertThat(result).contains("| 내용 | 값 |");
+        }
+
+        @Test
+        @DisplayName("rowspan 셀은 해당 행마다 텍스트가 반복된다")
+        void rowspan() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table>" +
+                    "<tr><td rowspan=\"2\">A</td><td>B</td></tr>" +
+                    "<tr><td>C</td></tr>" +
+                    "</table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("| A | B |");
+            assertThat(result).contains("| A | C |");
+        }
+
+        @Test
+        @DisplayName("colspan 셀은 해당 열마다 텍스트가 반복된다")
+        void colspan() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table>" +
+                    "<tr><td colspan=\"2\">A</td><td>B</td></tr>" +
+                    "<tr><td>C</td><td>D</td><td>E</td></tr>" +
+                    "</table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then
+            assertThat(result).contains("| A | A | B |");
+            assertThat(result).contains("| C | D | E |");
+        }
+
+        @Test
+        @DisplayName("rowspan + colspan 복합 표는 모든 행의 열 수가 동일하게 유지된다")
+        void rowspanAndColspan() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table>" +
+                    "<tr><td rowspan=\"2\">수료요건</td><td colspan=\"2\">2020년</td><td>24학점</td></tr>" +
+                    "<tr><td colspan=\"2\">2021년</td><td>30학점</td></tr>" +
+                    "</table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.toStructuredText(el);
+
+            // then — 두 행 모두 4칸(수료요건, colspan×2, 학점)
+            assertThat(result).contains("| 수료요건 | 2020년 | 2020년 | 24학점 |");
+            assertThat(result).contains("| 수료요건 | 2021년 | 2021년 | 30학점 |");
         }
 
         @Test
