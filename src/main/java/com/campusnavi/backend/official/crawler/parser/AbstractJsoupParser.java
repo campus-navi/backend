@@ -122,7 +122,7 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         }
 
         // 허용할 attribute만 남기고 나머지 전부 제거 (style, class, id, bgcolor, width 등)
-        Set<String> keepAttrs = Set.of("href", "src", "alt");
+        Set<String> keepAttrs = Set.of("href", "src", "alt", "colspan", "rowspan");
         for (Element el : clone.getAllElements()) {
             List<String> toRemove = el.attributes().asList().stream()
                     .map(Attribute::getKey)

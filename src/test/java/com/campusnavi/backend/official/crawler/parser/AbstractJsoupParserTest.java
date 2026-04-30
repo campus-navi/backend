@@ -152,6 +152,38 @@ class AbstractJsoupParserTest {
         }
 
         @Test
+        @DisplayName("colspan, rowspan 속성은 유지된다")
+        void tableSpanAttributes() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><td colspan=\"3\" rowspan=\"2\">셀</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).contains("colspan=\"3\"");
+            assertThat(result).contains("rowspan=\"2\"");
+        }
+
+        @Test
+        @DisplayName("colspan이 있어도 style 등 허용되지 않은 속성은 제거된다")
+        void disallowedAttributesWithColspan() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><table><tr><td colspan=\"2\" style=\"width:100px\">셀</td></tr></table></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).contains("colspan=\"2\"");
+            assertThat(result).doesNotContain("style=");
+        }
+
+        @Test
         @DisplayName("href, src, alt이면 그대로 유지한다")
         void allowedAttributes() {
             // given
