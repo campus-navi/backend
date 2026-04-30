@@ -22,8 +22,9 @@ public record OfficialAiResponse(
         LocalDate endDate,
         LocalTime endTime,
         String requiredDocuments,
-        String applyMethod,
+        String applyMethodType,
+        String applyMethodDetail,
         String eligibility,
-        String recruitmentCount
+        boolean isApplicable
 ) {
 }
