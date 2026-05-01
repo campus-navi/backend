@@ -10,6 +10,7 @@ import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.entity.OfficialAttachment;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
+import com.campusnavi.backend.official.post.repository.OfficialAttachmentDownloadRepository;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
@@ -27,12 +28,17 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class OfficialPostServiceTest {
@@ -45,6 +51,9 @@ class OfficialPostServiceTest {
 
     @Mock
     private OfficialAttachmentRepository attachmentRepository;
+
+    @Mock
+    private OfficialAttachmentDownloadRepository downloadRepository;
 
     @Mock
     private OfficialPostScrapRepository scrapRepository;
@@ -70,8 +79,8 @@ class OfficialPostServiceTest {
             // given
             OfficialPost post = mockPost();
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
-            OfficialAttachment image = mockAttachment("img.png", "img/a.png", true);
-            OfficialAttachment file = mockAttachment("doc.pdf", "file/b.pdf", false);
+            OfficialAttachment image = mockAttachment(900L, "img.png", "img/a.png", true);
+            OfficialAttachment file = mockAttachment(910L, "doc.pdf", "file/b.pdf", false);
 
             given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
@@ -79,7 +88,8 @@ class OfficialPostServiceTest {
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
                     .willReturn(List.of(image, file));
             given(storageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
-            given(storageService.resolveUrl("file/b.pdf")).willReturn("https://cdn/file/b.pdf");
+            given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L)))
+                    .willReturn(Set.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
@@ -96,8 +106,10 @@ class OfficialPostServiceTest {
             assertThat(response.applyMethodType()).isEqualTo(ApplyMethodType.EMAIL);
             assertThat(response.thumbnailUrl()).isEqualTo("https://cdn/img/a.png");
             assertThat(response.attachments()).hasSize(1);
+            assertThat(response.attachments().getFirst().id()).isEqualTo(910L);
             assertThat(response.attachments().getFirst().name()).isEqualTo("doc.pdf");
-            assertThat(response.attachments().getFirst().url()).isEqualTo("https://cdn/file/b.pdf");
+            assertThat(response.attachments().getFirst().isDownloaded()).isFalse();
+            assertThat(response.hasUnreadAttachments()).isTrue();
             assertThat(response.isScrapped()).isFalse();
         }
 
@@ -154,14 +166,15 @@ class OfficialPostServiceTest {
             // given
             OfficialPost post = mockPost();
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
-            OfficialAttachment file = mockAttachment("doc.pdf", "file/b.pdf", false);
+            OfficialAttachment file = mockAttachment(910L, "doc.pdf", "file/b.pdf", false);
 
             given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
                     .willReturn(List.of(file));
-            given(storageService.resolveUrl("file/b.pdf")).willReturn("https://cdn/file/b.pdf");
+            given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L)))
+                    .willReturn(Set.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
@@ -173,12 +186,12 @@ class OfficialPostServiceTest {
         }
 
         @Test
-        @DisplayName("비이미지 첨부가 없으면 attachments는 빈 리스트이다")
+        @DisplayName("비이미지 첨부가 없으면 attachments는 빈 리스트이고 hasUnreadAttachments는 false이며 다운로드 이력 조회도 호출되지 않는다")
         void noFileAttachment() {
             // given
             OfficialPost post = mockPost();
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
-            OfficialAttachment image = mockAttachment("img.png", "img/a.png", true);
+            OfficialAttachment image = mockAttachment(900L, "img.png", "img/a.png", true);
 
             given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
@@ -194,10 +207,12 @@ class OfficialPostServiceTest {
             // then
             assertThat(response.thumbnailUrl()).isEqualTo("https://cdn/img/a.png");
             assertThat(response.attachments()).isEmpty();
+            assertThat(response.hasUnreadAttachments()).isFalse();
+            then(downloadRepository).should(never()).findDownloadedAttachmentIds(any(), anyList());
         }
 
         @Test
-        @DisplayName("첨부파일이 전혀 없으면 thumbnailUrl은 null이고 attachments는 빈 리스트이다")
+        @DisplayName("첨부파일이 전혀 없으면 thumbnailUrl은 null이고 attachments는 빈 리스트이며 hasUnreadAttachments는 false이다")
         void noAttachment() {
             // given
             OfficialPost post = mockPost();
@@ -215,6 +230,8 @@ class OfficialPostServiceTest {
             // then
             assertThat(response.thumbnailUrl()).isNull();
             assertThat(response.attachments()).isEmpty();
+            assertThat(response.hasUnreadAttachments()).isFalse();
+            then(downloadRepository).should(never()).findDownloadedAttachmentIds(any(), anyList());
         }
 
         @Test
@@ -235,6 +252,62 @@ class OfficialPostServiceTest {
 
             // then
             assertThat(response.tagName()).isNull();
+        }
+
+        @Test
+        @DisplayName("일부 첨부에만 다운로드 이력이 있으면 해당 항목만 isDownloaded=true이고 나머지는 false이며 hasUnreadAttachments는 true이다")
+        void partiallyDownloaded() {
+            // given
+            OfficialPost post = mockPost();
+            OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
+            OfficialAttachment file1 = mockAttachment(910L, "a.pdf", "file/a.pdf", false);
+            OfficialAttachment file2 = mockAttachment(911L, "b.pdf", "file/b.pdf", false);
+
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
+                    .willReturn(Optional.of(meta));
+            given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
+                    .willReturn(List.of(file1, file2));
+            given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L, 911L)))
+                    .willReturn(Set.of(910L));
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+
+            // when
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
+
+            // then
+            assertThat(response.attachments()).hasSize(2);
+            assertThat(response.attachments().get(0).id()).isEqualTo(910L);
+            assertThat(response.attachments().get(0).isDownloaded()).isTrue();
+            assertThat(response.attachments().get(1).id()).isEqualTo(911L);
+            assertThat(response.attachments().get(1).isDownloaded()).isFalse();
+            assertThat(response.hasUnreadAttachments()).isTrue();
+        }
+
+        @Test
+        @DisplayName("모든 비이미지 첨부의 다운로드 이력이 존재하면 hasUnreadAttachments는 false이다")
+        void allDownloaded() {
+            // given
+            OfficialPost post = mockPost();
+            OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
+            OfficialAttachment file1 = mockAttachment(910L, "a.pdf", "file/a.pdf", false);
+            OfficialAttachment file2 = mockAttachment(911L, "b.pdf", "file/b.pdf", false);
+
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
+                    .willReturn(Optional.of(meta));
+            given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
+                    .willReturn(List.of(file1, file2));
+            given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L, 911L)))
+                    .willReturn(Set.of(910L, 911L));
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+
+            // when
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
+
+            // then
+            assertThat(response.attachments()).allMatch(a -> a.isDownloaded());
+            assertThat(response.hasUnreadAttachments()).isFalse();
         }
     }
 
@@ -273,8 +346,9 @@ class OfficialPostServiceTest {
         return tag;
     }
 
-    private OfficialAttachment mockAttachment(String originalName, String s3Key, boolean isImage) {
+    private OfficialAttachment mockAttachment(Long id, String originalName, String s3Key, boolean isImage) {
         OfficialAttachment attachment = mock(OfficialAttachment.class);
+        lenient().when(attachment.getId()).thenReturn(id);
         lenient().when(attachment.getOriginalName()).thenReturn(originalName);
         lenient().when(attachment.getS3Key()).thenReturn(s3Key);
         lenient().when(attachment.isImage()).thenReturn(isImage);
