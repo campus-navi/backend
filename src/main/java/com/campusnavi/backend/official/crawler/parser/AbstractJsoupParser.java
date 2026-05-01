@@ -124,6 +124,10 @@ public abstract class AbstractJsoupParser implements CrawlParser {
             }
         }
 
+        // XSS 위험 태그 제거 (스크립트 실행/외부 임베드/폼 탈취 방지)
+        clone.select("script, iframe, object, embed, form, input, button, "
+                + "link, meta, style, base, frame, frameset").remove();
+
         // 허용할 attribute만 남기고 나머지 전부 제거 (style, class, id, bgcolor, width 등)
         Set<String> keepAttrs = Set.of("href", "src", "alt", "colspan", "rowspan");
         for (Element el : clone.getAllElements()) {
@@ -132,6 +136,14 @@ public abstract class AbstractJsoupParser implements CrawlParser {
                     .filter(k -> !keepAttrs.contains(k))
                     .toList();
             toRemove.forEach(el::removeAttr);
+        }
+
+        // 위험 프로토콜 차단 (javascript:/data:/vbscript:)
+        for (Element a : clone.select("a[href]")) {
+            if (isDangerousUrl(a.attr("href"))) a.removeAttr("href");
+        }
+        for (Element img : clone.select("img[src]")) {
+            if (isDangerousUrl(img.attr("src"))) img.remove();
         }
 
         // attribute 없는 bare <span> 언랩 (style/class 전용 span 제거)
@@ -161,6 +173,13 @@ public abstract class AbstractJsoupParser implements CrawlParser {
         html = html.replaceAll("\\n{3,}", "\n\n");       // 3줄 이상 빈 줄 → 2줄
 
         return html.trim();
+    }
+
+    private boolean isDangerousUrl(String url) {
+        String trimmed = url.trim().toLowerCase();
+        return trimmed.startsWith("javascript:")
+                || trimmed.startsWith("data:")
+                || trimmed.startsWith("vbscript:");
     }
 
     protected String toStructuredText(Element element) {
