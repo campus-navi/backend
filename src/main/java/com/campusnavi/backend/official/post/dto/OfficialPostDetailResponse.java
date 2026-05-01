@@ -28,6 +28,7 @@ public record OfficialPostDetailResponse(
         String contactEmail,
         String thumbnailUrl,
         List<AttachmentResponse> attachments,
+        boolean hasUnreadAttachments,
         boolean isScrapped
 ) {
 }
