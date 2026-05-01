@@ -8,10 +8,13 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -95,6 +98,31 @@ public class S3StorageService {
 
     public String resolveUrl(String key) {
         return properties.baseUrl() + "/" + key;
+    }
+
+    public String generateGetPresignedUrl(String s3Key, String originalName, Duration ttl) {
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(properties.bucket())
+                .key(s3Key)
+                .responseContentDisposition(buildContentDisposition(originalName))
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .getObjectRequest(request)
+                .build();
+
+        return s3Presigner.presignGetObject(presignRequest)
+                .url()
+                .toString();
+    }
+
+    private String buildContentDisposition(String filename) {
+        String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+        String asciiFallback = filename.replaceAll("[^\\x20-\\x7E]", "_")
+                .replace("\\", "_")
+                .replace("\"", "_");
+        return "attachment; filename=\"" + asciiFallback + "\"; filename*=UTF-8''" + encoded;
     }
 
     private void validate(UploadType type, String contentType, long size) {
