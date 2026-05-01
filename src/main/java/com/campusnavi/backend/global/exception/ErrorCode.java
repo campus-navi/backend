@@ -63,7 +63,11 @@ public enum ErrorCode {
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND),
 
     //크롤링 관련
-    INVALID_PARSER_TYPE(HttpStatus.BAD_REQUEST);
+    INVALID_PARSER_TYPE(HttpStatus.BAD_REQUEST),
+
+    //공식정보 관련
+    OFFICIAL_POST_NOT_FOUND(HttpStatus.NOT_FOUND),
+    OFFICIAL_POST_NOT_READY(HttpStatus.TOO_EARLY);
 
     private final HttpStatus status;
 }

@@ -59,14 +59,18 @@ public class OfficialPostAiMeta extends BaseEntity {
     @Column(length = 100)
     private String requiredDocuments;
 
-    @Column(columnDefinition = "TEXT")
-    private String applyMethod;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "apply_method_type", length = 20)
+    private ApplyMethodType applyMethodType;
+
+    @Column(name = "apply_method_detail", columnDefinition = "TEXT")
+    private String applyMethodDetail;
 
     @Column(columnDefinition = "TEXT")
     private String eligibility;
 
-    @Column(length = 100)
-    private String recruitmentCount;
+    @Column(nullable = false)
+    private boolean isApplicable;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -100,9 +104,10 @@ public class OfficialPostAiMeta extends BaseEntity {
             LocalDate endDate,
             LocalTime endTime,
             String requiredDocuments,
-            String applyMethod,
+            ApplyMethodType applyMethodType,
+            String applyMethodDetail,
             String eligibility,
-            String recruitmentCount
+            boolean isApplicable
     ) {
         this.summary = summary;
         this.targetGradeMin = targetGradeMin;
@@ -116,9 +121,10 @@ public class OfficialPostAiMeta extends BaseEntity {
         this.endDate = endDate;
         this.endTime = endTime;
         this.requiredDocuments = requiredDocuments;
-        this.applyMethod = applyMethod;
+        this.applyMethodType = applyMethodType;
+        this.applyMethodDetail = applyMethodDetail;
         this.eligibility = eligibility;
-        this.recruitmentCount = recruitmentCount;
+        this.isApplicable = isApplicable;
         this.status = ProcessingStatus.DONE;
         this.processedAt = LocalDateTime.now();
         this.failureReason = null;
