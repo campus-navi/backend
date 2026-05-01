@@ -10,6 +10,7 @@ import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.entity.OfficialAttachment;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
+import com.campusnavi.backend.official.post.repository.OfficialAttachmentDownloadRepository;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class OfficialPostService {
     private final OfficialPostRepository postRepository;
     private final OfficialPostAiMetaRepository aiMetaRepository;
     private final OfficialAttachmentRepository attachmentRepository;
+    private final OfficialAttachmentDownloadRepository downloadRepository;
     private final OfficialPostScrapRepository scrapRepository;
     private final S3StorageService storageService;
 
@@ -46,11 +49,24 @@ public class OfficialPostService {
                 .map(a -> storageService.resolveUrl(a.getS3Key()))
                 .orElse(null);
 
-        List<AttachmentResponse> files = all.stream()
+        List<OfficialAttachment> nonImages = all.stream()
                 .filter(a -> !a.isImage())
-                .map(a -> new AttachmentResponse(
-                        a.getOriginalName(), storageService.resolveUrl(a.getS3Key())))
                 .toList();
+
+        Set<Long> downloadedIds = nonImages.isEmpty()
+                ? Set.of()
+                : downloadRepository.findDownloadedAttachmentIds(
+                context.memberId(),
+                nonImages.stream().map(OfficialAttachment::getId).toList());
+
+        List<AttachmentResponse> files = nonImages.stream()
+                .map(a -> new AttachmentResponse(
+                        a.getId(),
+                        a.getOriginalName(),
+                        downloadedIds.contains(a.getId())))
+                .toList();
+
+        boolean hasUnreadAttachments = nonImages.size() > downloadedIds.size();
 
         boolean isScrapped = scrapRepository.existsByMemberIdAndPostId(context.memberId(), postId);
 
@@ -76,6 +92,7 @@ public class OfficialPostService {
                 meta.getContactEmail(),
                 thumbnailUrl,
                 files,
+                hasUnreadAttachments,
                 isScrapped
         );
     }

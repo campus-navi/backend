@@ -4,7 +4,9 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
+import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +33,7 @@ public class OfficialPostController {
 
     private final OfficialPostService officialPostService;
     private final OfficialPostScrapService officialPostScrapService;
+    private final OfficialAttachmentDownloadService officialAttachmentDownloadService;
 
     @Operation(summary = "공식 정보 상세 조회", description = "공식 정보의 상세 내용(본문, AI 메타, 첨부파일 포함)을 반환합니다. 인증된 사용자의 스크랩 여부도 함께 반환됩니다. 사용자의 university scope 밖 공지에는 접근할 수 없습니다.")
     @SecurityRequirement(name = "Authorization")
@@ -83,5 +86,26 @@ public class OfficialPostController {
             @AuthenticationPrincipal AuthMember authMember) {
         officialPostScrapService.unscrap(id, AuthContext.of(authMember));
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "공식 정보 첨부파일 다운로드 URL 발급",
+            description = "공식 정보 첨부파일에 대한 단기 유효 presigned URL을 발급하고 다운로드 이력을 적재합니다. " +
+                    "응답의 downloadUrl로 클라이언트가 직접 다운로드 합니다 (Content-Disposition: attachment 강제). " +
+                    "사용자의 university scope 밖 공지의 첨부는 다운로드할 수 없습니다.")
+    @SecurityRequirement(name = "Authorization")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "다운로드 URL 발급 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지 또는 첨부파일",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/{postId}/attachments/{attachmentId}/download")
+    public ResponseEntity<ApiResponse<AttachmentDownloadResponse>> downloadAttachment(
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                officialAttachmentDownloadService.issueDownloadUrl(postId, attachmentId, AuthContext.of(authMember))));
     }
 }

@@ -4,9 +4,11 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.AttachmentResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
+import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import com.campusnavi.backend.support.ControllerSliceTest;
@@ -46,6 +48,9 @@ class OfficialPostControllerTest {
     @MockitoBean
     private OfficialPostScrapService officialPostScrapService;
 
+    @MockitoBean
+    private OfficialAttachmentDownloadService officialAttachmentDownloadService;
+
     private static final Long MEMBER_ID = 1L;
     private static final Long UNIVERSITY_ID = 10L;
     private static final AuthContext CONTEXT = new AuthContext(MEMBER_ID, UNIVERSITY_ID);
@@ -58,7 +63,7 @@ class OfficialPostControllerTest {
     class GetDetail {
 
         @Test
-        @DisplayName("정상 요청이면 200과 상세 정보를 반환하며 isScrapped를 포함한다")
+        @DisplayName("정상 요청이면 200과 상세 정보를 반환하며 isScrapped/hasUnreadAttachments/attachments 새 스키마를 포함한다")
         void success() throws Exception {
             OfficialPostDetailResponse response = new OfficialPostDetailResponse(
                     1L,
@@ -81,7 +86,8 @@ class OfficialPostControllerTest {
                     "02-1234-5678",
                     "staff@example.com",
                     "https://cdn/img/a.png",
-                    List.of(new AttachmentResponse("doc.pdf", "https://cdn/file/b.pdf")),
+                    List.of(new AttachmentResponse(910L, "doc.pdf", false)),
+                    true,
                     true
             );
             given(officialPostService.getDetail(1L, CONTEXT)).willReturn(response);
@@ -94,8 +100,10 @@ class OfficialPostControllerTest {
                     .andExpect(jsonPath("$.data.tagName").value("장학금"))
                     .andExpect(jsonPath("$.data.applyMethodType").value("EMAIL"))
                     .andExpect(jsonPath("$.data.thumbnailUrl").value("https://cdn/img/a.png"))
+                    .andExpect(jsonPath("$.data.attachments[0].id").value(910L))
                     .andExpect(jsonPath("$.data.attachments[0].name").value("doc.pdf"))
-                    .andExpect(jsonPath("$.data.attachments[0].url").value("https://cdn/file/b.pdf"))
+                    .andExpect(jsonPath("$.data.attachments[0].isDownloaded").value(false))
+                    .andExpect(jsonPath("$.data.hasUnreadAttachments").value(true))
                     .andExpect(jsonPath("$.data.isScrapped").value(true));
         }
 
@@ -175,6 +183,49 @@ class OfficialPostControllerTest {
             mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("첨부파일 다운로드 URL 발급")
+    class DownloadAttachment {
+
+        @Test
+        @DisplayName("정상 요청이면 200과 downloadUrl/expiresInSeconds를 반환한다")
+        void success() throws Exception {
+            given(officialAttachmentDownloadService.issueDownloadUrl(1L, 910L, CONTEXT))
+                    .willReturn(new AttachmentDownloadResponse("https://signed.example/doc.pdf", 600L));
+
+            mockMvc.perform(get("/api/v1/official-posts/{postId}/attachments/{attachmentId}/download", 1L, 910L)
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.downloadUrl").value("https://signed.example/doc.pdf"))
+                    .andExpect(jsonPath("$.data.expiresInSeconds").value(600));
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 비활성화/스코프 밖 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
+        void postNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
+                    .given(officialAttachmentDownloadService).issueDownloadUrl(99L, 910L, CONTEXT);
+
+            mockMvc.perform(get("/api/v1/official-posts/{postId}/attachments/{attachmentId}/download", 99L, 910L)
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 post와 일치하지 않는 첨부이면 404와 OFFICIAL_ATTACHMENT_NOT_FOUND를 반환한다")
+        void attachmentNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_ATTACHMENT_NOT_FOUND))
+                    .given(officialAttachmentDownloadService).issueDownloadUrl(1L, 999L, CONTEXT);
+
+            mockMvc.perform(get("/api/v1/official-posts/{postId}/attachments/{attachmentId}/download", 1L, 999L)
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_ATTACHMENT_NOT_FOUND"));
         }
     }
 }
