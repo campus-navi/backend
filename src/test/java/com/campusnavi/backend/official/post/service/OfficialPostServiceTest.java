@@ -1,5 +1,6 @@
 package com.campusnavi.backend.official.post.service;
 
+import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.common.ProcessingStatus;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
@@ -12,6 +13,7 @@ import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import com.campusnavi.backend.tag.entity.Tag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,12 +47,18 @@ class OfficialPostServiceTest {
     private OfficialAttachmentRepository attachmentRepository;
 
     @Mock
+    private OfficialPostScrapRepository scrapRepository;
+
+    @Mock
     private S3StorageService storageService;
 
     @InjectMocks
     private OfficialPostService officialPostService;
 
     private static final Long POST_ID = 100L;
+    private static final Long MEMBER_ID = 1L;
+    private static final Long UNIVERSITY_ID = 10L;
+    private static final AuthContext CONTEXT = new AuthContext(MEMBER_ID, UNIVERSITY_ID);
 
     @Nested
     @DisplayName("공식 공지 상세 조회")
@@ -65,16 +73,17 @@ class OfficialPostServiceTest {
             OfficialAttachment image = mockAttachment("img.png", "img/a.png", true);
             OfficialAttachment file = mockAttachment("doc.pdf", "file/b.pdf", false);
 
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
                     .willReturn(List.of(image, file));
             given(storageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
             given(storageService.resolveUrl("file/b.pdf")).willReturn("https://cdn/file/b.pdf");
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
-            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID);
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.postId()).isEqualTo(POST_ID);
@@ -89,16 +98,37 @@ class OfficialPostServiceTest {
             assertThat(response.attachments()).hasSize(1);
             assertThat(response.attachments().getFirst().name()).isEqualTo("doc.pdf");
             assertThat(response.attachments().getFirst().url()).isEqualTo("https://cdn/file/b.pdf");
+            assertThat(response.isScrapped()).isFalse();
         }
 
         @Test
-        @DisplayName("존재하지 않거나 비활성화된 공지이면 OFFICIAL_POST_NOT_FOUND 예외가 발생한다")
+        @DisplayName("스크랩된 공지를 조회하면 isScrapped가 true이다")
+        void scrappedTrue() {
+            // given
+            OfficialPost post = mockPost();
+            OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
+
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
+                    .willReturn(Optional.of(meta));
+            given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(true);
+
+            // when
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
+
+            // then
+            assertThat(response.isScrapped()).isTrue();
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 비활성화/스코프 밖 공지이면 OFFICIAL_POST_NOT_FOUND 예외가 발생한다")
         void postNotFound() {
             // given
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.empty());
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> officialPostService.getDetail(POST_ID))
+            assertThatThrownBy(() -> officialPostService.getDetail(POST_ID, CONTEXT))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_NOT_FOUND));
         }
@@ -108,12 +138,12 @@ class OfficialPostServiceTest {
         void metaNotReady() {
             // given
             OfficialPost post = mockPost();
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> officialPostService.getDetail(POST_ID))
+            assertThatThrownBy(() -> officialPostService.getDetail(POST_ID, CONTEXT))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_NOT_READY));
         }
@@ -126,15 +156,16 @@ class OfficialPostServiceTest {
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
             OfficialAttachment file = mockAttachment("doc.pdf", "file/b.pdf", false);
 
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
                     .willReturn(List.of(file));
             given(storageService.resolveUrl("file/b.pdf")).willReturn("https://cdn/file/b.pdf");
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
-            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID);
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.thumbnailUrl()).isNull();
@@ -149,15 +180,16 @@ class OfficialPostServiceTest {
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
             OfficialAttachment image = mockAttachment("img.png", "img/a.png", true);
 
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
                     .willReturn(List.of(image));
             given(storageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
-            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID);
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.thumbnailUrl()).isEqualTo("https://cdn/img/a.png");
@@ -171,13 +203,14 @@ class OfficialPostServiceTest {
             OfficialPost post = mockPost();
             OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
 
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
-            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID);
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.thumbnailUrl()).isNull();
@@ -191,13 +224,14 @@ class OfficialPostServiceTest {
             OfficialPost post = mockPost();
             OfficialPostAiMeta meta = mockMeta(null);
 
-            given(postRepository.findByIdAndIsActiveTrue(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
             given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
-            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID);
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.tagName()).isNull();

@@ -1,16 +1,21 @@
 package com.campusnavi.backend.official.post.controller;
 
+import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.AttachmentResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
+import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,8 +24,13 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,12 +43,22 @@ class OfficialPostControllerTest {
     @MockitoBean
     private OfficialPostService officialPostService;
 
+    @MockitoBean
+    private OfficialPostScrapService officialPostScrapService;
+
+    private static final Long MEMBER_ID = 1L;
+    private static final Long UNIVERSITY_ID = 10L;
+    private static final AuthContext CONTEXT = new AuthContext(MEMBER_ID, UNIVERSITY_ID);
+    private static final Authentication AUTH = new UsernamePasswordAuthenticationToken(
+            new AuthMember(MEMBER_ID, "USER", UNIVERSITY_ID), null, List.of()
+    );
+
     @Nested
     @DisplayName("공식 공지 상세 조회")
     class GetDetail {
 
         @Test
-        @DisplayName("정상 요청이면 200과 상세 정보를 반환한다")
+        @DisplayName("정상 요청이면 200과 상세 정보를 반환하며 isScrapped를 포함한다")
         void success() throws Exception {
             OfficialPostDetailResponse response = new OfficialPostDetailResponse(
                     1L,
@@ -61,11 +81,12 @@ class OfficialPostControllerTest {
                     "02-1234-5678",
                     "staff@example.com",
                     "https://cdn/img/a.png",
-                    List.of(new AttachmentResponse("doc.pdf", "https://cdn/file/b.pdf"))
+                    List.of(new AttachmentResponse("doc.pdf", "https://cdn/file/b.pdf")),
+                    true
             );
-            given(officialPostService.getDetail(1L)).willReturn(response);
+            given(officialPostService.getDetail(1L, CONTEXT)).willReturn(response);
 
-            mockMvc.perform(get("/api/v1/official-posts/{id}", 1L))
+            mockMvc.perform(get("/api/v1/official-posts/{id}", 1L).with(authentication(AUTH)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.postId").value(1L))
@@ -74,16 +95,17 @@ class OfficialPostControllerTest {
                     .andExpect(jsonPath("$.data.applyMethodType").value("EMAIL"))
                     .andExpect(jsonPath("$.data.thumbnailUrl").value("https://cdn/img/a.png"))
                     .andExpect(jsonPath("$.data.attachments[0].name").value("doc.pdf"))
-                    .andExpect(jsonPath("$.data.attachments[0].url").value("https://cdn/file/b.pdf"));
+                    .andExpect(jsonPath("$.data.attachments[0].url").value("https://cdn/file/b.pdf"))
+                    .andExpect(jsonPath("$.data.isScrapped").value(true));
         }
 
         @Test
         @DisplayName("존재하지 않거나 비활성화된 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
         void notFound() throws Exception {
             willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
-                    .given(officialPostService).getDetail(99L);
+                    .given(officialPostService).getDetail(99L, CONTEXT);
 
-            mockMvc.perform(get("/api/v1/official-posts/{id}", 99L))
+            mockMvc.perform(get("/api/v1/official-posts/{id}", 99L).with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
         }
@@ -92,11 +114,67 @@ class OfficialPostControllerTest {
         @DisplayName("AI 후처리가 완료되지 않았으면 425와 OFFICIAL_POST_NOT_READY를 반환한다")
         void notReady() throws Exception {
             willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_READY))
-                    .given(officialPostService).getDetail(50L);
+                    .given(officialPostService).getDetail(50L, CONTEXT);
 
-            mockMvc.perform(get("/api/v1/official-posts/{id}", 50L))
+            mockMvc.perform(get("/api/v1/official-posts/{id}", 50L).with(authentication(AUTH)))
                     .andExpect(status().is(425))
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_READY"));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 추가")
+    class Scrap {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostScrapService).scrap(1L, CONTEXT);
+
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap", 1L).with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            then(officialPostScrapService).should().scrap(1L, CONTEXT);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
+        void notFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
+                    .given(officialPostScrapService).scrap(99L, CONTEXT);
+
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 해제")
+    class Unscrap {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostScrapService).unscrap(1L, CONTEXT);
+
+            mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 1L).with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            then(officialPostScrapService).should().unscrap(1L, CONTEXT);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
+        void notFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
+                    .given(officialPostScrapService).unscrap(99L, CONTEXT);
+
+            mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
         }
     }
 }
