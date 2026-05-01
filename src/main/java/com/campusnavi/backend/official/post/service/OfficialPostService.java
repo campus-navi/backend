@@ -1,5 +1,6 @@
 package com.campusnavi.backend.official.post.service;
 
+import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.common.ProcessingStatus;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
@@ -12,6 +13,7 @@ import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,11 +27,12 @@ public class OfficialPostService {
     private final OfficialPostRepository postRepository;
     private final OfficialPostAiMetaRepository aiMetaRepository;
     private final OfficialAttachmentRepository attachmentRepository;
+    private final OfficialPostScrapRepository scrapRepository;
     private final S3StorageService storageService;
 
     @Transactional(readOnly = true)
-    public OfficialPostDetailResponse getDetail(Long postId) {
-        OfficialPost post = postRepository.findByIdAndIsActiveTrue(postId)
+    public OfficialPostDetailResponse getDetail(Long postId, AuthContext context) {
+        OfficialPost post = postRepository.findActiveByIdAndUniversityScope(postId, context.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND));
 
         OfficialPostAiMeta meta = aiMetaRepository.findByOfficialPostIdWithTag(postId, ProcessingStatus.DONE)
@@ -37,7 +40,7 @@ public class OfficialPostService {
 
         List<OfficialAttachment> all = attachmentRepository.findByPostIdOrderBySortOrderAsc(postId);
 
-        String thumbnailUrl =all.stream()
+        String thumbnailUrl = all.stream()
                 .filter(OfficialAttachment::isImage)
                 .findFirst()
                 .map(a -> storageService.resolveUrl(a.getS3Key()))
@@ -48,6 +51,8 @@ public class OfficialPostService {
                 .map(a -> new AttachmentResponse(
                         a.getOriginalName(), storageService.resolveUrl(a.getS3Key())))
                 .toList();
+
+        boolean isScrapped = scrapRepository.existsByMemberIdAndPostId(context.memberId(), postId);
 
         return new OfficialPostDetailResponse(
                 post.getId(),
@@ -70,7 +75,8 @@ public class OfficialPostService {
                 meta.getContactPhone(),
                 meta.getContactEmail(),
                 thumbnailUrl,
-                files
+                files,
+                isScrapped
         );
     }
 }
