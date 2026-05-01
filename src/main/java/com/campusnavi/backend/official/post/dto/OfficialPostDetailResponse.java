@@ -27,6 +27,7 @@ public record OfficialPostDetailResponse(
         String contactPhone,
         String contactEmail,
         String thumbnailUrl,
-        List<AttachmentResponse> attachments
+        List<AttachmentResponse> attachments,
+        boolean isScrapped
 ) {
 }
