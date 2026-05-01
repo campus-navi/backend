@@ -227,6 +227,138 @@ class AbstractJsoupParserTest {
             // then
             assertThat(result).contains("hello world");
         }
+
+        @Test
+        @DisplayName("script 태그이면 통째로 제거한다")
+        void removeScriptTag() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><p>본문</p><script src='https://evil.com/x.js'></script></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("<script");
+            assertThat(result).doesNotContain("evil.com");
+            assertThat(result).contains("본문");
+        }
+
+        @Test
+        @DisplayName("iframe 태그이면 통째로 제거한다")
+        void removeIframeTag() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div>본문<iframe src='https://phishing.com'></iframe></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("<iframe");
+            assertThat(result).doesNotContain("phishing.com");
+        }
+
+        @Test
+        @DisplayName("form/input/button 태그이면 통째로 제거한다")
+        void removeFormTags() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><form action='https://attacker.com'>"
+                            + "<input name='pw'><button>제출</button></form></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("<form");
+            assertThat(result).doesNotContain("<input");
+            assertThat(result).doesNotContain("<button");
+        }
+
+        @Test
+        @DisplayName("object, embed, base, frame 태그이면 통째로 제거한다")
+        void removeOtherDangerousTags() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><object data='x.swf'></object><embed src='y.swf'>"
+                            + "<base href='https://evil.com'></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("<object");
+            assertThat(result).doesNotContain("<embed");
+            assertThat(result).doesNotContain("<base");
+        }
+
+        @Test
+        @DisplayName("a 태그의 href가 javascript: 프로토콜이면 href 속성을 제거한다")
+        void stripJavascriptHref() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><a href='javascript:alert(1)'>click</a></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("javascript:");
+            assertThat(result).contains("click");
+        }
+
+        @Test
+        @DisplayName("a 태그의 href가 대소문자 혼용 JavaScript: 프로토콜이어도 제거한다")
+        void stripJavascriptHrefMixedCase() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><a href=' JavaScript:alert(1)'>click</a></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result.toLowerCase()).doesNotContain("javascript:");
+        }
+
+        @Test
+        @DisplayName("img 태그의 src가 data: 프로토콜이면 태그째 제거한다")
+        void removeDataUrlImg() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><img src='data:text/html,<script>alert(1)</script>'><p>본문</p></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("data:");
+            assertThat(result).doesNotContain("<img");
+            assertThat(result).contains("본문");
+        }
+
+        @Test
+        @DisplayName("a 태그의 href가 vbscript: 프로토콜이면 href 속성을 제거한다")
+        void stripVbscriptHref() {
+            // given
+            Document doc = Jsoup.parseBodyFragment(
+                    "<div><a href='vbscript:msgbox(1)'>click</a></div>");
+            Element el = doc.body().selectFirst("div");
+
+            // when
+            String result = parser.sanitizeHtml(el, null);
+
+            // then
+            assertThat(result).doesNotContain("vbscript:");
+        }
     }
 
     @Nested
