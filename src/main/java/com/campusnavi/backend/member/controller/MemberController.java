@@ -5,7 +5,6 @@ import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,6 @@ public class MemberController {
     private final MemberService memberService;
 
     @Operation(summary = "관심사 전체 교체/등록", description = "멤버의 관심사를 전달된 목록으로 전체 교체/등록한다. 빈 배열 전달 시 전체 해제.")
-    @SecurityRequirement(name = "Authorization")
     @PutMapping("/me/interests")
     public ResponseEntity<ApiResponse<Void>> updateInterests(
             @AuthenticationPrincipal AuthMember authMember,

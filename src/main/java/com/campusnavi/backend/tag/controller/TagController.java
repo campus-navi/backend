@@ -4,7 +4,6 @@ import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.tag.dto.TagResponse;
 import com.campusnavi.backend.tag.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,6 @@ public class TagController {
     private final TagService tagService;
 
     @Operation(summary = "관심사 목록 조회", description = "온보딩·마이페이지에서 선택 가능한 관심사 목록을 반환한다.")
-    @SecurityRequirement(name = "Authorization")
     @GetMapping
     public ResponseEntity<ApiResponse<List<TagResponse>>> getTags() {
         return ResponseEntity.ok(ApiResponse.ok(tagService.getTags()));
