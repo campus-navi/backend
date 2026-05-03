@@ -13,6 +13,7 @@ import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentDownloadRepository;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostNotificationRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ public class OfficialPostService {
     private final OfficialAttachmentRepository attachmentRepository;
     private final OfficialAttachmentDownloadRepository downloadRepository;
     private final OfficialPostScrapRepository scrapRepository;
+    private final OfficialPostNotificationRepository notificationRepository;
+    private final OfficialPostViewService viewService;
     private final S3StorageService storageService;
 
     @Transactional(readOnly = true)
@@ -70,6 +73,10 @@ public class OfficialPostService {
 
         boolean isScrapped = scrapRepository.existsByMemberIdAndPostId(context.memberId(), postId);
 
+        boolean isNotificationOn = notificationRepository.existsByMemberIdAndPostId(context.memberId(), postId);
+
+        viewService.recordView(context.memberId(), postId);
+
         return new OfficialPostDetailResponse(
                 post.getId(),
                 post.getTitle(),
@@ -93,7 +100,8 @@ public class OfficialPostService {
                 thumbnailUrl,
                 files,
                 hasUnreadAttachments,
-                isScrapped
+                isScrapped,
+                isNotificationOn
         );
     }
 }

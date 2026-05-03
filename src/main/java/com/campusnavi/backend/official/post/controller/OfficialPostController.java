@@ -7,6 +7,7 @@ import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
+import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +33,7 @@ public class OfficialPostController {
 
     private final OfficialPostService officialPostService;
     private final OfficialPostScrapService officialPostScrapService;
+    private final OfficialPostNotificationService officialPostNotificationService;
     private final OfficialAttachmentDownloadService officialAttachmentDownloadService;
 
     @Operation(summary = "공식 정보 상세 조회", description = "공식 정보의 상세 내용(본문, AI 메타, 첨부파일 포함)을 반환합니다. 인증된 사용자의 스크랩 여부도 함께 반환됩니다. 사용자의 university scope 밖 공지에는 접근할 수 없습니다.")
@@ -81,6 +83,38 @@ public class OfficialPostController {
             @PathVariable Long id,
             @AuthenticationPrincipal AuthMember authMember) {
         officialPostScrapService.unscrap(id, AuthContext.of(authMember));
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "공식 정보 알림 켜기", description = "공식 정보의 알림을 켭니다. 이미 켜져 있으면 멱등 동작합니다. 사용자의 university scope 밖 공지는 설정할 수 없습니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "알림 켜기 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PutMapping("/{id}/notification")
+    public ResponseEntity<ApiResponse<Void>> enableNotification(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthMember authMember) {
+        officialPostNotificationService.enable(id, AuthContext.of(authMember));
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "공식 정보 알림 끄기", description = "공식 정보의 알림을 끕니다. 이미 꺼져 있으면 멱등 동작합니다. 사용자의 university scope 밖 공지는 설정할 수 없습니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "알림 끄기 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{id}/notification")
+    public ResponseEntity<ApiResponse<Void>> disableNotification(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthMember authMember) {
+        officialPostNotificationService.disable(id, AuthContext.of(authMember));
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

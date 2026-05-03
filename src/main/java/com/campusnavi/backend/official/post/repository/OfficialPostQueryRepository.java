@@ -4,6 +4,7 @@ import com.campusnavi.backend.official.post.dto.DeadlinePostResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostCardRaw;
 import com.campusnavi.backend.official.post.dto.OfficialPostScopeCondition;
 import com.campusnavi.backend.official.post.entity.QOfficialAttachment;
+import com.campusnavi.backend.official.post.entity.QOfficialPostNotification;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -40,18 +41,19 @@ public class OfficialPostQueryRepository {
                 .fetch();
     }
 
-    public List<DeadlinePostResponse> findDeadlinePostsForFeed(OfficialPostScopeCondition condition, LocalDate today) {
-        return deadlineBaseQuery(condition, today)
+    public List<DeadlinePostResponse> findDeadlinePostsForFeed(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
+        return deadlineBaseQuery(condition, today, memberId)
                 .limit(8)
                 .fetch();
     }
 
-    public List<DeadlinePostResponse> findAllDeadlinePosts(OfficialPostScopeCondition condition, LocalDate today) {
-        return deadlineBaseQuery(condition,today)
+    public List<DeadlinePostResponse> findAllDeadlinePosts(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
+        return deadlineBaseQuery(condition, today, memberId)
                 .fetch();
     }
 
-    private JPAQuery<DeadlinePostResponse> deadlineBaseQuery(OfficialPostScopeCondition condition, LocalDate today) {
+    private JPAQuery<DeadlinePostResponse> deadlineBaseQuery(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
+        QOfficialPostNotification noti = QOfficialPostNotification.officialPostNotification;
         return queryFactory
                 .select(Projections.constructor(DeadlinePostResponse.class,
                         officialPost.id,
@@ -59,10 +61,12 @@ public class OfficialPostQueryRepository {
                         tag.name,
                         officialPost.publisher,
                         officialPost.publishedAt,
-                        officialPostAiMeta.endDate))
+                        officialPostAiMeta.endDate,
+                        noti.id.isNotNull()))
                 .from(officialPost)
                 .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
                 .join(officialPostAiMeta.tag, tag)
+                .leftJoin(noti).on(noti.post.id.eq(officialPost.id).and(noti.memberId.eq(memberId)))
                 .where(baseCondition(condition))
                 .where(
                         officialPostAiMeta.endDate.isNotNull(),

@@ -9,6 +9,7 @@ import com.campusnavi.backend.official.post.dto.AttachmentResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
+import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import com.campusnavi.backend.support.ControllerSliceTest;
@@ -47,6 +48,9 @@ class OfficialPostControllerTest {
 
     @MockitoBean
     private OfficialPostScrapService officialPostScrapService;
+
+    @MockitoBean
+    private OfficialPostNotificationService officialPostNotificationService;
 
     @MockitoBean
     private OfficialAttachmentDownloadService officialAttachmentDownloadService;
@@ -88,7 +92,8 @@ class OfficialPostControllerTest {
                     "https://cdn/img/a.png",
                     List.of(new AttachmentResponse(910L, "doc.pdf", false)),
                     true,
-                    true
+                    true,
+                    false
             );
             given(officialPostService.getDetail(1L, CONTEXT)).willReturn(response);
 
@@ -104,7 +109,8 @@ class OfficialPostControllerTest {
                     .andExpect(jsonPath("$.data.attachments[0].name").value("doc.pdf"))
                     .andExpect(jsonPath("$.data.attachments[0].isDownloaded").value(false))
                     .andExpect(jsonPath("$.data.hasUnreadAttachments").value(true))
-                    .andExpect(jsonPath("$.data.isScrapped").value(true));
+                    .andExpect(jsonPath("$.data.isScrapped").value(true))
+                    .andExpect(jsonPath("$.data.isNotificationOn").value(false));
         }
 
         @Test
@@ -181,6 +187,62 @@ class OfficialPostControllerTest {
                     .given(officialPostScrapService).unscrap(99L, CONTEXT);
 
             mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("알림 켜기")
+    class EnableNotification {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostNotificationService).enable(1L, CONTEXT);
+
+            mockMvc.perform(put("/api/v1/official-posts/{id}/notification", 1L).with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            then(officialPostNotificationService).should().enable(1L, CONTEXT);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
+        void notFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
+                    .given(officialPostNotificationService).enable(99L, CONTEXT);
+
+            mockMvc.perform(put("/api/v1/official-posts/{id}/notification", 99L).with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("알림 끄기")
+    class DisableNotification {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostNotificationService).disable(1L, CONTEXT);
+
+            mockMvc.perform(delete("/api/v1/official-posts/{id}/notification", 1L).with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            then(officialPostNotificationService).should().disable(1L, CONTEXT);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
+        void notFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
+                    .given(officialPostNotificationService).disable(99L, CONTEXT);
+
+            mockMvc.perform(delete("/api/v1/official-posts/{id}/notification", 99L).with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
         }
