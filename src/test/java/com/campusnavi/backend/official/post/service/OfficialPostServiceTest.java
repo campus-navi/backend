@@ -13,6 +13,7 @@ import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentDownloadRepository;
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostNotificationRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import com.campusnavi.backend.tag.entity.Tag;
@@ -59,6 +60,12 @@ class OfficialPostServiceTest {
     private OfficialPostScrapRepository scrapRepository;
 
     @Mock
+    private OfficialPostNotificationRepository notificationRepository;
+
+    @Mock
+    private OfficialPostViewService viewService;
+
+    @Mock
     private S3StorageService storageService;
 
     @InjectMocks
@@ -91,6 +98,7 @@ class OfficialPostServiceTest {
             given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L)))
                     .willReturn(Set.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -111,6 +119,8 @@ class OfficialPostServiceTest {
             assertThat(response.attachments().getFirst().isDownloaded()).isFalse();
             assertThat(response.hasUnreadAttachments()).isTrue();
             assertThat(response.isScrapped()).isFalse();
+            assertThat(response.isNotificationOn()).isFalse();
+            then(viewService).should().recordView(MEMBER_ID, POST_ID);
         }
 
         @Test
@@ -125,12 +135,32 @@ class OfficialPostServiceTest {
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(true);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
             assertThat(response.isScrapped()).isTrue();
+        }
+
+        @Test
+        @DisplayName("알림이 켜진 공지를 조회하면 isNotificationOn이 true이다")
+        void notificationOnTrue() {
+            // given
+            OfficialPost post = mockPost();
+            OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE)).willReturn(Optional.of(meta));
+            given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(true);
+
+            // when
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
+
+            // then
+            assertThat(response.isNotificationOn()).isTrue();
         }
 
         @Test
@@ -176,6 +206,7 @@ class OfficialPostServiceTest {
             given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L)))
                     .willReturn(Set.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -200,6 +231,7 @@ class OfficialPostServiceTest {
                     .willReturn(List.of(image));
             given(storageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -223,6 +255,7 @@ class OfficialPostServiceTest {
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -246,6 +279,7 @@ class OfficialPostServiceTest {
                     .willReturn(Optional.of(meta));
             given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID)).willReturn(List.of());
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -271,6 +305,7 @@ class OfficialPostServiceTest {
             given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L, 911L)))
                     .willReturn(Set.of(910L));
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
@@ -301,6 +336,7 @@ class OfficialPostServiceTest {
             given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L, 911L)))
                     .willReturn(Set.of(910L, 911L));
             given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
