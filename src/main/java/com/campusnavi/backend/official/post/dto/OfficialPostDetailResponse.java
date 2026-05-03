@@ -29,6 +29,7 @@ public record OfficialPostDetailResponse(
         String thumbnailUrl,
         List<AttachmentResponse> attachments,
         boolean hasUnreadAttachments,
-        boolean isScrapped
+        boolean isScrapped,
+        boolean isNotificationOn
 ) {
 }
