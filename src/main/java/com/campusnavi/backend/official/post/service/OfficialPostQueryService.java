@@ -51,12 +51,12 @@ public class OfficialPostQueryService {
 
     public List<DeadlinePostResponse> getDeadlinePostsForFeed(AuthContext context) {
         OfficialPostScopeCondition condition = toCondition(context);
-        return officialPostQueryRepository.findDeadlinePostsForFeed(condition, LocalDate.now());
+        return officialPostQueryRepository.findDeadlinePostsForFeed(condition, LocalDate.now(), context.memberId());
     }
 
     public List<DeadlinePostResponse> getAllDeadlinePosts(AuthContext context) {
         OfficialPostScopeCondition condition = toCondition(context);
-        return officialPostQueryRepository.findAllDeadlinePosts(condition, LocalDate.now());
+        return officialPostQueryRepository.findAllDeadlinePosts(condition, LocalDate.now(), context.memberId());
     }
 
     private OfficialPostScopeCondition toCondition(AuthContext context) {

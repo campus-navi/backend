@@ -8,6 +8,7 @@ public record DeadlinePostResponse(
         String tagName,
         String publisher,
         LocalDate publishedAt,
-        LocalDate endDate
+        LocalDate endDate,
+        boolean isNotificationOn
 ) {
 }
