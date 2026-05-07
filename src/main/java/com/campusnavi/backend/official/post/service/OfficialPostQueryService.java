@@ -5,6 +5,7 @@ import com.campusnavi.backend.infra.storage.S3StorageService;
 import com.campusnavi.backend.member.dto.MemberScope;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberQueryRepository;
+import com.campusnavi.backend.official.post.dto.DeadlinePostRaw;
 import com.campusnavi.backend.official.post.dto.DeadlinePostResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostCardRaw;
 import com.campusnavi.backend.official.post.dto.OfficialPostCardResponse;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -51,12 +51,18 @@ public class OfficialPostQueryService {
 
     public List<DeadlinePostResponse> getDeadlinePostsForFeed(AuthContext context) {
         OfficialPostScopeCondition condition = toCondition(context);
-        return officialPostQueryRepository.findDeadlinePostsForFeed(condition, LocalDate.now(), context.memberId());
+        return officialPostQueryRepository.findDeadlinePostsForFeed(condition, context.memberId())
+                .stream()
+                .map(this::toDeadlineResponse)
+                .toList();
     }
 
     public List<DeadlinePostResponse> getAllDeadlinePosts(AuthContext context) {
         OfficialPostScopeCondition condition = toCondition(context);
-        return officialPostQueryRepository.findAllDeadlinePosts(condition, LocalDate.now(), context.memberId());
+        return officialPostQueryRepository.findAllDeadlinePosts(condition, context.memberId())
+                .stream()
+                .map(this::toDeadlineResponse)
+                .toList();
     }
 
     private OfficialPostScopeCondition toCondition(AuthContext context) {
@@ -72,6 +78,18 @@ public class OfficialPostQueryService {
                 raw.summary(),
                 resolveImageUrl(raw.s3Key()),
                 raw.publishedAt()
+        );
+    }
+
+    private DeadlinePostResponse toDeadlineResponse(DeadlinePostRaw raw) {
+        return new DeadlinePostResponse(
+                raw.postId(),
+                raw.title(),
+                raw.tagName(),
+                raw.publisher(),
+                raw.publishedAt(),
+                raw.endDate(),
+                raw.isNotificationOn()
         );
     }
 

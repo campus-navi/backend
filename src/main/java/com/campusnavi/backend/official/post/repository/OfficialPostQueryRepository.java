@@ -40,14 +40,14 @@ public class OfficialPostQueryRepository {
                 .fetch();
     }
 
-    public List<DeadlinePostResponse> findDeadlinePostsForFeed(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
-        return deadlineBaseQuery(condition, today, memberId)
+    public List<DeadlinePostRaw> findDeadlinePostsForFeed(OfficialPostScopeCondition condition, Long memberId) {
+        return deadlineBaseQuery(condition, memberId)
                 .limit(8)
                 .fetch();
     }
 
-    public List<DeadlinePostResponse> findAllDeadlinePosts(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
-        return deadlineBaseQuery(condition, today, memberId)
+    public List<DeadlinePostRaw> findAllDeadlinePosts(OfficialPostScopeCondition condition, Long memberId) {
+        return deadlineBaseQuery(condition, memberId)
                 .fetch();
     }
 
@@ -117,10 +117,11 @@ public class OfficialPostQueryRepository {
                 .or(officialPostAiMeta.endDate.eq(cursorDate).and(officialPost.id.gt(cursorId)));
     }
 
-    private JPAQuery<DeadlinePostResponse> deadlineBaseQuery(OfficialPostScopeCondition condition, LocalDate today, Long memberId) {
+    private JPAQuery<DeadlinePostRaw> deadlineBaseQuery(OfficialPostScopeCondition condition, Long memberId) {
+        LocalDate today = LocalDate.now();
         QOfficialPostNotification noti = QOfficialPostNotification.officialPostNotification;
         return queryFactory
-                .select(Projections.constructor(DeadlinePostResponse.class,
+                .select(Projections.constructor(DeadlinePostRaw.class,
                         officialPost.id,
                         officialPost.title,
                         tag.name,
