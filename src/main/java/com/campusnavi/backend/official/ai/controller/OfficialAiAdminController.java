@@ -1,4 +1,4 @@
-package com.campusnavi.backend.official.ai.cotroller;
+package com.campusnavi.backend.official.ai.controller;
 
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.official.ai.dto.BatchResult;
