@@ -4,8 +4,13 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.common.ProcessingStatus;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.infra.storage.S3StorageService;
+import com.campusnavi.backend.member.repository.MemberQueryRepository;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
+import com.campusnavi.backend.official.post.dto.OfficialPostSummaryRaw;
+import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.entity.OfficialAttachment;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
@@ -14,9 +19,11 @@ import com.campusnavi.backend.official.post.repository.OfficialAttachmentDownloa
 import com.campusnavi.backend.official.post.repository.OfficialAttachmentRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostNotificationRepository;
+import com.campusnavi.backend.official.post.repository.OfficialPostQueryRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import com.campusnavi.backend.tag.entity.Tag;
+import com.campusnavi.backend.tag.repository.TagRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,16 +32,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -67,6 +80,15 @@ class OfficialPostServiceTest {
 
     @Mock
     private S3StorageService storageService;
+
+    @Mock
+    private MemberQueryRepository memberQueryRepository;
+
+    @Mock
+    private OfficialPostQueryRepository officialPostQueryRepository;
+
+    @Mock
+    private TagRepository tagRepository;
 
     @InjectMocks
     private OfficialPostService officialPostService;
@@ -344,6 +366,186 @@ class OfficialPostServiceTest {
             // then
             assertThat(response.attachments()).allMatch(a -> a.isDownloaded());
             assertThat(response.hasUnreadAttachments()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("공식 공지 목록 조회")
+    class GetList {
+
+        @Nested
+        @DisplayName("LATEST 정렬 커서 페이징")
+        class LatestPaging {
+
+            @Test
+            @DisplayName("size+1 결과가 size를 초과하면 hasNext=true이고 nextCursor는 Base64(publishedAt:id) 형태이다")
+            void hasNextTrue() {
+                givenScopes();
+                stubFindList(IntStream.rangeClosed(1, 21).mapToObj(i -> summaryRaw(i, null)).toList());
+
+                CursorPageResponse<OfficialPostSummaryResponse> result =
+                        officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, null);
+
+                LocalDate lastPublishedAt = LocalDate.of(2026, 4, 1).minusDays(20);
+                String expected = encodeCursor(lastPublishedAt + ":20");
+                assertThat(result.hasNext()).isTrue();
+                assertThat(result.content()).hasSize(20);
+                assertThat(result.nextCursor()).isEqualTo(expected);
+            }
+
+            @Test
+            @DisplayName("페이지 마지막 row의 publishedAt이 null이면 nextCursor는 Base64(\"null:id\") 형태이다")
+            void nextCursorWhenPublishedAtNull() {
+                givenScopes();
+                stubFindList(IntStream.rangeClosed(1, 21).mapToObj(i -> summaryRaw(i, null, null)).toList());
+
+                CursorPageResponse<OfficialPostSummaryResponse> result =
+                        officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, null);
+
+                assertThat(result.nextCursor()).isEqualTo(encodeCursor("null:20"));
+            }
+
+            @Test
+            @DisplayName("결과가 size 이하이면 hasNext=false이고 nextCursor는 null이다")
+            void hasNextFalse() {
+                givenScopes();
+                stubFindList(List.of(summaryRaw(5L, null), summaryRaw(3L, null)));
+
+                CursorPageResponse<OfficialPostSummaryResponse> result =
+                        officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, null);
+
+                assertThat(result.hasNext()).isFalse();
+                assertThat(result.nextCursor()).isNull();
+            }
+
+            @Test
+            @DisplayName("Base64(publishedAt:id) cursor를 전달하면 파싱해 리포지토리에 전달한다")
+            void withCursor() {
+                givenScopes();
+                stubFindList(List.of());
+                LocalDate cursorDate = LocalDate.of(2026, 4, 1);
+
+                officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, encodeCursor(cursorDate + ":100"));
+
+                then(officialPostQueryRepository).should().findList(any(), isNull(), isNull(), eq(OfficialPostListSort.LATEST),
+                        eq(cursorDate), eq(100L), isNull(), isNull(), eq(21));
+            }
+
+            @Test
+            @DisplayName("Base64(\"null:id\") cursor를 전달하면 publishedAt=null로 파싱해 리포지토리에 전달한다")
+            void withCursorWhenPublishedAtNull() {
+                givenScopes();
+                stubFindList(List.of());
+
+                officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, encodeCursor("null:50"));
+
+                then(officialPostQueryRepository).should().findList(any(), isNull(), isNull(), eq(OfficialPostListSort.LATEST),
+                        isNull(), eq(50L), isNull(), isNull(), eq(21));
+            }
+
+            @Test
+            @DisplayName("잘못된 형식의 Base64 cursor이면 INVALID_PARAM 예외가 발생한다")
+            void invalidCursor() {
+                givenScopes();
+
+                assertThatThrownBy(() -> officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, "abc"))
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(e -> ((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_PARAM);
+            }
+        }
+
+        @Nested
+        @DisplayName("DEADLINE 정렬 커서 페이징")
+        class DeadlinePaging {
+
+            @Test
+            @DisplayName("hasNext=true이면 nextCursor는 Base64(endDate:id) 형태이다")
+            void nextCursorEncoding() {
+                givenScopes();
+                LocalDate endDate = LocalDate.of(2026, 5, 10);
+                stubFindList(IntStream.rangeClosed(1, 21).mapToObj(i -> summaryRaw(i, endDate)).toList());
+
+                CursorPageResponse<OfficialPostSummaryResponse> result =
+                        officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.DEADLINE, null);
+
+                assertThat(result.nextCursor()).isEqualTo(encodeCursor(endDate + ":20"));
+            }
+
+            @Test
+            @DisplayName("Base64(date:id) cursor를 전달하면 올바르게 파싱해 리포지토리에 전달한다")
+            void withCursor() {
+                givenScopes();
+                stubFindList(List.of());
+                LocalDate cursorDate = LocalDate.of(2026, 5, 10);
+
+                officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.DEADLINE, encodeCursor(cursorDate + ":50"));
+
+                then(officialPostQueryRepository).should().findList(any(), isNull(), isNull(), eq(OfficialPostListSort.DEADLINE),
+                        isNull(), isNull(), eq(cursorDate), eq(50L), eq(21));
+            }
+        }
+
+        @Nested
+        @DisplayName("tagCode 필터")
+        class TagCodeFilter {
+
+            @Test
+            @DisplayName("tagCode를 전달하면 tagId로 변환하여 리포지토리에 전달한다")
+            void withTagCode() {
+                givenScopes();
+                stubFindList(List.of());
+                Tag tag = mock(Tag.class);
+                given(tag.getId()).willReturn(3L);
+                given(tagRepository.findByCode("SCHOLARSHIP")).willReturn(Optional.of(tag));
+
+                officialPostService.getList(CONTEXT, null, "SCHOLARSHIP", OfficialPostListSort.LATEST, null);
+
+                then(officialPostQueryRepository).should().findList(any(), isNull(), eq(3L), eq(OfficialPostListSort.LATEST),
+                        isNull(), isNull(), isNull(), isNull(), eq(21));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 tagCode이면 INVALID_PARAM 예외가 발생한다")
+            void invalidTagCode() {
+                givenScopes();
+                given(tagRepository.findByCode("UNKNOWN")).willReturn(Optional.empty());
+
+                assertThatThrownBy(() -> officialPostService.getList(CONTEXT, null, "UNKNOWN", OfficialPostListSort.LATEST, null))
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(e -> ((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_PARAM);
+            }
+        }
+
+        @Test
+        @DisplayName("q가 100자를 초과하면 INVALID_PARAM 예외가 발생한다")
+        void tooLongKeyword() {
+            assertThatThrownBy(() -> officialPostService.getList(CONTEXT, "a".repeat(101), null, OfficialPostListSort.LATEST, null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.INVALID_PARAM);
+        }
+
+        private void givenScopes() {
+            given(memberQueryRepository.findScopesByMemberId(MEMBER_ID)).willReturn(List.of());
+        }
+
+        private void stubFindList(List<OfficialPostSummaryRaw> rows) {
+            given(officialPostQueryRepository.findList(any(), any(), any(), any(), any(), any(), any(), any(), anyInt()))
+                    .willReturn(rows);
+        }
+
+        private String encodeCursor(String raw) {
+            return Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+        }
+
+        private OfficialPostSummaryRaw summaryRaw(long id, LocalDate endDate) {
+            return summaryRaw(id, LocalDate.of(2026, 4, 1).minusDays(id), endDate);
+        }
+
+        private OfficialPostSummaryRaw summaryRaw(long id, LocalDate publishedAt, LocalDate endDate) {
+            return new OfficialPostSummaryRaw(id, "제목" + id, "수강", publishedAt, endDate);
         }
     }
 
