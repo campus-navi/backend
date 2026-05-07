@@ -1,5 +1,6 @@
 package com.campusnavi.backend.tag.service;
 
+import com.campusnavi.backend.tag.dto.InternalTagResponse;
 import com.campusnavi.backend.tag.dto.TagResponse;
 import com.campusnavi.backend.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,14 @@ public class TagService {
         return tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()
                 .stream()
                 .map(TagResponse::of)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalTagResponse> getAllTagsForInternal() {
+        return tagRepository.findAll()
+                .stream()
+                .map(InternalTagResponse::of)
                 .toList();
     }
 }

@@ -32,7 +32,8 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
 
     private static final String[] AUTH_WHITELIST = {
-            "/api/v1/auth/**", "/swagger-ui/**", "/api-docs/**", "/api/v1/campuses/**"
+            "/api/v1/auth/**", "/swagger-ui/**", "/api-docs/**", "/api/v1/campuses/**",
+            "/internal/**"
     };
 
     @Bean
