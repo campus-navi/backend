@@ -54,11 +54,10 @@ public class OfficialPostService {
 
         List<OfficialAttachment> all = attachmentRepository.findByPostIdOrderBySortOrderAsc(postId);
 
-        String thumbnailUrl = all.stream()
+        List<String> imageUrls = all.stream()
                 .filter(OfficialAttachment::isImage)
-                .findFirst()
                 .map(a -> storageService.resolveUrl(a.getS3Key()))
-                .orElse(null);
+                .toList();
 
         List<OfficialAttachment> nonImages = all.stream()
                 .filter(a -> !a.isImage())
@@ -105,7 +104,7 @@ public class OfficialPostService {
                 meta.getRequiredDocuments(),
                 meta.getContactPhone(),
                 meta.getContactEmail(),
-                thumbnailUrl,
+                imageUrls,
                 files,
                 hasUnreadAttachments,
                 isScrapped,
