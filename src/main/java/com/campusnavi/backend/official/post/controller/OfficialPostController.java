@@ -2,15 +2,19 @@ package com.campusnavi.backend.official.post.controller;
 
 import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.response.ApiResponse;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "9. 공식 정보", description = "공식 정보 조회 API")
@@ -35,6 +40,27 @@ public class OfficialPostController {
     private final OfficialPostScrapService officialPostScrapService;
     private final OfficialPostNotificationService officialPostNotificationService;
     private final OfficialAttachmentDownloadService officialAttachmentDownloadService;
+
+    @Operation(summary = "공식 정보 목록 조회",
+            description = "사용자 스코프(대학/캠퍼스/단과대/학과) 내 공식 정보를 키워드·카테고리(tagCode)·정렬 조건으로 커서 페이징 조회합니다. " +
+                    "DEADLINE 정렬은 마감일이 있고 오늘 이후인 공지만 포함합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 커서 또는 카테고리 코드",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping
+    public ResponseEntity<ApiResponse<CursorPageResponse<OfficialPostSummaryResponse>>> getList(
+            @Parameter(description = "키워드 (제목·요약 부분 일치, 선택)") @RequestParam(required = false) String q,
+            @Parameter(description = "카테고리 태그 코드 (선택, 없으면 전체). 예: SCHOLARSHIP") @RequestParam(required = false) String tagCode,
+            @Parameter(description = "정렬 (LATEST | DEADLINE), 기본 LATEST") @RequestParam(defaultValue = "LATEST") OfficialPostListSort sort,
+            @Parameter(description = "다음 페이지 커서 (첫 요청 시 생략)") @RequestParam(required = false) String cursor,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                officialPostService.getList(AuthContext.of(authMember), q, tagCode, sort, cursor)));
+    }
 
     @Operation(summary = "공식 정보 상세 조회", description = "공식 정보의 상세 내용(본문, AI 메타, 첨부파일 포함)을 반환합니다. 인증된 사용자의 스크랩 여부도 함께 반환됩니다. 사용자의 university scope 밖 공지에는 접근할 수 없습니다.")
     @ApiResponses({

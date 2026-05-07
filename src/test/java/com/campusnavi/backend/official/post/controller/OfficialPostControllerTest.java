@@ -3,10 +3,13 @@ package com.campusnavi.backend.official.post.controller;
 import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.AttachmentResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
@@ -25,6 +28,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -61,6 +68,83 @@ class OfficialPostControllerTest {
     private static final Authentication AUTH = new UsernamePasswordAuthenticationToken(
             new AuthMember(MEMBER_ID, "USER", UNIVERSITY_ID), null, List.of()
     );
+
+    @Nested
+    @DisplayName("공식 정보 목록 조회")
+    class GetList {
+
+        private static final OfficialPostSummaryResponse ITEM =
+                new OfficialPostSummaryResponse(1L, "장학금 안내", "장학", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 5, 31));
+
+        @Test
+        @DisplayName("파라미터 없이 호출하면 LATEST/null/null/null로 서비스에 위임하고 200을 반환한다")
+        void defaultParams() throws Exception {
+            CursorPageResponse<OfficialPostSummaryResponse> response =
+                    CursorPageResponse.of(List.of(ITEM), null, false);
+            given(officialPostService.getList(eq(CONTEXT), isNull(), isNull(),
+                    eq(OfficialPostListSort.LATEST), isNull())).willReturn(response);
+
+            mockMvc.perform(get("/api/v1/official-posts").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content[0].postId").value(1L))
+                    .andExpect(jsonPath("$.data.content[0].title").value("장학금 안내"))
+                    .andExpect(jsonPath("$.data.hasNext").value(false))
+                    .andExpect(jsonPath("$.data.nextCursor").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("q, tagCode, sort, cursor를 전달하면 각 인자가 서비스에 그대로 위임된다")
+        void withAllParams() throws Exception {
+            given(officialPostService.getList(eq(CONTEXT), eq("장학"), eq("SCHOLARSHIP"),
+                    eq(OfficialPostListSort.DEADLINE), eq("abc123")))
+                    .willReturn(CursorPageResponse.of(List.of(), null, false));
+
+            mockMvc.perform(get("/api/v1/official-posts")
+                            .param("q", "장학")
+                            .param("tagCode", "SCHOLARSHIP")
+                            .param("sort", "DEADLINE")
+                            .param("cursor", "abc123")
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("hasNext=true이면 nextCursor가 응답에 포함된다")
+        void withNextCursor() throws Exception {
+            CursorPageResponse<OfficialPostSummaryResponse> response =
+                    CursorPageResponse.of(List.of(ITEM), "nextToken", true);
+            given(officialPostService.getList(any(), any(), any(), any(), any()))
+                    .willReturn(response);
+
+            mockMvc.perform(get("/api/v1/official-posts").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasNext").value(true))
+                    .andExpect(jsonPath("$.data.nextCursor").value("nextToken"));
+        }
+
+        @Test
+        @DisplayName("잘못된 sort 값이면 400을 반환한다")
+        void invalidSort() throws Exception {
+            mockMvc.perform(get("/api/v1/official-posts")
+                            .param("sort", "WRONG")
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("잘못된 cursor로 서비스가 INVALID_PARAM을 던지면 400을 반환한다")
+        void invalidCursor() throws Exception {
+            given(officialPostService.getList(any(), any(), any(), any(), eq("bad")))
+                    .willThrow(new BusinessException(ErrorCode.INVALID_PARAM));
+
+            mockMvc.perform(get("/api/v1/official-posts")
+                            .param("cursor", "bad")
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_PARAM"));
+        }
+    }
 
     @Nested
     @DisplayName("공식 공지 상세 조회")
