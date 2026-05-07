@@ -173,7 +173,7 @@ class OfficialPostControllerTest {
                     "성적증명서",
                     "02-1234-5678",
                     "staff@example.com",
-                    "https://cdn/img/a.png",
+                    List.of("https://cdn/img/a.png"),
                     List.of(new AttachmentResponse(910L, "doc.pdf", false)),
                     true,
                     true,
@@ -188,7 +188,8 @@ class OfficialPostControllerTest {
                     .andExpect(jsonPath("$.data.title").value("2026 장학금 안내"))
                     .andExpect(jsonPath("$.data.tagName").value("장학금"))
                     .andExpect(jsonPath("$.data.applyMethodType").value("EMAIL"))
-                    .andExpect(jsonPath("$.data.thumbnailUrl").value("https://cdn/img/a.png"))
+                    .andExpect(jsonPath("$.data.imageUrls.length()").value(1))
+                    .andExpect(jsonPath("$.data.imageUrls[0]").value("https://cdn/img/a.png"))
                     .andExpect(jsonPath("$.data.attachments[0].id").value(910L))
                     .andExpect(jsonPath("$.data.attachments[0].name").value("doc.pdf"))
                     .andExpect(jsonPath("$.data.attachments[0].isDownloaded").value(false))

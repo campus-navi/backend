@@ -134,7 +134,7 @@ class OfficialPostServiceTest {
             assertThat(response.contentHtml()).isEqualTo("<p>본문</p>");
             assertThat(response.isApplicable()).isTrue();
             assertThat(response.applyMethodType()).isEqualTo(ApplyMethodType.EMAIL);
-            assertThat(response.thumbnailUrl()).isEqualTo("https://cdn/img/a.png");
+            assertThat(response.imageUrls()).containsExactly("https://cdn/img/a.png");
             assertThat(response.attachments()).hasSize(1);
             assertThat(response.attachments().getFirst().id()).isEqualTo(910L);
             assertThat(response.attachments().getFirst().name()).isEqualTo("doc.pdf");
@@ -213,7 +213,7 @@ class OfficialPostServiceTest {
         }
 
         @Test
-        @DisplayName("이미지 첨부가 없으면 thumbnailUrl이 null이다")
+        @DisplayName("이미지 첨부가 없으면 imageUrls는 빈 리스트이다")
         void noImageAttachment() {
             // given
             OfficialPost post = mockPost();
@@ -234,7 +234,7 @@ class OfficialPostServiceTest {
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
-            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.imageUrls()).isEmpty();
             assertThat(response.attachments()).hasSize(1);
         }
 
@@ -259,14 +259,14 @@ class OfficialPostServiceTest {
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
-            assertThat(response.thumbnailUrl()).isEqualTo("https://cdn/img/a.png");
+            assertThat(response.imageUrls()).containsExactly("https://cdn/img/a.png");
             assertThat(response.attachments()).isEmpty();
             assertThat(response.hasUnreadAttachments()).isFalse();
             then(downloadRepository).should(never()).findDownloadedAttachmentIds(any(), anyList());
         }
 
         @Test
-        @DisplayName("첨부파일이 전혀 없으면 thumbnailUrl은 null이고 attachments는 빈 리스트이며 hasUnreadAttachments는 false이다")
+        @DisplayName("첨부파일이 전혀 없으면 imageUrls와 attachments는 모두 빈 리스트이며 hasUnreadAttachments는 false이다")
         void noAttachment() {
             // given
             OfficialPost post = mockPost();
@@ -283,10 +283,42 @@ class OfficialPostServiceTest {
             OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
 
             // then
-            assertThat(response.thumbnailUrl()).isNull();
+            assertThat(response.imageUrls()).isEmpty();
             assertThat(response.attachments()).isEmpty();
             assertThat(response.hasUnreadAttachments()).isFalse();
             then(downloadRepository).should(never()).findDownloadedAttachmentIds(any(), anyList());
+        }
+
+        @Test
+        @DisplayName("이미지 첨부가 여러 개이면 imageUrls가 sortOrder 순서대로 모두 담긴다")
+        void multipleImageAttachments() {
+            // given
+            OfficialPost post = mockPost();
+            OfficialPostAiMeta meta = mockMeta(mockTag("장학금"));
+            OfficialAttachment image1 = mockAttachment(900L, "img1.png", "img/a.png", true);
+            OfficialAttachment image2 = mockAttachment(901L, "img2.png", "img/b.png", true);
+            OfficialAttachment file = mockAttachment(910L, "doc.pdf", "file/c.pdf", false);
+
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID)).willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostIdWithTag(POST_ID, ProcessingStatus.DONE))
+                    .willReturn(Optional.of(meta));
+            given(attachmentRepository.findByPostIdOrderBySortOrderAsc(POST_ID))
+                    .willReturn(List.of(image1, image2, file));
+            given(storageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
+            given(storageService.resolveUrl("img/b.png")).willReturn("https://cdn/img/b.png");
+            given(downloadRepository.findDownloadedAttachmentIds(MEMBER_ID, List.of(910L)))
+                    .willReturn(Set.of());
+            given(scrapRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+
+            // when
+            OfficialPostDetailResponse response = officialPostService.getDetail(POST_ID, CONTEXT);
+
+            // then
+            assertThat(response.imageUrls())
+                    .containsExactly("https://cdn/img/a.png", "https://cdn/img/b.png");
+            assertThat(response.attachments()).hasSize(1);
+            assertThat(response.attachments().getFirst().id()).isEqualTo(910L);
         }
 
         @Test
