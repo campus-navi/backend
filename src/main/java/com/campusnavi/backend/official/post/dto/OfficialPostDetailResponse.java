@@ -26,7 +26,7 @@ public record OfficialPostDetailResponse(
         String requiredDocuments,
         String contactPhone,
         String contactEmail,
-        String thumbnailUrl,
+        List<String> imageUrls,
         List<AttachmentResponse> attachments,
         boolean hasUnreadAttachments,
         boolean isScrapped,
