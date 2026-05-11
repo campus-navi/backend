@@ -8,7 +8,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
 
 @Configuration
-@Profile("prod")
+@Profile("ses")
 @RequiredArgsConstructor
 public class SesConfig {
 
