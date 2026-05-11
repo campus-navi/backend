@@ -15,4 +15,6 @@ public interface MemberInterestRepository extends JpaRepository<MemberInterest,L
 
     @Query("SELECT mi.tag.id FROM MemberInterest mi WHERE mi.memberId = :memberId")
     List<Long> findTagIdsByMemberId(@Param("memberId") Long memberId);
+
+    boolean existsByMemberId(Long memberId);
 }
