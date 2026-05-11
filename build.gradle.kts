@@ -69,6 +69,7 @@ dependencies {
 
     //Test
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
+    testRuntimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
