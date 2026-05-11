@@ -21,16 +21,12 @@ public class Tag {
     private String name;
 
     @Column(nullable = false)
-    private short sortOrder;
-
-    @Column(nullable = false)
     private boolean isRecommendable;
 
-    public static Tag create(String code, String name, short sortOrder, boolean isRecommendable) {
+    public static Tag create(String code, String name, boolean isRecommendable) {
         Tag tag = new Tag();
         tag.code = code;
         tag.name = name;
-        tag.sortOrder = sortOrder;
         tag.isRecommendable = isRecommendable;
         return tag;
     }
