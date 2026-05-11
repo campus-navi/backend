@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TagRepository extends JpaRepository<Tag,Long> {
-    List<Tag> findByIsRecommendableTrueOrderBySortOrderAsc();
+    List<Tag> findByIsRecommendableTrueOrderByIdAsc();
 
     Optional<Tag> findByCode(String code);
 }

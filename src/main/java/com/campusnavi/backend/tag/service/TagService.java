@@ -17,7 +17,7 @@ public class TagService {
 
     @Transactional(readOnly = true)
     public List<TagResponse> getTags() {
-        return tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()
+        return tagRepository.findByIsRecommendableTrueOrderByIdAsc()
                 .stream()
                 .map(TagResponse::of)
                 .toList();
