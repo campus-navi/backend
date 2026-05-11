@@ -1,5 +1,6 @@
 package com.campusnavi.backend.university.repository;
 
+import com.campusnavi.backend.support.PostgresSliceTestSupport;
 import com.campusnavi.backend.university.entity.University;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ActiveProfiles("test")
-class UniversityRepositorySliceTest {
+class UniversityRepositorySliceTest extends PostgresSliceTestSupport {
 
     @Autowired
     private UniversityRepository universityRepository;
