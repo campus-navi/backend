@@ -36,7 +36,7 @@ class TagServiceTest {
         when(tag1.getName()).thenReturn("장학금");
         when(tag2.getId()).thenReturn(2L);
         when(tag2.getName()).thenReturn("취업·채용");
-        given(tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of(tag1, tag2));
+        given(tagRepository.findByIsRecommendableTrueOrderByIdAsc()).willReturn(List.of(tag1, tag2));
 
         // when
         List<TagResponse> result = tagService.getTags();
@@ -51,7 +51,7 @@ class TagServiceTest {
     @DisplayName("추천 가능한 태그가 없으면 빈 목록을 반환한다")
     void getEmptyTags() {
         // given
-        given(tagRepository.findByIsRecommendableTrueOrderBySortOrderAsc()).willReturn(List.of());
+        given(tagRepository.findByIsRecommendableTrueOrderByIdAsc()).willReturn(List.of());
 
         // when
         List<TagResponse> result = tagService.getTags();
