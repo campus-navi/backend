@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.ses.model.*;
 import java.nio.charset.StandardCharsets;
 
 @Component
-@Profile("prod")
+@Profile("ses")
 @RequiredArgsConstructor
 public class SesEmailSender implements EmailSender{
 
