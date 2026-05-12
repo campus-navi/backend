@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,8 +65,10 @@ class AiMetaProcessorTest {
             OfficialAttachment file = OfficialAttachment.create(post, "file.pdf", "file/b.pdf", "application/pdf", false, (short) 1);
 
             given(attachmentRepository.findByPostId(POST_ID)).willReturn(List.of(image, file));
-            given(s3StorageService.resolveUrl("img/a.png")).willReturn("https://cdn/img/a.png");
-            given(s3StorageService.resolveUrl("file/b.pdf")).willReturn("https://cdn/file/b.pdf");
+            given(s3StorageService.generateGetPresignedUrl(eq("img/a.png"), eq("image.png"), any(Duration.class)))
+                    .willReturn("https://cdn/img/a.png");
+            given(s3StorageService.generateGetPresignedUrl(eq("file/b.pdf"), eq("file.pdf"), any(Duration.class)))
+                    .willReturn("https://cdn/file/b.pdf");
             given(aiClient.post(anyString(), any(), eq(OfficialAiResponse.class))).willReturn(mock(OfficialAiResponse.class));
 
             // when
@@ -142,8 +145,10 @@ class AiMetaProcessorTest {
             OfficialAttachment file2 = OfficialAttachment.create(post2, "file2.pdf", "file/2.pdf", "application/pdf", false, (short) 0);
 
             given(attachmentRepository.findByPostIdIn(List.of(1L, 2L))).willReturn(List.of(img1, file2));
-            given(s3StorageService.resolveUrl("img/1.png")).willReturn("https://cdn/img/1.png");
-            given(s3StorageService.resolveUrl("file/2.pdf")).willReturn("https://cdn/file/2.pdf");
+            given(s3StorageService.generateGetPresignedUrl(eq("img/1.png"), eq("img1.png"), any(Duration.class)))
+                    .willReturn("https://cdn/img/1.png");
+            given(s3StorageService.generateGetPresignedUrl(eq("file/2.pdf"), eq("file2.pdf"), any(Duration.class)))
+                    .willReturn("https://cdn/file/2.pdf");
 
             // when
             List<OfficialAiRequest> requests = processor.buildRequests(List.of(post1, post2));
