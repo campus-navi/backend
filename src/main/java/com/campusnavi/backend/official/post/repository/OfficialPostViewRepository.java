@@ -15,7 +15,7 @@ public interface OfficialPostViewRepository extends JpaRepository<OfficialPostVi
             VALUES (:memberId, :postId)
             ON CONFLICT (member_id, post_id) DO UPDATE
             SET last_viewed_at = now(),
-                view_count     = view_count + 1
+                view_count     = official_post_view.view_count + 1
             """, nativeQuery = true)
     void upsert(@Param("memberId") Long memberId,
                 @Param("postId") Long postId);
