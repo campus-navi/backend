@@ -64,7 +64,7 @@ public class OfficialPostQueryRepository {
                         officialPostAiMeta.endDate))
                 .from(officialPost)
                 .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
-                .leftJoin(officialPostAiMeta.tag, tag)
+                .join(officialPostAiMeta.tag, tag)
                 .where(baseCondition(condition))
                 .where(keywordFilter(q))
                 .where(tagFilter(tagId));

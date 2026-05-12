@@ -37,7 +37,7 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Long universityId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "campus_id")
     private Campus campus;
 
