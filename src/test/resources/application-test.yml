@@ -11,6 +11,18 @@ spring:
   flyway:
     enabled: false
 
+recommend:
+  feed:
+    w1: 0.30
+    w2: 0.30
+    w3: 0.40
+    w2-admission: 0.4
+    w2-grade: 0.6
+    view-cap: 30
+    candidate-limit: 200
+    result-limit: 5
+    freshness-days: 14
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
