@@ -1,4 +1,4 @@
-package com.campusnavi.backend.official.post.recommend;
+package com.campusnavi.backend.official.post.recommend.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

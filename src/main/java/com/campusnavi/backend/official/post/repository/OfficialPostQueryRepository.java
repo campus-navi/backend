@@ -5,7 +5,7 @@ import com.campusnavi.backend.official.post.dto.*;
 import com.campusnavi.backend.official.post.entity.QOfficialAttachment;
 import com.campusnavi.backend.official.post.entity.QOfficialPostNotification;
 import com.campusnavi.backend.official.post.entity.QOfficialPostView;
-import com.campusnavi.backend.official.post.recommend.RecommendProperties;
+import com.campusnavi.backend.official.post.recommend.config.RecommendProperties;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;

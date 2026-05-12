@@ -11,7 +11,7 @@ import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberQueryRepository;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import com.campusnavi.backend.official.post.dto.*;
-import com.campusnavi.backend.official.post.recommend.RecommendationScoringService;
+import com.campusnavi.backend.official.post.recommend.service.RecommendationScoringService;
 import com.campusnavi.backend.official.post.repository.OfficialPostQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -10,7 +10,7 @@ import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.entity.OfficialPostView;
-import com.campusnavi.backend.official.post.recommend.RecommendProperties;
+import com.campusnavi.backend.official.post.recommend.config.RecommendProperties;
 import com.campusnavi.backend.official.source.entity.OfficialSource;
 import com.campusnavi.backend.official.source.entity.SourceType;
 import com.campusnavi.backend.support.PostgresSliceTestSupport;

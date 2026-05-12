@@ -1,7 +1,8 @@
-package com.campusnavi.backend.official.post.recommend;
+package com.campusnavi.backend.official.post.recommend.service;
 
 import com.campusnavi.backend.official.post.dto.OfficialPostRecommendCandidateRaw;
 import com.campusnavi.backend.official.post.dto.OfficialPostStatsRaw;
+import com.campusnavi.backend.official.post.recommend.config.RecommendProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -13,7 +13,7 @@ import com.campusnavi.backend.member.repository.MemberRepository;
 import com.campusnavi.backend.official.post.dto.OfficialPostCardRaw;
 import com.campusnavi.backend.official.post.dto.OfficialPostCardResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostRecommendCandidateRaw;
-import com.campusnavi.backend.official.post.recommend.RecommendationScoringService;
+import com.campusnavi.backend.official.post.recommend.service.RecommendationScoringService;
 import com.campusnavi.backend.official.post.repository.OfficialPostQueryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
