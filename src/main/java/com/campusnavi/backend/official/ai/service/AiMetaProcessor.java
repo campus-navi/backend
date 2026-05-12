@@ -10,6 +10,7 @@ import com.campusnavi.backend.official.post.repository.OfficialAttachmentReposit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,6 +18,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AiMetaProcessor {
+
+    private static final Duration PRESIGNED_TTL = Duration.ofHours(1);
 
     private final OfficialAttachmentRepository attachmentRepository;
     private final S3StorageService s3StorageService;
@@ -48,14 +51,17 @@ public class AiMetaProcessor {
     private OfficialAiRequest toRequest(OfficialPost post, List<OfficialAttachment> attachments) {
         List<String> imageUrls = attachments.stream()
                 .filter(OfficialAttachment::isImage)
-                .map(OfficialAttachment::getS3Key)
-                .map(s3StorageService::resolveUrl)
+                .map(this::presign)
                 .toList();
         List<String> attachmentUrls = attachments.stream()
                 .filter(a -> !a.isImage())
-                .map(OfficialAttachment::getS3Key)
-                .map(s3StorageService::resolveUrl)
+                .map(this::presign)
                 .toList();
         return new OfficialAiRequest(post.getId(), post.getStructuredText(), imageUrls, attachmentUrls);
+    }
+
+    private String presign(OfficialAttachment attachment) {
+        return s3StorageService.generateGetPresignedUrl(
+                attachment.getS3Key(), attachment.getOriginalName(), PRESIGNED_TTL);
     }
 }
