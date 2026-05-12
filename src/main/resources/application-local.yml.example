@@ -51,10 +51,10 @@ app:
       bucket: campus-navi-local
       region: ap-northeast-2
       access-key: test
-      secret-key: test
-      endpoint: http://localhost:4566
+      secret-key: test12345
+      endpoint: http://localhost:9000
       path-style-access: true
-      base-url: http://localhost:4566/campus-navi-local
+      base-url: http://localhost:9000/campus-navi-local
 
   ai:
     server:
