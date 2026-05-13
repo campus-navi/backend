@@ -32,6 +32,8 @@ springdoc:
 app:
   crawl:
     enabled: false
+    retry:
+      max-count: 3
 
   jwt:
     secret: ${JWT_SECRET}
