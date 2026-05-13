@@ -15,17 +15,16 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "feed_recommend_snapshot",
         uniqueConstraints = @UniqueConstraint(
-                name = "uq_feed_recommend_snapshot",
-                columnNames = {"member_id", "slot_at"}))
+                name = "uq_feed_recommend_snapshot_member",
+                columnNames = {"member_id"}))
 public class FeedRecommendSnapshot extends BaseCreatedAtEntity {
 
     @Id
@@ -35,18 +34,10 @@ public class FeedRecommendSnapshot extends BaseCreatedAtEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "slot_at", nullable = false)
-    private LocalDateTime slotAt;
+    @Column(name = "computed_at", nullable = false)
+    private LocalDateTime computedAt;
 
     @Type(JsonBinaryType.class)
     @Column(name = "post_ids", nullable = false, columnDefinition = "jsonb")
     private List<Long> postIds;
-
-    public static FeedRecommendSnapshot create(Long memberId, LocalDateTime slotAt, List<Long> postIds) {
-        FeedRecommendSnapshot snapshot = new FeedRecommendSnapshot();
-        snapshot.memberId = memberId;
-        snapshot.slotAt = slotAt;
-        snapshot.postIds = new ArrayList<>(Objects.requireNonNullElse(postIds, List.of()));
-        return snapshot;
-    }
 }
