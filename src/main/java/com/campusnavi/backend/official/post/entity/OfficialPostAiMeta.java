@@ -42,7 +42,7 @@ public class OfficialPostAiMeta extends BaseEntity {
     @Column(columnDefinition = "TEXT[]")
     private List<String> keyword;
 
-    @Column(length = 50)
+    @Column(length = 255)
     private String contactPhone;
 
     @Column(length = 200)
@@ -56,7 +56,7 @@ public class OfficialPostAiMeta extends BaseEntity {
 
     private LocalTime endTime;
 
-    @Column(length = 100)
+    @Column(length = 500)
     private String requiredDocuments;
 
     @Enumerated(EnumType.STRING)
