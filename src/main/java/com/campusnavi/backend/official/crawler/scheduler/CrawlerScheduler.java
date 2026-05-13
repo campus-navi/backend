@@ -21,4 +21,11 @@ public class CrawlerScheduler {
         crawlerOrchestratorService.runAll();
         log.info("크롤링 스케줄 완료");
     }
+
+    @Scheduled(cron = "0 0 9,18 * * *", zone = "Asia/Seoul")
+    public void scheduleRetry() {
+        log.info("크롤링 재시도 스케줄 시작");
+        crawlerOrchestratorService.retryAll();
+        log.info("크롤링 재시도 스케줄 완료");
+    }
 }
