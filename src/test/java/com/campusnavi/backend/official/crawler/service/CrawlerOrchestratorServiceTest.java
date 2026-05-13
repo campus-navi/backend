@@ -1,6 +1,9 @@
 package com.campusnavi.backend.official.crawler.service;
 
 import com.campusnavi.backend.official.crawler.dto.PostList;
+import com.campusnavi.backend.official.crawler.failure.entity.CrawlFailure;
+import com.campusnavi.backend.official.crawler.failure.service.CrawlFailureService;
+import com.campusnavi.backend.official.crawler.failure.service.RetryAction;
 import com.campusnavi.backend.official.crawler.parser.CrawlParser;
 import com.campusnavi.backend.official.crawler.parser.CrawlParserFactory;
 import com.campusnavi.backend.official.source.entity.OfficialSource;
@@ -12,9 +15,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -46,6 +51,9 @@ class CrawlerOrchestratorServiceTest {
 
     @Mock
     private CrawlerPostService crawlerPostService;
+
+    @Mock
+    private CrawlFailureService crawlFailureService;
 
     @InjectMocks
     private CrawlerOrchestratorService orchestratorService;
@@ -253,6 +261,7 @@ class CrawlerOrchestratorServiceTest {
 
             // then
             then(crawlerPostService).should(times(1)).crawlAndSave(any(), eq(post2), any());
+            then(crawlFailureService).should().record(eq(source), eq(post1), any(Throwable.class));
         }
     }
 
@@ -332,6 +341,111 @@ class CrawlerOrchestratorServiceTest {
             // then
             assertThat(source.getLastCrawledAt()).isEqualTo(LocalDate.now());
             then(sourceRepository).should().save(source);
+        }
+    }
+
+    @Nested
+    @DisplayName("재시도 (retryAll)")
+    class RetryAll {
+
+        private CrawlFailure failure(Long id, Long sourceId, String originalId) {
+            PostList post = new PostList(originalId, "제목", "공지팀", "https://test.com/" + id,
+                    LocalDate.of(2026, 5, 13));
+            OfficialSource src = OfficialSource.create(1L, 1L, null, null, SourceType.CRAWL,
+                    "X", "X", "https://x.com");
+            ReflectionTestUtils.setField(src, "id", sourceId);
+            CrawlFailure f = CrawlFailure.create(src, post, new RuntimeException("이전 오류"));
+            ReflectionTestUtils.setField(f, "id", id);
+            ReflectionTestUtils.setField(f, "sourceId", sourceId);
+            return f;
+        }
+
+        @Test
+        @DisplayName("재시도 대상이 없으면 source/parser 조회와 retryOne을 호출하지 않는다")
+        void noTargets() {
+            // given
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of());
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            then(sourceRepository).should(never()).findAllById(any());
+            then(parserFactory).shouldHaveNoInteractions();
+            then(crawlFailureService).should(never()).retryOne(any(), any());
+        }
+
+        @Test
+        @DisplayName("source가 조회되지 않으면 해당 failure 들은 skip 하고 다음 source로 넘어간다")
+        void sourceNotFound() {
+            // given
+            CrawlFailure f1 = failure(100L, 99L, "orig-1");
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of(f1));
+            given(sourceRepository.findAllById(Set.of(99L))).willReturn(List.of());
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            then(parserFactory).shouldHaveNoInteractions();
+            then(crawlFailureService).should(never()).retryOne(any(), any());
+        }
+
+        @Test
+        @DisplayName("source 가 비활성이면 해당 source 의 failure 들은 skip 한다")
+        void inactiveSourceSkipped() {
+            // given
+            ReflectionTestUtils.setField(source, "id", 10L);
+            ReflectionTestUtils.setField(source, "isActive", false);
+            CrawlFailure f1 = failure(100L, 10L, "orig-1");
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of(f1));
+            given(sourceRepository.findAllById(Set.of(10L))).willReturn(List.of(source));
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            then(parserFactory).shouldHaveNoInteractions();
+            then(crawlFailureService).should(never()).retryOne(any(), any());
+        }
+
+        @Test
+        @DisplayName("같은 source 에 여러 failure 가 있어도 parser 조회는 한 번만 한다")
+        void parserLookupOncePerSource() {
+            // given
+            ReflectionTestUtils.setField(source, "id", 10L);
+            CrawlFailure f1 = failure(100L, 10L, "orig-1");
+            CrawlFailure f2 = failure(101L, 10L, "orig-2");
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of(f1, f2));
+            given(sourceRepository.findAllById(Set.of(10L))).willReturn(List.of(source));
+            given(parserFactory.getParser(any())).willReturn(parser);
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            then(parserFactory).should(times(1)).getParser(eq(source.getParserType()));
+            then(crawlFailureService).should(times(2)).retryOne(any(), any());
+        }
+
+        @Test
+        @DisplayName("retryOne 에 넘긴 action 을 실행하면 crawlAndSave 가 호출된다")
+        void actionInvokesCrawlAndSave() throws Exception {
+            // given
+            ReflectionTestUtils.setField(source, "id", 10L);
+            CrawlFailure f1 = failure(100L, 10L, "orig-1");
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of(f1));
+            given(sourceRepository.findAllById(Set.of(10L))).willReturn(List.of(source));
+            given(parserFactory.getParser(any())).willReturn(parser);
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            ArgumentCaptor<RetryAction> actionCaptor = ArgumentCaptor.forClass(RetryAction.class);
+            then(crawlFailureService).should().retryOne(eq(f1), actionCaptor.capture());
+            actionCaptor.getValue().execute();
+            then(crawlerPostService).should().crawlAndSave(eq(source), any(PostList.class), eq(parser));
         }
     }
 }
