@@ -187,7 +187,7 @@ class OfficialPostControllerTest {
                     .andExpect(jsonPath("$.data.postId").value(1L))
                     .andExpect(jsonPath("$.data.title").value("2026 장학금 안내"))
                     .andExpect(jsonPath("$.data.tagName").value("장학금"))
-                    .andExpect(jsonPath("$.data.applyMethodType").value("EMAIL"))
+                    .andExpect(jsonPath("$.data.applyMethodType").value("FILE"))
                     .andExpect(jsonPath("$.data.imageUrls.length()").value(1))
                     .andExpect(jsonPath("$.data.imageUrls[0]").value("https://cdn/img/a.png"))
                     .andExpect(jsonPath("$.data.attachments[0].id").value(910L))
