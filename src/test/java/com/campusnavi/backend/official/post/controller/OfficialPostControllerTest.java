@@ -168,7 +168,7 @@ class OfficialPostControllerTest {
                     LocalDate.of(2026, 5, 31),
                     null,
                     "재학생",
-                    ApplyMethodType.EMAIL,
+                    ApplyMethodType.FILE,
                     null,
                     "성적증명서",
                     "02-1234-5678",

@@ -133,7 +133,7 @@ class OfficialPostServiceTest {
             assertThat(response.summary()).isEqualTo("요약");
             assertThat(response.contentHtml()).isEqualTo("<p>본문</p>");
             assertThat(response.isApplicable()).isTrue();
-            assertThat(response.applyMethodType()).isEqualTo(ApplyMethodType.EMAIL);
+            assertThat(response.applyMethodType()).isEqualTo(ApplyMethodType.FILE);
             assertThat(response.imageUrls()).containsExactly("https://cdn/img/a.png");
             assertThat(response.attachments()).hasSize(1);
             assertThat(response.attachments().getFirst().id()).isEqualTo(910L);
@@ -602,7 +602,7 @@ class OfficialPostServiceTest {
         lenient().when(meta.getEndDate()).thenReturn(LocalDate.of(2026, 5, 31));
         lenient().when(meta.getEndTime()).thenReturn(null);
         lenient().when(meta.getEligibility()).thenReturn("재학생");
-        lenient().when(meta.getApplyMethodType()).thenReturn(ApplyMethodType.EMAIL);
+        lenient().when(meta.getApplyMethodType()).thenReturn(ApplyMethodType.FILE);
         lenient().when(meta.getApplyMethodDetail()).thenReturn(null);
         lenient().when(meta.getRequiredDocuments()).thenReturn("성적증명서");
         lenient().when(meta.getContactPhone()).thenReturn("02-1234-5678");
