@@ -15,7 +15,7 @@ public class CrawlerScheduler {
 
     private final CrawlerOrchestratorService crawlerOrchestratorService;
 
-    @Scheduled(cron = "0 0 9,18 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 30 8,17 * * *", zone = "Asia/Seoul")
     public void scheduleCrawl() {
         log.info("크롤링 스케줄 시작");
         crawlerOrchestratorService.runAll();
