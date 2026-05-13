@@ -65,8 +65,8 @@ app:
     server:
       base-url: ${AI_SERVER_URL}
       connect-timeout: 5s
-      response-timeout: 30s
-      connection-request-timeout: 300s
+      response-timeout: 300s
+      connection-request-timeout: 5s
       max-total: 100
       max-per-route: 50
 
