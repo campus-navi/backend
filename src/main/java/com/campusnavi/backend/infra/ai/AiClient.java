@@ -54,6 +54,13 @@ public class AiClient {
                 .body(responseClass);
     }
 
+    public AiHealthResponse healthCheck() {
+        return restClient.get()
+                .uri("/health")
+                .retrieve()
+                .body(AiHealthResponse.class);
+    }
+
     private Timeout of(Duration duration) {
         return Timeout.ofMilliseconds(duration.toMillis());
     }
