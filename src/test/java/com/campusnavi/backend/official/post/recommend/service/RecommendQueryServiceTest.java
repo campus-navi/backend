@@ -61,7 +61,7 @@ class RecommendQueryServiceTest {
             Member requester = activeMember();
             FeedRecommendSnapshot snapshot = mock(FeedRecommendSnapshot.class);
             given(snapshot.getPostIds()).willReturn(List.of(2L, 1L));
-            given(snapshotRepository.findByMemberId(MEMBER_ID))
+            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID))
                     .willReturn(Optional.of(snapshot));
 
             OfficialPostCardRaw card1 = card(1L);
@@ -83,12 +83,12 @@ class RecommendQueryServiceTest {
         @Test
         @DisplayName("스냅샷 row가 빈 배열이면 miss로 취급해 builder를 호출한다")
         void emptySnapshotTreatedAsMiss() {
-            // given — 이전 빌드/마이그레이션으로 빈 row 가 박힌 사용자가 다음 정각까지
-            //         빈 응답에 락인되는 걸 막기 위해 빈 배열은 miss 로 취급한다
+            // given
+
             Member requester = activeMember();
             FeedRecommendSnapshot emptySnapshot = mock(FeedRecommendSnapshot.class);
             given(emptySnapshot.getPostIds()).willReturn(List.of());
-            given(snapshotRepository.findByMemberId(MEMBER_ID))
+            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID))
                     .willReturn(Optional.of(emptySnapshot));
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of(7L));
 
@@ -111,7 +111,7 @@ class RecommendQueryServiceTest {
         void snapshotMiss() {
             // given
             Member requester = activeMember();
-            given(snapshotRepository.findByMemberId(MEMBER_ID)).willReturn(Optional.empty());
+            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID)).willReturn(Optional.empty());
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of(7L));
 
             OfficialPostCardRaw card = card(7L);
@@ -133,7 +133,7 @@ class RecommendQueryServiceTest {
         void emptyAfterBuilder() {
             // given
             Member requester = activeMember();
-            given(snapshotRepository.findByMemberId(MEMBER_ID)).willReturn(Optional.empty());
+            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID)).willReturn(Optional.empty());
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of());
 
             // when

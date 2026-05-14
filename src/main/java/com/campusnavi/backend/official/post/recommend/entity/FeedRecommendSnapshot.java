@@ -23,8 +23,8 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "feed_recommend_snapshot",
         uniqueConstraints = @UniqueConstraint(
-                name = "uq_feed_recommend_snapshot_member",
-                columnNames = {"member_id"}))
+                name = "uq_feed_recommend_snapshot_member_slot",
+                columnNames = {"member_id", "slot_at"}))
 public class FeedRecommendSnapshot extends BaseCreatedAtEntity {
 
     @Id
@@ -34,8 +34,8 @@ public class FeedRecommendSnapshot extends BaseCreatedAtEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "computed_at", nullable = false)
-    private LocalDateTime computedAt;
+    @Column(name = "slot_at", nullable = false)
+    private LocalDateTime slotAt;
 
     @Type(JsonBinaryType.class)
     @Column(name = "post_ids", nullable = false, columnDefinition = "jsonb")

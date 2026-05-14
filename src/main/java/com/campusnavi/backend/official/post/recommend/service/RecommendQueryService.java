@@ -31,7 +31,7 @@ public class RecommendQueryService {
     public List<OfficialPostCardResponse> getRecommendPosts(AuthContext context, Member requester) {
         Long memberId = context.memberId();
 
-        List<Long> postIds = snapshotRepository.findByMemberId(memberId)
+        List<Long> postIds = snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(memberId)
                 .map(FeedRecommendSnapshot::getPostIds)
                 .filter(ids -> !ids.isEmpty())
                 .orElseGet(() -> snapshotBuilder.computeAndUpsert(requester));
