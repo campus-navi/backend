@@ -38,4 +38,8 @@ public interface FeedRecommendSnapshotRepository
     List<Object[]> findRawByMemberIdsAndSlotRange(@Param("memberIds") Collection<Long> memberIds,
                                                   @Param("start") LocalDateTime start,
                                                   @Param("end") LocalDateTime end);
+
+    @Modifying
+    @Query("DELETE FROM FeedRecommendSnapshot s WHERE s.slotAt < :before")
+    void deleteOlderThan(@Param("before") LocalDateTime before);
 }

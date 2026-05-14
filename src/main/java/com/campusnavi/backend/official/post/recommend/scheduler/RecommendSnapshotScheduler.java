@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -20,13 +21,14 @@ public class RecommendSnapshotScheduler {
 
     private final MemberRepository memberRepository;
     private final RecommendSnapshotBuilder snapshotBuilder;
+    private final RecommendSnapshotCleaner cleaner;
 
     private static final int CHUNK_SIZE = 500;
+    private static final int RETENTION_DAYS = 3;
 
     @Scheduled(cron = "0 0 9,18 * * *", zone = "Asia/Seoul")
     public void rebuildAll() {
         long lastId = 0L;
-        int totalProcessed = 0;
 
         while (true) {
             List<Member> chunk = memberRepository.findActiveAfterIdExcludingRole(
@@ -36,14 +38,13 @@ public class RecommendSnapshotScheduler {
             for (Member member : chunk) {
                 try {
                     snapshotBuilder.computeAndUpsert(member);
-                    totalProcessed++;
                 } catch (RuntimeException e) {
-                    log.warn("snapshot upsert failed for member {}", member.getId(), e);
+                    log.warn("추천 스냅샷 갱신 실패. memberId={}", member.getId(), e);
                 }
             }
-            lastId = chunk.get(chunk.size() - 1).getId();
+            lastId = chunk.getLast().getId();
         }
 
-        log.info("recommend snapshot rebuild done. processed={}", totalProcessed);
+        cleaner.cleanupOlderThan(LocalDateTime.now().minusDays(RETENTION_DAYS));
     }
 }
