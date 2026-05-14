@@ -44,7 +44,7 @@ public class RecommendSnapshotBuilder {
             return ranked;
         }
 
-        snapshotRepository.upsert(memberId, toJsonArray(ranked));
+        snapshotRepository.upsertSlot(memberId, slotAt, toJsonArray(ranked));
         return ranked;
     }
 

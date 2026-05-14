@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
+
 
 public interface OfficialPostViewRepository extends JpaRepository<OfficialPostView, Long> {
 
@@ -19,4 +22,7 @@ public interface OfficialPostViewRepository extends JpaRepository<OfficialPostVi
             """, nativeQuery = true)
     void upsert(@Param("memberId") Long memberId,
                 @Param("postId") Long postId);
+
+    List<OfficialPostView> findByMemberIdInAndPostIdIn(Collection<Long> memberIds,
+                                                       Collection<Long> postIds);
 }

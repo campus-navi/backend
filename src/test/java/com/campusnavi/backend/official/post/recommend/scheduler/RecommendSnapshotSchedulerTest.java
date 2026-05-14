@@ -14,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -32,6 +34,9 @@ class RecommendSnapshotSchedulerTest {
 
     @Mock
     private RecommendSnapshotBuilder snapshotBuilder;
+
+    @Mock
+    private RecommendSnapshotCleaner cleaner;
 
     @InjectMocks
     private RecommendSnapshotScheduler scheduler;
@@ -96,11 +101,25 @@ class RecommendSnapshotSchedulerTest {
             then(snapshotBuilder).should().computeAndUpsert(m1);
             then(snapshotBuilder).should().computeAndUpsert(m2);
         }
+
+        @Test
+        @DisplayName("rebuild 끝에 보관 기간이 지난 스냅샷을 정리한다")
+        void cleanupAfterRebuild() {
+            // given
+            given(memberRepository.findActiveAfterIdExcludingRole(
+                    eq(0L), eq(MemberRole.ADMIN), any(Pageable.class)))
+                    .willReturn(List.of());
+
+            // when
+            scheduler.rebuildAll();
+
+            // then
+            then(cleaner).should().cleanupOlderThan(any(LocalDateTime.class));
+        }
     }
 
     private static List<Member> members(Long... ids) {
-        return IntStream.range(0, ids.length)
-                .mapToObj(i -> member(ids[i]))
+        return Arrays.stream(ids).map(RecommendSnapshotSchedulerTest::member)
                 .toList();
     }
 

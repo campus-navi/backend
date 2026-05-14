@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -81,7 +82,8 @@ class RecommendSnapshotBuilderTest {
 
             // then
             assertThat(ranked).containsExactly(7L);
-            then(snapshotRepository).should().upsert(eq(MEMBER_ID), eq("[7]"));
+            then(snapshotRepository).should()
+                    .upsertSlot(eq(MEMBER_ID), any(LocalDateTime.class), eq("[7]"));
         }
 
         @Test
@@ -106,7 +108,8 @@ class RecommendSnapshotBuilderTest {
             builder.computeAndUpsert(requester);
 
             // then
-            then(snapshotRepository).should().upsert(eq(MEMBER_ID), eq("[3,1,2]"));
+            then(snapshotRepository).should()
+                    .upsertSlot(eq(MEMBER_ID), any(LocalDateTime.class), eq("[3,1,2]"));
         }
 
         @Test
@@ -127,7 +130,7 @@ class RecommendSnapshotBuilderTest {
                     .findStatsByPostIds(any(), anyInt(), anyInt(), any());
             then(interestRepository).shouldHaveNoInteractions();
             then(scoringService).shouldHaveNoInteractions();
-            then(snapshotRepository).should(never()).upsert(any(), any());
+            then(snapshotRepository).should(never()).upsertSlot(any(), any(), any());
         }
     }
 
