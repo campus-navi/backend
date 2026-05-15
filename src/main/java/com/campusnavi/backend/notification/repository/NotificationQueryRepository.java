@@ -1,6 +1,7 @@
 package com.campusnavi.backend.notification.repository;
 
 import com.campusnavi.backend.notification.dto.MissedNoticeRaw;
+import com.campusnavi.backend.notification.dto.RemindNotice;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 
 import static com.campusnavi.backend.official.post.entity.QOfficialPost.officialPost;
 import static com.campusnavi.backend.official.post.entity.QOfficialPostAiMeta.officialPostAiMeta;
+import static com.campusnavi.backend.official.post.entity.QOfficialPostNotification.officialPostNotification;
 import static com.campusnavi.backend.tag.entity.QTag.tag;
 
 @Repository
@@ -37,6 +39,22 @@ public class NotificationQueryRepository {
                 .where(officialPost.id.in(postIds))
                 .where(officialPostAiMeta.endDate.isNull()
                         .or(officialPostAiMeta.endDate.goe(LocalDate.now())))
+                .fetch();
+    }
+
+    public List<RemindNotice> findRemindNoticesByMemberId(Long memberId) {
+        return queryFactory
+                .select(Projections.constructor(RemindNotice.class,
+                        officialPost.id,
+                        officialPost.title,
+                        officialPostAiMeta.endDate))
+                .from(officialPostNotification)
+                .join(officialPost).on(officialPost.id.eq(officialPostNotification.post.id))
+                .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
+                .where(officialPostNotification.memberId.eq(memberId)
+                        .and(officialPostAiMeta.endDate.isNotNull())
+                        .and(officialPostAiMeta.endDate.goe(LocalDate.now())))
+                .orderBy(officialPostAiMeta.endDate.asc())
                 .fetch();
     }
 }
