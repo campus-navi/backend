@@ -4,7 +4,9 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
+import com.campusnavi.backend.official.post.entity.OfficialPostAiMeta;
 import com.campusnavi.backend.official.post.entity.OfficialPostNotification;
+import com.campusnavi.backend.official.post.repository.OfficialPostAiMetaRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostNotificationRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,8 +38,17 @@ class OfficialPostNotificationServiceTest {
     @Mock
     private OfficialPostNotificationRepository notificationRepository;
 
+    @Mock
+    private OfficialPostAiMetaRepository aiMetaRepository;
+
     @InjectMocks
     private OfficialPostNotificationService officialPostNotificationService;
+
+    private void givenEndDate(LocalDate endDate) {
+        OfficialPostAiMeta aiMeta = mock(OfficialPostAiMeta.class);
+        given(aiMeta.getEndDate()).willReturn(endDate);
+        given(aiMetaRepository.findByOfficialPostId(POST_ID)).willReturn(Optional.of(aiMeta));
+    }
 
     private static final Long MEMBER_ID = 1L;
     private static final Long POST_ID = 100L;
@@ -54,6 +66,25 @@ class OfficialPostNotificationServiceTest {
             OfficialPost post = mock(OfficialPost.class);
             given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
                     .willReturn(Optional.of(post));
+            givenEndDate(LocalDate.now().plusDays(1));
+            given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
+
+            // when
+            assertThatCode(() -> officialPostNotificationService.enable(POST_ID, CONTEXT))
+                    .doesNotThrowAnyException();
+
+            // then
+            then(notificationRepository).should().save(any(OfficialPostNotification.class));
+        }
+
+        @Test
+        @DisplayName("마감기한이 오늘이면 정상 저장한다")
+        void successWhenDeadlineIsToday() {
+            // given
+            OfficialPost post = mock(OfficialPost.class);
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
+                    .willReturn(Optional.of(post));
+            givenEndDate(LocalDate.now());
             given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(false);
 
             // when
@@ -71,6 +102,7 @@ class OfficialPostNotificationServiceTest {
             OfficialPost post = mock(OfficialPost.class);
             given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
                     .willReturn(Optional.of(post));
+            givenEndDate(LocalDate.now().plusDays(1));
             given(notificationRepository.existsByMemberIdAndPostId(MEMBER_ID, POST_ID)).willReturn(true);
 
             // when
@@ -78,6 +110,54 @@ class OfficialPostNotificationServiceTest {
                     .doesNotThrowAnyException();
 
             // then
+            then(notificationRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("마감기한이 없으면 OFFICIAL_POST_DEADLINE_REQUIRED 예외가 발생한다")
+        void deadlineNull() {
+            // given
+            OfficialPost post = mock(OfficialPost.class);
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
+                    .willReturn(Optional.of(post));
+            givenEndDate(null);
+
+            // when & then
+            assertThatThrownBy(() -> officialPostNotificationService.enable(POST_ID, CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_DEADLINE_REQUIRED));
+            then(notificationRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("AI 메타가 없으면 OFFICIAL_POST_DEADLINE_REQUIRED 예외가 발생한다")
+        void aiMetaNotFound() {
+            // given
+            OfficialPost post = mock(OfficialPost.class);
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
+                    .willReturn(Optional.of(post));
+            given(aiMetaRepository.findByOfficialPostId(POST_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> officialPostNotificationService.enable(POST_ID, CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_DEADLINE_REQUIRED));
+            then(notificationRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("마감기한이 이미 지났으면 OFFICIAL_POST_DEADLINE_REQUIRED 예외가 발생한다")
+        void deadlinePassed() {
+            // given
+            OfficialPost post = mock(OfficialPost.class);
+            given(postRepository.findActiveByIdAndUniversityScope(POST_ID, UNIVERSITY_ID))
+                    .willReturn(Optional.of(post));
+            givenEndDate(LocalDate.now().minusDays(1));
+
+            // when & then
+            assertThatThrownBy(() -> officialPostNotificationService.enable(POST_ID, CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_DEADLINE_REQUIRED));
             then(notificationRepository).should(never()).save(any());
         }
 

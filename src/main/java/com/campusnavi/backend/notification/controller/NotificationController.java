@@ -6,7 +6,9 @@ import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.notification.dto.MissedNotice;
 import com.campusnavi.backend.notification.dto.MissedNoticeCard;
+import com.campusnavi.backend.notification.dto.RemindNotice;
 import com.campusnavi.backend.notification.service.ActivityNotificationService;
+import com.campusnavi.backend.notification.service.RemindNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,6 +33,7 @@ import java.util.List;
 public class NotificationController {
 
     private final ActivityNotificationService activityNotificationService;
+    private final RemindNotificationService remindNotificationService;
 
     @Operation(summary = "지나친 추천 공지 목록 조회",
             description = "최근 보관 기간(13일) 동안의 추천 공지를 missedDate(어제 09:00 ~ 오늘 09:00) 단위로 묶어 카드 목록으로 반환합니다. " +
@@ -62,5 +65,19 @@ public class NotificationController {
             @AuthenticationPrincipal AuthMember authMember) {
         return ResponseEntity.ok(ApiResponse.ok(
                 activityNotificationService.getActivityDetail(AuthContext.of(authMember), missedDate)));
+    }
+
+    @Operation(summary = "리마인드 공지 목록 조회",
+            description = "알림 설정한 공지 중 마감기한이 있고 아직 지나지 않은 공지를 마감 임박 순(endDate 오름차순)으로 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/remind")
+    public ResponseEntity<ApiResponse<List<RemindNotice>>> getRemindNotices(
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                remindNotificationService.getRemindNotices(AuthContext.of(authMember))));
     }
 }

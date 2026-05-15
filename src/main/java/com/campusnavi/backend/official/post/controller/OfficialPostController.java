@@ -112,9 +112,11 @@ public class OfficialPostController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    @Operation(summary = "공식 정보 알림 켜기", description = "공식 정보의 알림을 켭니다. 이미 켜져 있으면 멱등 동작합니다. 사용자의 university scope 밖 공지는 설정할 수 없습니다.")
+    @Operation(summary = "공식 정보 알림 켜기", description = "공식 정보의 알림을 켭니다. 이미 켜져 있으면 멱등 동작합니다. 사용자의 university scope 밖 공지는 설정할 수 없습니다. 마감기한이 없거나 이미 지난 공지는 알림을 설정할 수 없습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "알림 켜기 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "마감기한이 없거나 이미 지난 공지",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지",
