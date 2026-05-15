@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 
 public interface OfficialPostViewRepository extends JpaRepository<OfficialPostView, Long> {
@@ -25,4 +26,9 @@ public interface OfficialPostViewRepository extends JpaRepository<OfficialPostVi
 
     List<OfficialPostView> findByMemberIdInAndPostIdIn(Collection<Long> memberIds,
                                                        Collection<Long> postIds);
+
+    @Query("SELECT v.postId FROM OfficialPostView v " +
+           "WHERE v.memberId = :memberId AND v.postId IN :postIds")
+    Set<Long> findPostIdsByMemberIdAndPostIdIn(@Param("memberId") Long memberId,
+                                               @Param("postIds") Collection<Long> postIds);
 }

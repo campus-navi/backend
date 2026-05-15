@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ActivityNotificationSnapshotRepository
@@ -17,6 +19,10 @@ public interface ActivityNotificationSnapshotRepository
            "WHERE s.missedDate = :missedDate AND s.memberId IN :memberIds")
     Set<Long> findMemberIdsByMissedDateAndMemberIdIn(@Param("missedDate") LocalDate missedDate,
                                                     @Param("memberIds") Collection<Long> memberIds);
+
+    List<ActivityNotificationSnapshot> findAllByMemberIdOrderByMissedDateDesc(Long memberId);
+
+    Optional<ActivityNotificationSnapshot> findByMemberIdAndMissedDate(Long memberId, LocalDate missedDate);
 
     @Modifying
     @Query("DELETE FROM ActivityNotificationSnapshot s WHERE s.missedDate < :before")

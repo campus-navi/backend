@@ -68,7 +68,10 @@ public enum ErrorCode {
     //공식정보 관련
     OFFICIAL_POST_NOT_FOUND(HttpStatus.NOT_FOUND),
     OFFICIAL_POST_NOT_READY(HttpStatus.TOO_EARLY),
-    OFFICIAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND);
+    OFFICIAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    //활동 알림 관련
+    ACTIVITY_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 }
