@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "post_id"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "post_id", "scrap_folder_id"}))
 public class OfficialPostScrap extends BaseCreatedAtEntity {
 
     @Id
@@ -23,10 +23,14 @@ public class OfficialPostScrap extends BaseCreatedAtEntity {
     @JoinColumn(name = "post_id", nullable = false)
     private OfficialPost post;
 
-    public static OfficialPostScrap create(Long memberId, OfficialPost post) {
+    @Column(name = "scrap_folder_id", nullable = false)
+    private Long scrapFolderId;
+
+    public static OfficialPostScrap create(Long memberId, OfficialPost post, Long scrapFolderId) {
         OfficialPostScrap scrap = new OfficialPostScrap();
         scrap.memberId = memberId;
         scrap.post = post;
+        scrap.scrapFolderId = scrapFolderId;
         return scrap;
     }
 }

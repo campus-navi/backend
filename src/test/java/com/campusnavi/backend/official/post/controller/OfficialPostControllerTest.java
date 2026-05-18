@@ -10,6 +10,7 @@ import com.campusnavi.backend.official.post.dto.AttachmentResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
+import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -222,58 +224,89 @@ class OfficialPostControllerTest {
     }
 
     @Nested
-    @DisplayName("스크랩 추가")
-    class Scrap {
+    @DisplayName("스크랩 폴더 목록 조회")
+    class GetScrapFolders {
 
         @Test
-        @DisplayName("정상 요청이면 200을 반환한다")
+        @DisplayName("정상 요청이면 200과 폴더 목록을 반환한다")
         void success() throws Exception {
-            willDoNothing().given(officialPostScrapService).scrap(1L, CONTEXT);
+            given(officialPostScrapService.getScrapFolders(1L, CONTEXT))
+                    .willReturn(List.of(new OfficialPostScrapFolderResponse(11L, "폴더A", true)));
 
-            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap", 1L).with(authentication(AUTH)))
+            mockMvc.perform(get("/api/v1/official-posts/{id}/scrap-folders", 1L).with(authentication(AUTH)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data[0].folderId").value(11))
+                    .andExpect(jsonPath("$.data[0].isScrapped").value(true));
 
-            then(officialPostScrapService).should().scrap(1L, CONTEXT);
+            then(officialPostScrapService).should().getScrapFolders(1L, CONTEXT);
         }
 
         @Test
         @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
         void notFound() throws Exception {
             willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
-                    .given(officialPostScrapService).scrap(99L, CONTEXT);
+                    .given(officialPostScrapService).getScrapFolders(99L, CONTEXT);
 
-            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
+            mockMvc.perform(get("/api/v1/official-posts/{id}/scrap-folders", 99L).with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
         }
     }
 
     @Nested
-    @DisplayName("스크랩 해제")
-    class Unscrap {
+    @DisplayName("스크랩 폴더 설정")
+    class SetScrapFolders {
 
         @Test
-        @DisplayName("정상 요청이면 200을 반환한다")
+        @DisplayName("정상 요청이면 200을 반환하고 폴더 집합을 위임한다")
         void success() throws Exception {
-            willDoNothing().given(officialPostScrapService).unscrap(1L, CONTEXT);
+            willDoNothing().given(officialPostScrapService).setScrapFolders(1L, List.of(11L, 22L), CONTEXT);
 
-            mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 1L).with(authentication(AUTH)))
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap-folders", 1L)
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"folderIds\":[11,22]}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true));
 
-            then(officialPostScrapService).should().unscrap(1L, CONTEXT);
+            then(officialPostScrapService).should().setScrapFolders(1L, List.of(11L, 22L), CONTEXT);
         }
 
         @Test
-        @DisplayName("존재하지 않는 공지이면 404와 OFFICIAL_POST_NOT_FOUND를 반환한다")
-        void notFound() throws Exception {
-            willThrow(new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND))
-                    .given(officialPostScrapService).unscrap(99L, CONTEXT);
+        @DisplayName("folderIds가 null이면 400과 INVALID_INPUT을 반환한다")
+        void invalidInput() throws Exception {
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap-folders", 1L)
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
 
-            mockMvc.perform(delete("/api/v1/official-posts/{id}/scrap", 99L).with(authentication(AUTH)))
+        @Test
+        @DisplayName("folderIds에 null 원소가 있으면 400과 INVALID_INPUT을 반환한다")
+        void nullElement() throws Exception {
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap-folders", 1L)
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"folderIds\":[11,null]}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("본인 소유가 아닌 폴더가 포함되면 404와 SCRAP_FOLDER_NOT_FOUND를 반환한다")
+        void folderNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND))
+                    .given(officialPostScrapService).setScrapFolders(1L, List.of(11L), CONTEXT);
+
+            mockMvc.perform(put("/api/v1/official-posts/{id}/scrap-folders", 1L)
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"folderIds\":[11]}"))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+                    .andExpect(jsonPath("$.code").value("SCRAP_FOLDER_NOT_FOUND"));
         }
     }
 
