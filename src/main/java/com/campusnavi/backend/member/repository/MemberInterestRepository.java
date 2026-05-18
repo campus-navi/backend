@@ -17,4 +17,6 @@ public interface MemberInterestRepository extends JpaRepository<MemberInterest,L
     List<Long> findTagIdsByMemberId(@Param("memberId") Long memberId);
 
     boolean existsByMemberId(Long memberId);
+
+    long countByMemberId(Long memberId);
 }

@@ -58,6 +58,11 @@ public class MemberService {
                 departments);
     }
 
+    @Transactional(readOnly = true)
+    public long countMyInterests(Long memberId) {
+        return memberInterestRepository.countByMemberId(memberId);
+    }
+
     @Transactional
     public void updateMemberInterests(AuthMember authMember, MemberInterestUpdateRequest request) {
         Long memberId = authMember.memberId();

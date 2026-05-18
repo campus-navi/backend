@@ -10,6 +10,7 @@ public record MyPageResponse(
         Integer grade,
         List<String> departments,
         long scrapCount,
-        long remindCount
+        long remindCount,
+        long interestCount
 ) {
 }

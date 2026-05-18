@@ -43,7 +43,7 @@ class MyPageControllerTest {
     void success() throws Exception {
         given(myPageService.getMyPage(MEMBER_ID)).willReturn(new MyPageResponse(
                 "testnick", "user@test.ac.kr", "테스트대학교(서울캠퍼스)", 25, 1,
-                List.of("컴퓨터공학과"), 5L, 4L));
+                List.of("컴퓨터공학과"), 5L, 4L, 3L));
 
         mockMvc.perform(get("/api/v1/mypage").with(authentication(AUTH)))
                 .andExpect(status().isOk())
@@ -55,7 +55,8 @@ class MyPageControllerTest {
                 .andExpect(jsonPath("$.data.grade").value(1))
                 .andExpect(jsonPath("$.data.departments[0]").value("컴퓨터공학과"))
                 .andExpect(jsonPath("$.data.scrapCount").value(5))
-                .andExpect(jsonPath("$.data.remindCount").value(4));
+                .andExpect(jsonPath("$.data.remindCount").value(4))
+                .andExpect(jsonPath("$.data.interestCount").value(3));
     }
 
     @Test

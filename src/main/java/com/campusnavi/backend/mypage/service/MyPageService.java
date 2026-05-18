@@ -26,6 +26,7 @@ public class MyPageService {
         long scrapCount = officialPostScrapService.countScrappedPosts(memberId)
                 + postInteractionService.countScraps(memberId);
         long remindCount = remindNotificationService.getActiveRemindCount(memberId);
+        long interestCount = memberService.countMyInterests(memberId);
 
         return new MyPageResponse(
                 profile.nickname(),
@@ -35,6 +36,7 @@ public class MyPageService {
                 profile.grade(),
                 profile.departments(),
                 scrapCount,
-                remindCount);
+                remindCount,
+                interestCount);
     }
 }

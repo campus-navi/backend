@@ -52,6 +52,7 @@ class MyPageServiceTest {
             given(officialPostScrapService.countScrappedPosts(MEMBER_ID)).willReturn(3L);
             given(postInteractionService.countScraps(MEMBER_ID)).willReturn(2L);
             given(remindNotificationService.getActiveRemindCount(MEMBER_ID)).willReturn(4L);
+            given(memberService.countMyInterests(MEMBER_ID)).willReturn(3L);
 
             MyPageResponse result = service.getMyPage(MEMBER_ID);
 
@@ -63,6 +64,7 @@ class MyPageServiceTest {
             assertThat(result.departments()).containsExactly("컴퓨터공학과");
             assertThat(result.scrapCount()).isEqualTo(5L);
             assertThat(result.remindCount()).isEqualTo(4L);
+            assertThat(result.interestCount()).isEqualTo(3L);
         }
 
         @Test
@@ -74,11 +76,13 @@ class MyPageServiceTest {
             given(officialPostScrapService.countScrappedPosts(MEMBER_ID)).willReturn(0L);
             given(postInteractionService.countScraps(MEMBER_ID)).willReturn(0L);
             given(remindNotificationService.getActiveRemindCount(MEMBER_ID)).willReturn(0L);
+            given(memberService.countMyInterests(MEMBER_ID)).willReturn(0L);
 
             MyPageResponse result = service.getMyPage(MEMBER_ID);
 
             assertThat(result.scrapCount()).isZero();
             assertThat(result.remindCount()).isZero();
+            assertThat(result.interestCount()).isZero();
             assertThat(result.departments()).isEmpty();
         }
     }
