@@ -14,4 +14,6 @@ public interface PostScrapRepository extends JpaRepository<PostScrap, Long> {
 
     @Query("SELECT ps.post.id FROM PostScrap ps WHERE ps.member.id = :memberId AND ps.post.id IN :postIds")
     List<Long> findScrapedPostIds(@Param("memberId") Long memberId, @Param("postIds") List<Long> postIds);
+
+    long countByMemberId(Long memberId);
 }
