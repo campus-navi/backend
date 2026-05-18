@@ -72,7 +72,11 @@ public enum ErrorCode {
     OFFICIAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND),
 
     //활동 알림 관련
-    ACTIVITY_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND);
+    ACTIVITY_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    //스크랩 폴더 관련
+    SCRAP_FOLDER_NOT_FOUND(HttpStatus.NOT_FOUND),
+    SCRAP_FOLDER_NAME_DUPLICATE(HttpStatus.CONFLICT);
 
     private final HttpStatus status;
 }

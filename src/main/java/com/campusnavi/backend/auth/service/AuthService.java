@@ -16,6 +16,8 @@ import com.campusnavi.backend.infra.redis.RedisService;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberStatus;
 import com.campusnavi.backend.member.repository.MemberRepository;
+import com.campusnavi.backend.scrap.entity.ScrapFolder;
+import com.campusnavi.backend.scrap.repository.ScrapFolderRepository;
 import com.campusnavi.backend.university.entity.Campus;
 import com.campusnavi.backend.university.entity.Department;
 import com.campusnavi.backend.university.repository.DepartmentRepository;
@@ -35,6 +37,7 @@ public class AuthService {
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
     private final DepartmentRepository departmentRepository;
+    private final ScrapFolderRepository scrapFolderRepository;
     private final JwtProvider jwtProvider;
     private final JwtProperties jwtProperties;
 
@@ -72,6 +75,8 @@ public class AuthService {
                 universityId, campus, request.admissionYear(), request.grade());
         member.addDepartment(department);
         memberRepository.save(member);
+
+        scrapFolderRepository.save(ScrapFolder.create(member.getId(), "나중에 볼 스크랩", null));
 
         redisService.delete(RedisKeys.emailVerified(request.verifiedToken()));
 

@@ -17,6 +17,7 @@ import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberRole;
 import com.campusnavi.backend.member.entity.MemberStatus;
 import com.campusnavi.backend.member.repository.MemberRepository;
+import com.campusnavi.backend.scrap.repository.ScrapFolderRepository;
 import com.campusnavi.backend.university.entity.Campus;
 import com.campusnavi.backend.university.entity.Department;
 import com.campusnavi.backend.university.entity.University;
@@ -57,6 +58,9 @@ class AuthServiceTest {
 
     @Mock
     private DepartmentRepository departmentRepository;
+
+    @Mock
+    private ScrapFolderRepository scrapFolderRepository;
 
     @Mock
     private JwtProvider jwtProvider;
@@ -158,6 +162,7 @@ class AuthServiceTest {
 
             // then
             then(memberRepository).should().save(any());
+            then(scrapFolderRepository).should().save(any());
             then(redisService).should().delete(RedisKeys.emailVerified(VERIFIED_TOKEN));
             then(redisService).should().set(eq(RedisKeys.refreshToken("refresh-jti")), eq("refresh-token"), any());
             assertThat(result.accessToken()).isEqualTo("access-token");
