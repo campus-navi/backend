@@ -24,6 +24,11 @@ public class PostInteractionService {
     private final PostScrapRepository postScrapRepository;
     private final MemberRepository memberRepository;
 
+    @Transactional(readOnly = true)
+    public long countScraps(Long memberId) {
+        return postScrapRepository.countByMemberId(memberId);
+    }
+
     public void addLike(Long postId, AuthMember authMember) {
         postRepository.findByIdWithMember(postId, authMember.universityId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));

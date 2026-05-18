@@ -21,6 +21,13 @@ public interface MemberRepository extends JpaRepository<Member,Long> {
     @Query("SELECT m FROM Member m WHERE m.id = :id AND m.status <> com.campusnavi.backend.member.entity.MemberStatus.WITHDRAWN")
     Optional<Member> findById(@Param("id") Long id);
 
+    @Query("SELECT DISTINCT m FROM Member m " +
+            "LEFT JOIN FETCH m.campus " +
+            "LEFT JOIN FETCH m.memberDepartments md " +
+            "LEFT JOIN FETCH md.department " +
+            "WHERE m.id = :id AND m.status <> com.campusnavi.backend.member.entity.MemberStatus.WITHDRAWN")
+    Optional<Member> findProfileById(@Param("id") Long id);
+
     @Query("SELECT m FROM Member m " +
             "WHERE m.id > :lastId " +
             "  AND m.role <> :excludedRole " +
