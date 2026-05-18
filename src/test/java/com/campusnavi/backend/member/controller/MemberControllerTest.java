@@ -2,7 +2,12 @@ package com.campusnavi.backend.member.controller;
 
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
+import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
+import com.campusnavi.backend.member.dto.UsernameUpdateRequest;
 import com.campusnavi.backend.member.service.MemberService;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +16,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,6 +26,8 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +43,10 @@ class MemberControllerTest {
     @MockitoBean
     private MemberService memberService;
 
+    private static final Authentication AUTH = new UsernamePasswordAuthenticationToken(
+            new AuthMember(1L, "USER", 10L), null, List.of()
+    );
+
     @Nested
     @DisplayName("관심사 전체 교체")
     class UpdateInterests {
@@ -47,6 +60,7 @@ class MemberControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/v1/members/me/interests")
+                            .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -62,6 +76,7 @@ class MemberControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/v1/members/me/interests")
+                            .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -76,6 +91,7 @@ class MemberControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/v1/members/me/interests")
+                            .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
@@ -93,11 +109,178 @@ class MemberControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/v1/members/me/interests")
+                            .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.code").value(ErrorCode.TAG_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("아이디 변경")
+    class ChangeUsername {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            // given
+            UsernameUpdateRequest request = new UsernameUpdateRequest("newname1");
+            willDoNothing().given(memberService).changeUsername(any(), any());
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/username")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("형식에 맞지 않는 아이디면 400을 반환한다")
+        void invalidUsername() throws Exception {
+            // given
+            UsernameUpdateRequest request = new UsernameUpdateRequest("AB");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/username")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("이미 사용 중인 아이디면 409를 반환한다")
+        void duplicateUsername() throws Exception {
+            // given
+            UsernameUpdateRequest request = new UsernameUpdateRequest("dupname1");
+            willThrow(new BusinessException(ErrorCode.DUPLICATE_USERNAME))
+                    .given(memberService).changeUsername(any(), any());
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/username")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.DUPLICATE_USERNAME.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("비밀번호 변경")
+    class ChangePassword {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            // given
+            PasswordUpdateRequest request = new PasswordUpdateRequest("newpass1!");
+            willDoNothing().given(memberService).changePassword(any(), any());
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/password")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("형식에 맞지 않는 비밀번호면 400을 반환한다")
+        void invalidPassword() throws Exception {
+            // given
+            PasswordUpdateRequest request = new PasswordUpdateRequest("short");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/password")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("학번 변경")
+    class ChangeAdmissionYear {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            // given
+            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(25);
+            willDoNothing().given(memberService).changeAdmissionYear(any(), any());
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/admission-year")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("학번이 null이면 400을 반환한다")
+        void nullAdmissionYear() throws Exception {
+            // given
+            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(null);
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/admission-year")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("학년 변경")
+    class ChangeGrade {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            // given
+            GradeUpdateRequest request = new GradeUpdateRequest(2);
+            willDoNothing().given(memberService).changeGrade(any(), any());
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/grade")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("학년이 범위를 벗어나면 400을 반환한다")
+        void invalidGrade() throws Exception {
+            // given
+            GradeUpdateRequest request = new GradeUpdateRequest(5);
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/grade")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
         }
     }
 }

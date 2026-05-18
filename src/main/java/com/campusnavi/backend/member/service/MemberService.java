@@ -11,9 +11,14 @@ import com.campusnavi.backend.member.dto.MemberProfile;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberInterest;
 import com.campusnavi.backend.member.entity.MemberRole;
+import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.GradeUpdateRequest;
+import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
+import com.campusnavi.backend.member.dto.UsernameUpdateRequest;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +31,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final MemberInterestRepository memberInterestRepository;
     private final TagRepository tagRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public MemberMeResponse getMe(AuthMember authMember) {
@@ -85,5 +91,41 @@ public class MemberService {
                 .toList();
 
         memberInterestRepository.saveAll(memberInterests);
+    }
+
+    @Transactional
+    public void changeUsername(Long memberId, UsernameUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (memberRepository.existsByUsername(request.username())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_USERNAME);
+        }
+
+        member.changeUsername(request.username());
+    }
+
+    @Transactional
+    public void changePassword(Long memberId, PasswordUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.changePassword(passwordEncoder.encode(request.password()));
+    }
+
+    @Transactional
+    public void changeAdmissionYear(Long memberId, AdmissionYearUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.changeAdmissionYear(request.admissionYear());
+    }
+
+    @Transactional
+    public void changeGrade(Long memberId, GradeUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.changeGrade(request.grade());
     }
 }

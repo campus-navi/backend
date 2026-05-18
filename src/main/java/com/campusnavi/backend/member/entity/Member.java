@@ -103,4 +103,20 @@ public class Member extends BaseEntity {
         this.status = MemberStatus.WITHDRAWN;
         this.deletedAt = LocalDateTime.now();
     }
+
+    public void changeUsername(String username) {
+        this.username = username;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void changeAdmissionYear(Integer admissionYear) {
+        this.admissionYear = admissionYear;
+    }
+
+    public void changeGrade(Integer grade) {
+        this.grade = grade;
+    }
 }
