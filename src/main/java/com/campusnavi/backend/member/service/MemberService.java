@@ -7,8 +7,10 @@ import com.campusnavi.backend.tag.entity.Tag;
 import com.campusnavi.backend.tag.repository.TagRepository;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberMeResponse;
+import com.campusnavi.backend.member.dto.MemberProfile;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberInterest;
+import com.campusnavi.backend.member.entity.MemberRole;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,29 @@ public class MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         boolean hasSetInterests = memberInterestRepository.existsByMemberId(authMember.memberId());
         return new MemberMeResponse(member.getNickname(), hasSetInterests);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberProfile getMyProfile(Long memberId) {
+        Member member = memberRepository.findProfileById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (member.getRole() == MemberRole.ADMIN) {
+            return new MemberProfile(member.getNickname(), member.getEmail(),
+                    null, null, null, List.of());
+        }
+
+        List<String> departments = member.getMemberDepartments().stream()
+                .map(memberDepartment -> memberDepartment.getDepartment().getName())
+                .toList();
+
+        return new MemberProfile(
+                member.getNickname(),
+                member.getEmail(),
+                member.getCampus().getName(),
+                member.getAdmissionYear(),
+                member.getGrade(),
+                departments);
     }
 
     @Transactional
