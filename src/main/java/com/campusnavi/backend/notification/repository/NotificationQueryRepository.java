@@ -57,4 +57,17 @@ public class NotificationQueryRepository {
                 .orderBy(officialPostAiMeta.endDate.asc())
                 .fetch();
     }
+
+    public long countActiveRemindsByMemberId(Long memberId) {
+        Long count = queryFactory
+                .select(officialPost.id.count())
+                .from(officialPostNotification)
+                .join(officialPost).on(officialPost.id.eq(officialPostNotification.post.id))
+                .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
+                .where(officialPostNotification.memberId.eq(memberId)
+                        .and(officialPostAiMeta.endDate.isNotNull())
+                        .and(officialPostAiMeta.endDate.goe(LocalDate.now())))
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
 }

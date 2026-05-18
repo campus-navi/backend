@@ -19,4 +19,8 @@ public class RemindNotificationService {
     public List<RemindNotice> getRemindNotices(AuthContext context) {
         return notificationQueryRepository.findRemindNoticesByMemberId(context.memberId());
     }
+
+    public long getActiveRemindCount(Long memberId) {
+        return notificationQueryRepository.countActiveRemindsByMemberId(memberId);
+    }
 }
