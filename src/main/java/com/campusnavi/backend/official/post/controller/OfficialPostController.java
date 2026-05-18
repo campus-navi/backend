@@ -9,6 +9,8 @@ import com.campusnavi.backend.official.post.dto.AttachmentDownloadResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
+import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
+import com.campusnavi.backend.official.post.dto.OfficialPostScrapRequest;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
@@ -19,6 +21,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,9 +29,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Tag(name = "9. 공식 정보", description = "공식 정보 조회 API")
 @RestController
@@ -80,35 +86,41 @@ public class OfficialPostController {
                 officialPostService.getDetail(id, AuthContext.of(authMember))));
     }
 
-    @Operation(summary = "공식 정보 스크랩 추가", description = "공식 정보를 스크랩합니다. 이미 스크랩된 상태이면 멱등 동작합니다. 사용자의 university scope 밖 공지는 스크랩할 수 없습니다.")
+    @Operation(summary = "공식 정보 스크랩 폴더 목록 조회",
+            description = "스크랩 바텀시트용. 회원의 전체 스크랩 폴더와 해당 공지가 각 폴더에 담겨 있는지 여부를 반환합니다. 사용자의 university scope 밖 공지는 조회할 수 없습니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "스크랩 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PutMapping("/{id}/scrap")
-    public ResponseEntity<ApiResponse<Void>> scrap(
+    @GetMapping("/{id}/scrap-folders")
+    public ResponseEntity<ApiResponse<List<OfficialPostScrapFolderResponse>>> getScrapFolders(
             @PathVariable Long id,
             @AuthenticationPrincipal AuthMember authMember) {
-        officialPostScrapService.scrap(id, AuthContext.of(authMember));
-        return ResponseEntity.ok(ApiResponse.ok());
+        return ResponseEntity.ok(ApiResponse.ok(
+                officialPostScrapService.getScrapFolders(id, AuthContext.of(authMember))));
     }
 
-    @Operation(summary = "공식 정보 스크랩 해제", description = "공식 정보 스크랩을 해제합니다. 스크랩되지 않은 상태이면 멱등 동작합니다. 사용자의 university scope 밖 공지는 해제할 수 없습니다.")
+    @Operation(summary = "공식 정보 스크랩 폴더 설정",
+            description = "해당 공지가 담길 폴더 집합을 folderIds로 치환합니다. 새로 선택된 폴더에는 추가, 빠진 폴더에서는 제거됩니다(멱등). " +
+                    "본인 소유가 아니거나 존재하지 않는 폴더가 포함되면 404를 반환합니다. 사용자의 university scope 밖 공지는 설정할 수 없습니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "스크랩 해제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "설정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 비활성화/스코프 밖 공지",
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 스코프 밖 공지 / 본인 소유가 아닌 폴더",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @DeleteMapping("/{id}/scrap")
-    public ResponseEntity<ApiResponse<Void>> unscrap(
+    @PutMapping("/{id}/scrap-folders")
+    public ResponseEntity<ApiResponse<Void>> setScrapFolders(
             @PathVariable Long id,
+            @RequestBody @Valid OfficialPostScrapRequest request,
             @AuthenticationPrincipal AuthMember authMember) {
-        officialPostScrapService.unscrap(id, AuthContext.of(authMember));
+        officialPostScrapService.setScrapFolders(id, request.folderIds(), AuthContext.of(authMember));
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
