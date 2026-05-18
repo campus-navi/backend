@@ -15,4 +15,7 @@ public interface OfficialPostScrapRepository extends JpaRepository<OfficialPostS
 
     @Query("SELECT s.scrapFolderId FROM OfficialPostScrap s WHERE s.memberId = :memberId AND s.post.id = :postId")
     List<Long> findScrapFolderIdsByMemberIdAndPostId(@Param("memberId") Long memberId, @Param("postId") Long postId);
+
+    @Query("SELECT COUNT(DISTINCT s.post.id) FROM OfficialPostScrap s WHERE s.memberId = :memberId")
+    long countDistinctPostByMemberId(@Param("memberId") Long memberId);
 }

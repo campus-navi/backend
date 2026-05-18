@@ -28,6 +28,11 @@ public class OfficialPostScrapService {
     private final ScrapFolderRepository scrapFolderRepository;
 
     @Transactional(readOnly = true)
+    public long countScrappedPosts(Long memberId) {
+        return scrapRepository.countDistinctPostByMemberId(memberId);
+    }
+
+    @Transactional(readOnly = true)
     public List<OfficialPostScrapFolderResponse> getScrapFolders(Long postId, AuthContext context) {
         if (!postRepository.existsActiveByIdAndUniversityScope(postId, context.universityId())) {
             throw new BusinessException(ErrorCode.OFFICIAL_POST_NOT_FOUND);
