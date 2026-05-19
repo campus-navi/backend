@@ -2,6 +2,7 @@ package com.campusnavi.backend.official.ai.dto;
 
 
 import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDate;
@@ -18,8 +19,10 @@ public record OfficialAiResponse(
         String contactPhone,
         String contactEmail,
         LocalDate startDate,
+        @JsonDeserialize(using = StartTimeDeserializer.class)
         LocalTime startTime,
         LocalDate endDate,
+        @JsonDeserialize(using = EndTimeDeserializer.class)
         LocalTime endTime,
         String requiredDocuments,
         String applyMethodType,

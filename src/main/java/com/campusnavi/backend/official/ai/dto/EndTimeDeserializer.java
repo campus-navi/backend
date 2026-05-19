@@ -1,0 +1,24 @@
+package com.campusnavi.backend.official.ai.dto;
+
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+
+import java.time.LocalTime;
+
+public class EndTimeDeserializer extends ValueDeserializer<LocalTime> {
+
+    private static final LocalTime END_OF_DAY = LocalTime.of(23, 59, 59);
+
+    @Override
+    public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) {
+        String value = p.getString();
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.startsWith("24:00")) {
+            return END_OF_DAY;
+        }
+        return LocalTime.parse(value);
+    }
+}
