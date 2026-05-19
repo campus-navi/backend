@@ -26,6 +26,9 @@ public class ScrapFolder extends BaseCreatedAtEntity {
     @Column(length = 20)
     private String description;
 
+    @Column(nullable = false)
+    private long scrapCount;
+
     public static ScrapFolder create(Long memberId, String name, String description) {
         ScrapFolder folder = new ScrapFolder();
         folder.memberId = memberId;
