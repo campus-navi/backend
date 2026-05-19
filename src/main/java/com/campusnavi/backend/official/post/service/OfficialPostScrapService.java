@@ -64,11 +64,16 @@ public class OfficialPostScrapService {
 
         current.stream()
                 .filter(scrap -> !targetFolderIds.contains(scrap.getScrapFolderId()))
-                .forEach(scrapRepository::delete);
+                .forEach(scrap -> {
+                    scrapRepository.delete(scrap);
+                    scrapFolderRepository.decrementScrapCount(scrap.getScrapFolderId());
+                });
 
         targetFolderIds.stream()
                 .filter(folderId -> !currentFolderIds.contains(folderId))
-                .forEach(folderId -> scrapRepository.save(
-                        OfficialPostScrap.create(context.memberId(), post, folderId)));
+                .forEach(folderId -> {
+                    scrapRepository.save(OfficialPostScrap.create(context.memberId(), post, folderId));
+                    scrapFolderRepository.incrementScrapCount(folderId);
+                });
     }
 }
