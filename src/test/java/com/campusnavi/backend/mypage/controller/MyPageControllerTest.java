@@ -4,7 +4,11 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.mypage.dto.MyPageResponse;
+import com.campusnavi.backend.mypage.dto.MyScrapResponse;
 import com.campusnavi.backend.mypage.service.MyPageService;
+import com.campusnavi.backend.mypage.service.MyScrapService;
+import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
+import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +35,9 @@ class MyPageControllerTest {
 
     @MockitoBean
     private MyPageService myPageService;
+
+    @MockitoBean
+    private MyScrapService myScrapService;
 
     private static final Long MEMBER_ID = 1L;
     private static final Long UNIVERSITY_ID = 10L;
@@ -68,5 +75,19 @@ class MyPageControllerTest {
         mockMvc.perform(get("/api/v1/mypage").with(authentication(AUTH)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("내 스크랩 화면 요청이면 200과 최근 스크랩·폴더 목록을 반환한다")
+    void getMyScraps() throws Exception {
+        given(myScrapService.getMyScraps(MEMBER_ID)).willReturn(new MyScrapResponse(
+                List.of(new RecentScrapResponse(2L, "장학 공고", "장학", null, null)),
+                List.of(new ScrapFolderResponse(100L, "취업", null, 1L))));
+
+        mockMvc.perform(get("/api/v1/mypage/scraps").with(authentication(AUTH)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.recentScraps[0].title").value("장학 공고"))
+                .andExpect(jsonPath("$.data.folders[0].name").value("취업"));
     }
 }
