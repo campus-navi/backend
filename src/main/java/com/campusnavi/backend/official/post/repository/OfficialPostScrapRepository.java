@@ -1,7 +1,9 @@
 package com.campusnavi.backend.official.post.repository;
 
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
+import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +31,16 @@ public interface OfficialPostScrapRepository extends JpaRepository<OfficialPostS
             + "ORDER BY s.createdAt DESC")
     List<FolderScrapResponse> findFolderScraps(@Param("memberId") Long memberId,
                                                @Param("folderId") Long folderId);
+
+    @Query("SELECT s.post.id FROM OfficialPostScrap s WHERE s.memberId = :memberId "
+            + "GROUP BY s.post.id ORDER BY MAX(s.createdAt) DESC")
+    List<Long> findRecentScrappedPostIds(@Param("memberId") Long memberId, Pageable pageable);
+
+    @Query("SELECT new com.campusnavi.backend.official.post.dto.RecentScrapResponse("
+            + "p.id, p.title, t.name, m.endDate, p.publishedAt) "
+            + "FROM OfficialPost p "
+            + "LEFT JOIN OfficialPostAiMeta m ON m.officialPost = p "
+            + "LEFT JOIN m.tag t "
+            + "WHERE p.id IN :postIds")
+    List<RecentScrapResponse> findRecentScrapCards(@Param("postIds") List<Long> postIds);
 }
