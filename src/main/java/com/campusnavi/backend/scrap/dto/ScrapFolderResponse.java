@@ -8,7 +8,8 @@ public record ScrapFolderResponse(
         String description,
         long scrapCount
 ) {
-    public static ScrapFolderResponse of(ScrapFolder folder, long scrapCount) {
-        return new ScrapFolderResponse(folder.getId(), folder.getName(), folder.getDescription(), scrapCount);
+    public static ScrapFolderResponse of(ScrapFolder folder) {
+        return new ScrapFolderResponse(
+                folder.getId(), folder.getName(), folder.getDescription(), folder.getScrapCount());
     }
 }

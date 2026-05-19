@@ -50,7 +50,7 @@ public class ScrapFolderService {
 
     public List<ScrapFolderResponse> getFolders(Long memberId, ScrapFolderSort sort) {
         return scrapFolderRepository.findByMemberId(memberId, toSort(sort)).stream()
-                .map(folder -> ScrapFolderResponse.of(folder, 0L))
+                .map(ScrapFolderResponse::of)
                 .toList();
     }
 
