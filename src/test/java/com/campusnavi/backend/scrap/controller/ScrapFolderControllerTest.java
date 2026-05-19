@@ -4,10 +4,13 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
+import com.campusnavi.backend.official.post.dto.ScrapBulkDeleteResponse;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
+import com.campusnavi.backend.scrap.dto.ScrapBulkDeleteRequest;
 import com.campusnavi.backend.scrap.dto.ScrapFolderCreateRequest;
 import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.scrap.dto.ScrapFolderUpdateRequest;
+import com.campusnavi.backend.scrap.dto.ScrapRestoreRequest;
 import com.campusnavi.backend.scrap.service.ScrapFolderService;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -188,6 +192,109 @@ class ScrapFolderControllerTest {
             mockMvc.perform(get("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(ErrorCode.SCRAP_FOLDER_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 다중 제거")
+    class DeleteScraps {
+
+        @Test
+        @DisplayName("정상 요청이면 200과 삭제 건수를 반환한다")
+        void success() throws Exception {
+            given(officialPostScrapService.deleteScraps(eq(100L), any(), any()))
+                    .willReturn(new ScrapBulkDeleteResponse(2, List.of(100L, 200L)));
+
+            mockMvc.perform(delete("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapBulkDeleteRequest(List.of(1L, 2L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.deletedCount").value(2))
+                    .andExpect(jsonPath("$.data.deletedPostIds[0]").value(100));
+        }
+
+        @Test
+        @DisplayName("scrapIds가 비어 있으면 400을 반환한다")
+        void emptyList() throws Exception {
+            mockMvc.perform(delete("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapBulkDeleteRequest(List.of()))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 404를 반환한다")
+        void folderNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND))
+                    .given(officialPostScrapService).deleteScraps(eq(100L), any(), any());
+
+            mockMvc.perform(delete("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapBulkDeleteRequest(List.of(1L)))))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.SCRAP_FOLDER_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 복구")
+    class RestoreScraps {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostScrapService)
+                    .restoreScraps(eq(100L), any(), any());
+
+            mockMvc.perform(post("/api/v1/scrap-folders/100/scraps/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapRestoreRequest(List.of(7L, 8L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("postIds가 비어 있으면 400을 반환한다")
+        void emptyList() throws Exception {
+            mockMvc.perform(post("/api/v1/scrap-folders/100/scraps/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapRestoreRequest(List.of()))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 404를 반환한다")
+        void folderNotFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND))
+                    .given(officialPostScrapService).restoreScraps(eq(100L), any(), any());
+
+            mockMvc.perform(post("/api/v1/scrap-folders/100/scraps/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapRestoreRequest(List.of(7L)))))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.SCRAP_FOLDER_NOT_FOUND.name()));
+        }
+
+        @Test
+        @DisplayName("동시 복구로 유니크 제약 위반이 나면 멱등하게 200을 반환한다")
+        void concurrentIdempotent() throws Exception {
+            willThrow(new DataIntegrityViolationException("duplicate"))
+                    .given(officialPostScrapService).restoreScraps(eq(100L), any(), any());
+
+            mockMvc.perform(post("/api/v1/scrap-folders/100/scraps/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new ScrapRestoreRequest(List.of(7L, 8L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
         }
     }
 }

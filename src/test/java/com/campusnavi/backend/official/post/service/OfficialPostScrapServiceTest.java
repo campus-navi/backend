@@ -6,6 +6,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
+import com.campusnavi.backend.official.post.dto.ScrapBulkDeleteResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
@@ -20,12 +21,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -279,6 +283,152 @@ class OfficialPostScrapServiceTest {
             // then
             assertThat(result).isEmpty();
             then(scrapRepository).should(never()).findRecentScrapCards(any());
+        }
+    }
+
+    private OfficialPost activePost(Long postId) {
+        OfficialPost post = mock(OfficialPost.class);
+        given(post.getId()).willReturn(postId);
+        return post;
+    }
+
+    @Nested
+    @DisplayName("스크랩 다중 제거")
+    class DeleteScraps {
+
+        @Test
+        @DisplayName("선택한 스크랩을 삭제하고 실제 건수와 삭제된 postId를 반환한다")
+        void success() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            given(scrapRepository.findScrappedPostIds(any(), eq(MEMBER_ID), eq(FOLDER_A)))
+                    .willReturn(List.of(100L, 200L));
+            given(scrapRepository.deleteScrapsByIds(any(), eq(MEMBER_ID), eq(FOLDER_A)))
+                    .willReturn(2);
+
+            // when
+            ScrapBulkDeleteResponse result =
+                    officialPostScrapService.deleteScraps(FOLDER_A, List.of(1L, 2L), CONTEXT);
+
+            // then
+            assertThat(result.deletedCount()).isEqualTo(2);
+            assertThat(result.deletedPostIds()).containsExactly(100L, 200L);
+            then(scrapFolderRepository).should().decrementScrapCount(FOLDER_A, 2L);
+        }
+
+        @Test
+        @DisplayName("일치하는 스크랩이 없으면 0건을 반환하고 삭제하지 않는다")
+        void noMatch() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            given(scrapRepository.findScrappedPostIds(any(), eq(MEMBER_ID), eq(FOLDER_A)))
+                    .willReturn(List.of());
+
+            // when
+            ScrapBulkDeleteResponse result =
+                    officialPostScrapService.deleteScraps(FOLDER_A, List.of(9L), CONTEXT);
+
+            // then
+            assertThat(result.deletedCount()).isZero();
+            assertThat(result.deletedPostIds()).isEmpty();
+            then(scrapRepository).should(never()).deleteScrapsByIds(any(), any(), any());
+            then(scrapFolderRepository).should(never()).decrementScrapCount(any(), anyLong());
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 SCRAP_FOLDER_NOT_FOUND 예외가 발생한다")
+        void folderNotFound() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> officialPostScrapService.deleteScraps(FOLDER_A, List.of(1L), CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+            then(scrapRepository).should(never()).findScrappedPostIds(any(), any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("스크랩 복구")
+    class RestoreScraps {
+
+        @Test
+        @DisplayName("스크랩 삭제된 공지를 같은 폴더로 재스크랩한다")
+        void success() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            given(scrapRepository.findExistingPostIds(eq(MEMBER_ID), eq(FOLDER_A), any()))
+                    .willReturn(List.of());
+            List<OfficialPost> posts = List.of(activePost(7L), activePost(8L));
+            given(postRepository.findByIdInAndUniversityScope(any(), eq(UNIVERSITY_ID)))
+                    .willReturn(posts);
+
+            // when
+            officialPostScrapService.restoreScraps(FOLDER_A, List.of(7L, 8L), CONTEXT);
+
+            // then
+            then(scrapRepository).should()
+                    .saveAll(argThat((Collection<OfficialPostScrap> c) -> c.size() == 2));
+            then(scrapFolderRepository).should().incrementScrapCount(FOLDER_A, 2L);
+        }
+
+        @Test
+        @DisplayName("이미 폴더에 있는 공지는 건너뛴다")
+        void skipExisting() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            given(scrapRepository.findExistingPostIds(eq(MEMBER_ID), eq(FOLDER_A), any()))
+                    .willReturn(List.of(7L));
+            List<OfficialPost> posts = List.of(activePost(7L), activePost(8L));
+            given(postRepository.findByIdInAndUniversityScope(any(), eq(UNIVERSITY_ID)))
+                    .willReturn(posts);
+
+            // when
+            officialPostScrapService.restoreScraps(FOLDER_A, List.of(7L, 8L), CONTEXT);
+
+            // then
+            then(scrapRepository).should()
+                    .saveAll(argThat((Collection<OfficialPostScrap> c) -> c.size() == 1));
+            then(scrapFolderRepository).should().incrementScrapCount(FOLDER_A, 1L);
+        }
+
+        @Test
+        @DisplayName("스코프 밖이거나 완전 삭제된 공지는 건너뛴다")
+        void skipMissing() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            given(scrapRepository.findExistingPostIds(eq(MEMBER_ID), eq(FOLDER_A), any()))
+                    .willReturn(List.of());
+            given(postRepository.findByIdInAndUniversityScope(any(), eq(UNIVERSITY_ID)))
+                    .willReturn(List.of());
+
+            // when
+            officialPostScrapService.restoreScraps(FOLDER_A, List.of(7L), CONTEXT);
+
+            // then
+            then(scrapRepository).should(never()).saveAll(any());
+            then(scrapFolderRepository).should(never()).incrementScrapCount(any(), anyLong());
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 SCRAP_FOLDER_NOT_FOUND 예외가 발생한다")
+        void folderNotFound() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> officialPostScrapService.restoreScraps(FOLDER_A, List.of(7L), CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+            then(scrapRepository).should(never()).saveAll(any());
         }
     }
 }
