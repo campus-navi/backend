@@ -140,8 +140,8 @@ class NotificationControllerTest {
         @DisplayName("정상 요청이면 200과 마감 임박 순 목록을 반환한다")
         void success() throws Exception {
             given(remindNotificationService.getRemindNotices(CONTEXT)).willReturn(List.of(
-                    new RemindNotice(11L, "장학금 신청", LocalDate.of(2026, 5, 16)),
-                    new RemindNotice(12L, "동아리 모집", LocalDate.of(2026, 5, 20))));
+                    new RemindNotice(11L, "장학금 신청", "장학", LocalDate.of(2026, 5, 16)),
+                    new RemindNotice(12L, "동아리 모집", "행사", LocalDate.of(2026, 5, 20))));
 
             mockMvc.perform(get("/api/v1/notifications/remind").with(authentication(AUTH)))
                     .andExpect(status().isOk())
@@ -149,6 +149,7 @@ class NotificationControllerTest {
                     .andExpect(jsonPath("$.data.length()").value(2))
                     .andExpect(jsonPath("$.data[0].postId").value(11L))
                     .andExpect(jsonPath("$.data[0].title").value("장학금 신청"))
+                    .andExpect(jsonPath("$.data[0].tagName").value("장학"))
                     .andExpect(jsonPath("$.data[0].endDate").value("2026-05-16"))
                     .andExpect(jsonPath("$.data[1].postId").value(12L));
         }
