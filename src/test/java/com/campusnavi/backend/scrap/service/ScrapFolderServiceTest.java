@@ -186,18 +186,23 @@ class ScrapFolderServiceTest {
     class GetFolders {
 
         @Test
-        @DisplayName("정렬 조건으로 조회하고 scrapCount는 0으로 반환한다")
+        @DisplayName("정렬 조건으로 조회하고 폴더의 scrapCount를 반환한다")
         void success() {
             // given
+            ScrapFolder folder = mock(ScrapFolder.class);
+            given(folder.getId()).willReturn(100L);
+            given(folder.getName()).willReturn("취업");
+            given(folder.getDescription()).willReturn(null);
+            given(folder.getScrapCount()).willReturn(5L);
             given(scrapFolderRepository.findByMemberId(eq(MEMBER_ID), any(Sort.class)))
-                    .willReturn(List.of(ScrapFolder.create(MEMBER_ID, "취업", null)));
+                    .willReturn(List.of(folder));
 
             // when
             List<ScrapFolderResponse> result = scrapFolderService.getFolders(MEMBER_ID, ScrapFolderSort.NAME_ASC);
 
             // then
             assertThat(result).hasSize(1);
-            assertThat(result.getFirst().scrapCount()).isZero();
+            assertThat(result.getFirst().scrapCount()).isEqualTo(5L);
         }
     }
 }

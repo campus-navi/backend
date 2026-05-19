@@ -3,6 +3,7 @@ package com.campusnavi.backend.official.post.service;
 import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
@@ -202,6 +203,42 @@ class OfficialPostScrapServiceTest {
             assertThatThrownBy(() -> officialPostScrapService.getScrapFolders(POST_ID, CONTEXT))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OFFICIAL_POST_NOT_FOUND));
+        }
+    }
+
+    @Nested
+    @DisplayName("폴더 스크랩 목록 조회")
+    class GetFolderScraps {
+
+        @Test
+        @DisplayName("본인 폴더면 스크랩 목록을 반환한다")
+        void success() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.of(mock(ScrapFolder.class)));
+            List<FolderScrapResponse> expected = List.of(
+                    new FolderScrapResponse(1L, 2L, "공지", "장학", null, null, true));
+            given(scrapRepository.findFolderScraps(MEMBER_ID, FOLDER_A)).willReturn(expected);
+
+            // when
+            List<FolderScrapResponse> result = officialPostScrapService.getFolderScraps(FOLDER_A, CONTEXT);
+
+            // then
+            assertThat(result).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 SCRAP_FOLDER_NOT_FOUND 예외가 발생한다")
+        void notFound() {
+            // given
+            given(scrapFolderRepository.findByIdAndMemberId(FOLDER_A, MEMBER_ID))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> officialPostScrapService.getFolderScraps(FOLDER_A, CONTEXT))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+            then(scrapRepository).should(never()).findFolderScraps(any(), any());
         }
     }
 }
