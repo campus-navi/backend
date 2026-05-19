@@ -3,6 +3,7 @@ package com.campusnavi.backend.official.post.service;
 import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
@@ -45,6 +46,13 @@ public class OfficialPostScrapService {
                 .map(folder -> new OfficialPostScrapFolderResponse(
                         folder.getId(), folder.getName(), scrappedFolderIds.contains(folder.getId())))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FolderScrapResponse> getFolderScraps(Long folderId, AuthContext context) {
+        scrapFolderRepository.findByIdAndMemberId(folderId, context.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+        return scrapRepository.findFolderScraps(context.memberId(), folderId);
     }
 
     public void setScrapFolders(Long postId, List<Long> folderIds, AuthContext context) {
