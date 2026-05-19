@@ -1,5 +1,6 @@
 package com.campusnavi.backend.official.post.repository;
 
+import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,14 @@ public interface OfficialPostScrapRepository extends JpaRepository<OfficialPostS
 
     @Query("SELECT COUNT(DISTINCT s.post.id) FROM OfficialPostScrap s WHERE s.memberId = :memberId")
     long countDistinctPostByMemberId(@Param("memberId") Long memberId);
+
+    @Query("SELECT new com.campusnavi.backend.official.post.dto.FolderScrapResponse("
+            + "s.id, p.id, p.title, t.name, m.endDate, p.publishedAt, p.isActive) "
+            + "FROM OfficialPostScrap s JOIN s.post p "
+            + "LEFT JOIN OfficialPostAiMeta m ON m.officialPost = p "
+            + "LEFT JOIN m.tag t "
+            + "WHERE s.memberId = :memberId AND s.scrapFolderId = :folderId "
+            + "ORDER BY s.createdAt DESC")
+    List<FolderScrapResponse> findFolderScraps(@Param("memberId") Long memberId,
+                                               @Param("folderId") Long folderId);
 }
