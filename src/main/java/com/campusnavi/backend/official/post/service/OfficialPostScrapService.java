@@ -6,6 +6,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
+import com.campusnavi.backend.official.post.dto.ScrapBulkDeleteResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
@@ -102,5 +103,41 @@ public class OfficialPostScrapService {
                     scrapRepository.save(OfficialPostScrap.create(context.memberId(), post, folderId));
                     scrapFolderRepository.incrementScrapCount(folderId);
                 });
+    }
+
+    public ScrapBulkDeleteResponse deleteScraps(Long folderId, List<Long> scrapIds, AuthContext context) {
+        scrapFolderRepository.findByIdAndMemberId(folderId, context.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+
+        Set<Long> ids = Set.copyOf(scrapIds);
+        List<Long> deletedPostIds = scrapRepository.findScrappedPostIds(ids, context.memberId(), folderId);
+        if (deletedPostIds.isEmpty()) {
+            return new ScrapBulkDeleteResponse(0, List.of());
+        }
+
+        int deletedCount = scrapRepository.deleteScrapsByIds(ids, context.memberId(), folderId);
+        scrapFolderRepository.decrementScrapCount(folderId, deletedCount);
+
+        return new ScrapBulkDeleteResponse(deletedCount, deletedPostIds);
+    }
+
+    public void restoreScraps(Long folderId, List<Long> postIds, AuthContext context) {
+        scrapFolderRepository.findByIdAndMemberId(folderId, context.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
+
+        Set<Long> targetPostIds = Set.copyOf(postIds);
+        Set<Long> alreadyScrapped = Set.copyOf(
+                scrapRepository.findExistingPostIds(context.memberId(), folderId, targetPostIds));
+
+        List<OfficialPostScrap> toSave = postRepository
+                .findByIdInAndUniversityScope(targetPostIds, context.universityId()).stream()
+                .filter(post -> !alreadyScrapped.contains(post.getId()))
+                .map(post -> OfficialPostScrap.create(context.memberId(), post, folderId))
+                .toList();
+        if (toSave.isEmpty()) {
+            return;
+        }
+        scrapRepository.saveAll(toSave);
+        scrapFolderRepository.incrementScrapCount(folderId, toSave.size());
     }
 }

@@ -5,11 +5,14 @@ import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
+import com.campusnavi.backend.official.post.dto.ScrapBulkDeleteResponse;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
+import com.campusnavi.backend.scrap.dto.ScrapBulkDeleteRequest;
 import com.campusnavi.backend.scrap.dto.ScrapFolderCreateRequest;
 import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.scrap.dto.ScrapFolderSort;
 import com.campusnavi.backend.scrap.dto.ScrapFolderUpdateRequest;
+import com.campusnavi.backend.scrap.dto.ScrapRestoreRequest;
 import com.campusnavi.backend.scrap.service.ScrapFolderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -110,7 +114,7 @@ public class ScrapFolderController {
                 scrapFolderService.getFolders(authMember.memberId(), sort)));
     }
 
-    @Operation(summary = "폴더 스크랩 목록 조회",
+    @Operation(summary = "폴더 내 스크랩 목록 조회",
             description = "본인 폴더의 스크랩 게시글 목록을 스크랩한 순서(최신순)로 조회합니다. 비활성 게시글도 isActive=false로 포함됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -125,5 +129,49 @@ public class ScrapFolderController {
             @AuthenticationPrincipal AuthMember authMember) {
         return ResponseEntity.ok(ApiResponse.ok(
                 officialPostScrapService.getFolderScraps(id, AuthContext.of(authMember))));
+    }
+
+    @Operation(summary = "폴더 내 스크랩 다중 제거",
+            description = "선택한 스크랩을 해당 폴더에서 일괄 제거합니다. 실제 제거된 건수와 삭제된 게시글 ID(복구 시 사용)를 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "제거 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "scrapIds 누락",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 타인 소유 폴더",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{id}/scraps")
+    public ResponseEntity<ApiResponse<ScrapBulkDeleteResponse>> deleteScraps(
+            @PathVariable Long id,
+            @RequestBody @Valid ScrapBulkDeleteRequest request,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                officialPostScrapService.deleteScraps(id, request.scrapIds(), AuthContext.of(authMember))));
+    }
+
+    @Operation(summary = "폴더 내 스크랩 복구",
+            description = "다중 제거 응답의 게시글 ID를 해당 폴더로 재스크랩합니다. 이미 있거나 비활성·스코프 밖 게시글은 건너뜁니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "복구 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "postIds 누락",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않거나 타인 소유 폴더",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/{id}/scraps/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreScraps(
+            @PathVariable Long id,
+            @RequestBody @Valid ScrapRestoreRequest request,
+            @AuthenticationPrincipal AuthMember authMember) {
+        try {
+            officialPostScrapService.restoreScraps(id, request.postIds(), AuthContext.of(authMember));
+        } catch (DataIntegrityViolationException e) {
+            // 복구 더블클릭 등 동시 요청으로 유니크 제약 위반 시: 이미 복구된 상태이므로 멱등 처리
+        }
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }
