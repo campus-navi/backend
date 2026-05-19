@@ -5,6 +5,7 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
+import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
@@ -239,6 +240,45 @@ class OfficialPostScrapServiceTest {
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_NOT_FOUND));
             then(scrapRepository).should(never()).findFolderScraps(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("최근 스크랩 조회")
+    class GetRecentScraps {
+
+        @Test
+        @DisplayName("최신순 8건을 post 중복 없이 반환한다")
+        void success() {
+            // given
+            given(scrapRepository.findRecentScrappedPostIds(eq(MEMBER_ID), any()))
+                    .willReturn(List.of(3L, 1L, 2L));
+            RecentScrapResponse card1 = new RecentScrapResponse(1L, "공지1", "장학", null, null);
+            RecentScrapResponse card2 = new RecentScrapResponse(2L, "공지2", "취업", null, null);
+            RecentScrapResponse card3 = new RecentScrapResponse(3L, "공지3", "행사", null, null);
+            given(scrapRepository.findRecentScrapCards(List.of(3L, 1L, 2L)))
+                    .willReturn(List.of(card1, card2, card3));
+
+            // when
+            List<RecentScrapResponse> result = officialPostScrapService.getRecentScraps(MEMBER_ID);
+
+            // then
+            assertThat(result).containsExactly(card3, card1, card2);
+        }
+
+        @Test
+        @DisplayName("스크랩이 없으면 빈 목록을 반환한다")
+        void empty() {
+            // given
+            given(scrapRepository.findRecentScrappedPostIds(eq(MEMBER_ID), any()))
+                    .willReturn(List.of());
+
+            // when
+            List<RecentScrapResponse> result = officialPostScrapService.getRecentScraps(MEMBER_ID);
+
+            // then
+            assertThat(result).isEmpty();
+            then(scrapRepository).should(never()).findRecentScrapCards(any());
         }
     }
 }

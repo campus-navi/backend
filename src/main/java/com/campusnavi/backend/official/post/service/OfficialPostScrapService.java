@@ -5,18 +5,23 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
+import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPost;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import com.campusnavi.backend.official.post.repository.OfficialPostRepository;
 import com.campusnavi.backend.official.post.repository.OfficialPostScrapRepository;
 import com.campusnavi.backend.scrap.repository.ScrapFolderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +50,20 @@ public class OfficialPostScrapService {
         return scrapFolderRepository.findByMemberId(context.memberId(), Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(folder -> new OfficialPostScrapFolderResponse(
                         folder.getId(), folder.getName(), scrappedFolderIds.contains(folder.getId())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecentScrapResponse> getRecentScraps(Long memberId) {
+        List<Long> postIds = scrapRepository.findRecentScrappedPostIds(memberId, PageRequest.of(0, 8));
+        if (postIds.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, RecentScrapResponse> byId = scrapRepository.findRecentScrapCards(postIds).stream()
+                .collect(Collectors.toMap(RecentScrapResponse::postId, Function.identity()));
+        return postIds.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
