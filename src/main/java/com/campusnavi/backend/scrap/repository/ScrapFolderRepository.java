@@ -28,4 +28,12 @@ public interface ScrapFolderRepository extends JpaRepository<ScrapFolder, Long> 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE ScrapFolder f SET f.scrapCount = GREATEST(f.scrapCount - 1, 0) WHERE f.id = :folderId")
     void decrementScrapCount(@Param("folderId") Long folderId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ScrapFolder f SET f.scrapCount = f.scrapCount + :count WHERE f.id = :folderId")
+    void incrementScrapCount(@Param("folderId") Long folderId, @Param("count") long count);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ScrapFolder f SET f.scrapCount = GREATEST(f.scrapCount - :count, 0) WHERE f.id = :folderId")
+    void decrementScrapCount(@Param("folderId") Long folderId, @Param("count") long count);
 }

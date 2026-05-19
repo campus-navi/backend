@@ -5,9 +5,11 @@ import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.official.post.entity.OfficialPostScrap;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface OfficialPostScrapRepository extends JpaRepository<OfficialPostScrap, Long> {
@@ -43,4 +45,23 @@ public interface OfficialPostScrapRepository extends JpaRepository<OfficialPostS
             + "LEFT JOIN m.tag t "
             + "WHERE p.id IN :postIds")
     List<RecentScrapResponse> findRecentScrapCards(@Param("postIds") List<Long> postIds);
+
+    @Query("SELECT DISTINCT s.post.id FROM OfficialPostScrap s "
+            + "WHERE s.id IN :scrapIds AND s.memberId = :memberId AND s.scrapFolderId = :folderId")
+    List<Long> findScrappedPostIds(@Param("scrapIds") Collection<Long> scrapIds,
+                                   @Param("memberId") Long memberId,
+                                   @Param("folderId") Long folderId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM OfficialPostScrap s "
+            + "WHERE s.id IN :scrapIds AND s.memberId = :memberId AND s.scrapFolderId = :folderId")
+    int deleteScrapsByIds(@Param("scrapIds") Collection<Long> scrapIds,
+                          @Param("memberId") Long memberId,
+                          @Param("folderId") Long folderId);
+
+    @Query("SELECT s.post.id FROM OfficialPostScrap s WHERE s.memberId = :memberId "
+            + "AND s.scrapFolderId = :folderId AND s.post.id IN :postIds")
+    List<Long> findExistingPostIds(@Param("memberId") Long memberId,
+                                   @Param("folderId") Long folderId,
+                                   @Param("postIds") Collection<Long> postIds);
 }
