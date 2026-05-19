@@ -3,6 +3,8 @@ package com.campusnavi.backend.scrap.controller;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.official.post.dto.FolderScrapResponse;
+import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.scrap.dto.ScrapFolderCreateRequest;
 import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.scrap.dto.ScrapFolderUpdateRequest;
@@ -44,6 +46,9 @@ class ScrapFolderControllerTest {
 
     @MockitoBean
     private ScrapFolderService scrapFolderService;
+
+    @MockitoBean
+    private OfficialPostScrapService officialPostScrapService;
 
     private static final Long MEMBER_ID = 1L;
     private static final Authentication AUTH = new UsernamePasswordAuthenticationToken(
@@ -154,6 +159,35 @@ class ScrapFolderControllerTest {
             mockMvc.perform(get("/api/v1/scrap-folders").with(authentication(AUTH)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data[0].name").value("취업"));
+        }
+    }
+
+    @Nested
+    @DisplayName("폴더 스크랩 목록 조회")
+    class GetFolderScraps {
+
+        @Test
+        @DisplayName("정상 요청이면 200과 목록을 반환한다")
+        void success() throws Exception {
+            given(officialPostScrapService.getFolderScraps(eq(100L), any()))
+                    .willReturn(List.of(new FolderScrapResponse(
+                            1L, 2L, "장학 공고", "장학", null, null, false)));
+
+            mockMvc.perform(get("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].title").value("장학 공고"))
+                    .andExpect(jsonPath("$.data[0].isActive").value(false));
+        }
+
+        @Test
+        @DisplayName("존재하지 않거나 타인 폴더면 404를 반환한다")
+        void notFound() throws Exception {
+            willThrow(new BusinessException(ErrorCode.SCRAP_FOLDER_NOT_FOUND))
+                    .given(officialPostScrapService).getFolderScraps(eq(100L), any());
+
+            mockMvc.perform(get("/api/v1/scrap-folders/100/scraps").with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.SCRAP_FOLDER_NOT_FOUND.name()));
         }
     }
 }
