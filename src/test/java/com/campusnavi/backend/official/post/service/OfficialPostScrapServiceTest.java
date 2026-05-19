@@ -81,6 +81,8 @@ class OfficialPostScrapServiceTest {
             // then
             then(scrapRepository).should().delete(scrapA);
             then(scrapRepository).should().save(any(OfficialPostScrap.class));
+            then(scrapFolderRepository).should().decrementScrapCount(FOLDER_A);
+            then(scrapFolderRepository).should().incrementScrapCount(FOLDER_B);
         }
 
         @Test
@@ -100,6 +102,8 @@ class OfficialPostScrapServiceTest {
             // then
             then(scrapRepository).should().delete(scrapA);
             then(scrapRepository).should(never()).save(any());
+            then(scrapFolderRepository).should().decrementScrapCount(FOLDER_A);
+            then(scrapFolderRepository).should(never()).incrementScrapCount(any());
         }
 
         @Test
@@ -121,6 +125,8 @@ class OfficialPostScrapServiceTest {
             // then
             then(scrapRepository).should(never()).save(any());
             then(scrapRepository).should(never()).delete(any());
+            then(scrapFolderRepository).should(never()).incrementScrapCount(any());
+            then(scrapFolderRepository).should(never()).decrementScrapCount(any());
         }
 
         @Test
