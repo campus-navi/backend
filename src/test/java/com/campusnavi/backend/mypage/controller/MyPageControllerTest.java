@@ -2,15 +2,18 @@ package com.campusnavi.backend.mypage.controller;
 
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
+import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.mypage.dto.MyPageResponse;
 import com.campusnavi.backend.mypage.dto.MyScrapResponse;
+import com.campusnavi.backend.official.post.dto.RecentViewResponse;
 import com.campusnavi.backend.mypage.service.MyPageService;
 import com.campusnavi.backend.mypage.service.MyScrapService;
 import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,11 +21,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -89,5 +100,60 @@ class MyPageControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.recentScraps[0].title").value("장학 공고"))
                 .andExpect(jsonPath("$.data.folders[0].name").value("취업"));
+    }
+
+    @Nested
+    @DisplayName("최근 본 게시물 조회")
+    class GetRecentViews {
+
+        @Test
+        @DisplayName("정상 요청이면 200과 커서 페이지를 반환한다")
+        void success() throws Exception {
+            CursorPageResponse<RecentViewResponse> page = CursorPageResponse.of(
+                    List.of(new RecentViewResponse(3L, "공고 제목", "수강",
+                            LocalDate.of(2026, 5, 25), LocalDateTime.of(2026, 5, 20, 12, 0))),
+                    "next-cursor",
+                    true);
+            given(myPageService.getRecentViews(eq(MEMBER_ID), any())).willReturn(page);
+
+            mockMvc.perform(get("/api/v1/mypage/recent-views").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content[0].postId").value(3))
+                    .andExpect(jsonPath("$.data.content[0].title").value("공고 제목"))
+                    .andExpect(jsonPath("$.data.content[0].tagName").value("수강"))
+                    .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"))
+                    .andExpect(jsonPath("$.data.hasNext").value(true));
+        }
+
+        @Test
+        @DisplayName("잘못된 cursor면 400과 INVALID_PARAM을 반환한다")
+        void invalidCursor() throws Exception {
+            willThrow(new BusinessException(ErrorCode.INVALID_PARAM))
+                    .given(myPageService).getRecentViews(eq(MEMBER_ID), any());
+
+            mockMvc.perform(get("/api/v1/mypage/recent-views")
+                            .with(authentication(AUTH))
+                            .param("cursor", "broken"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_PARAM"));
+        }
+    }
+
+    @Nested
+    @DisplayName("최근 본 게시물 삭제")
+    class DeleteRecentView {
+
+        @Test
+        @DisplayName("정상 요청이면 204를 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(myPageService).deleteRecentView(anyLong(), anyLong());
+
+            mockMvc.perform(delete("/api/v1/mypage/recent-views/{postId}", 5L)
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isNoContent());
+
+            then(myPageService).should().deleteRecentView(MEMBER_ID, 5L);
+        }
     }
 }
