@@ -11,6 +11,7 @@ import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
 import com.campusnavi.backend.member.dto.UsernameUpdateRequest;
 import com.campusnavi.backend.member.entity.Member;
+import com.campusnavi.backend.member.entity.MemberStatus;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -247,6 +248,43 @@ class MemberServiceTest {
 
             // when & then
             assertThatThrownBy(() -> memberService.changeGrade(MEMBER_ID, request))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+        }
+    }
+
+    @Nested
+    @DisplayName("회원탈퇴")
+    class Withdraw {
+
+        @Test
+        @DisplayName("회원을 익명화하고 WITHDRAWN 상태로 변경한다")
+        void success() {
+            // given
+            Member member = Member.join("user@test.ac.kr", "username1", "encoded",
+                    "닉네임", 10L, null, 25, 1);
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
+
+            // when
+            memberService.withdraw(MEMBER_ID);
+
+            // then
+            assertThat(member.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
+            assertThat(member.getDeletedAt()).isNotNull();
+            assertThat(member.getUsername()).startsWith("[탈퇴된 회원");
+            assertThat(member.getEmail()).endsWith("@withdrawn");
+            assertThat(member.getNickname()).startsWith("[탈퇴된 회원");
+            assertThat(member.getPassword()).isNotEqualTo("encoded");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이면 MEMBER_NOT_FOUND 예외가 발생한다")
+        void memberNotFound() {
+            // given
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> memberService.withdraw(MEMBER_ID))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
         }

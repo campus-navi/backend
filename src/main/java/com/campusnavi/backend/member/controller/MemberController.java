@@ -1,7 +1,9 @@
 package com.campusnavi.backend.member.controller;
 
+import com.campusnavi.backend.auth.service.AuthService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.global.util.cookie.RefreshTokenCookieProvider;
 import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
@@ -10,15 +12,22 @@ import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
 import com.campusnavi.backend.member.dto.UsernameUpdateRequest;
 import com.campusnavi.backend.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,6 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+    private final AuthService authService;
+    private final RefreshTokenCookieProvider cookieProvider;
 
     @Operation(summary = "내 정보 조회", description = "닉네임, 맞춤공지 설정 여부를 반환한다.")
     @GetMapping("/me")
@@ -80,6 +91,23 @@ public class MemberController {
             @RequestBody @Valid GradeUpdateRequest request) {
         memberService.changeGrade(authMember.memberId(), request);
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "회원탈퇴", description = "회원 정보를 익명화하고 WITHDRAWN 상태로 변경한다. Access Token 블랙리스트 등록과 Refresh Token 삭제도 함께 수행한다.")
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> withdraw(
+            @AuthenticationPrincipal AuthMember authMember,
+            @Parameter(in = ParameterIn.HEADER, name = "Authorization", description = "Bearer {accessToken}")
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
+            @Parameter(in = ParameterIn.COOKIE, name = "refreshToken", description = "Refresh Token")
+            @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        memberService.withdraw(authMember.memberId());
+        authService.logout(accessToken, refreshToken);
+
+        ResponseCookie responseCookie = cookieProvider.expireRefreshTokenCookie();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
+                .build();
     }
 
 }

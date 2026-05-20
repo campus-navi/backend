@@ -1,8 +1,10 @@
 package com.campusnavi.backend.member.controller;
 
+import com.campusnavi.backend.auth.service.AuthService;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.global.util.cookie.RefreshTokenCookieProvider;
 import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,12 +26,19 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +52,12 @@ class MemberControllerTest {
 
     @MockitoBean
     private MemberService memberService;
+
+    @MockitoBean
+    private AuthService authService;
+
+    @MockitoBean
+    private RefreshTokenCookieProvider cookieProvider;
 
     private static final Authentication AUTH = new UsernamePasswordAuthenticationToken(
             new AuthMember(1L, "USER", 10L), null, List.of()
@@ -281,6 +297,45 @@ class MemberControllerTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("회원탈퇴")
+    class Withdraw {
+
+        @Test
+        @DisplayName("정상 요청이면 204와 만료된 Set-Cookie를 반환한다")
+        void success() throws Exception {
+            // given
+            willDoNothing().given(memberService).withdraw(anyLong());
+            given(cookieProvider.expireRefreshTokenCookie())
+                    .willReturn(ResponseCookie.from("refreshToken", "").maxAge(0).path("/").build());
+
+            // when & then
+            mockMvc.perform(delete("/api/v1/members/me")
+                            .with(authentication(AUTH))
+                            .header("Authorization", "Bearer valid-access-token")
+                            .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh-token")))
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Set-Cookie", containsString("refreshToken=")));
+            then(authService).should().logout("Bearer valid-access-token", "valid-refresh-token");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이면 404를 반환한다")
+        void memberNotFound() throws Exception {
+            // given
+            willThrow(new BusinessException(ErrorCode.MEMBER_NOT_FOUND))
+                    .given(memberService).withdraw(anyLong());
+
+            // when & then
+            mockMvc.perform(delete("/api/v1/members/me")
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.MEMBER_NOT_FOUND.name()));
+            then(authService).should(never()).logout(any(), any());
         }
     }
 }
