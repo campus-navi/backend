@@ -11,6 +11,9 @@ import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapRequest;
+import com.campusnavi.backend.official.post.dto.RemindBulkDeleteRequest;
+import com.campusnavi.backend.official.post.dto.RemindBulkDeleteResponse;
+import com.campusnavi.backend.official.post.dto.RemindRestoreRequest;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
@@ -23,11 +26,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -155,6 +160,44 @@ public class OfficialPostController {
             @PathVariable Long id,
             @AuthenticationPrincipal AuthMember authMember) {
         officialPostNotificationService.disable(id, AuthContext.of(authMember));
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "공식 정보 알림 다중 제거",
+            description = "선택한 공지의 알림을 일괄 해제합니다. 실제 제거된 건수와 게시글 ID(복구 시 사용)를 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "제거 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "postIds 누락",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/notifications")
+    public ResponseEntity<ApiResponse<RemindBulkDeleteResponse>> deleteNotifications(
+            @RequestBody @Valid RemindBulkDeleteRequest request,
+            @AuthenticationPrincipal AuthMember authMember) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                officialPostNotificationService.deleteReminds(request.postIds(), AuthContext.of(authMember))));
+    }
+
+    @Operation(summary = "공식 정보 알림 복구",
+            description = "다중 제거 응답의 게시글 ID로 알림을 재등록합니다. 이미 켜져 있거나 스코프 밖 공지는 건너뜁니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "복구 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "postIds 누락",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/notifications/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreNotifications(
+            @RequestBody @Valid RemindRestoreRequest request,
+            @AuthenticationPrincipal AuthMember authMember) {
+        try {
+            officialPostNotificationService.restoreReminds(request.postIds(), AuthContext.of(authMember));
+        } catch (DataIntegrityViolationException e) {
+            // 복구 더블클릭 등 동시 요청으로 유니크 제약 위반 시: 이미 복구된 상태이므로 멱등 처리
+        }
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

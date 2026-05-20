@@ -33,8 +33,8 @@ class RemindNotificationServiceTest {
     @DisplayName("회원 id로 조회한 리마인드 목록을 그대로 반환한다")
     void returnsQueryResult() {
         List<RemindNotice> expected = List.of(
-                new RemindNotice(1L, "공지 A", LocalDate.now().plusDays(1)),
-                new RemindNotice(2L, "공지 B", LocalDate.now().plusDays(3)));
+                new RemindNotice(1L, "공지 A", "장학", LocalDate.now().plusDays(1)),
+                new RemindNotice(2L, "공지 B", "행사", LocalDate.now().plusDays(3)));
         given(notificationQueryRepository.findRemindNoticesByMemberId(MEMBER_ID)).willReturn(expected);
 
         List<RemindNotice> result = service.getRemindNotices(CONTEXT);

@@ -11,16 +11,21 @@ import com.campusnavi.backend.official.post.dto.OfficialPostDetailResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostSummaryResponse;
 import com.campusnavi.backend.official.post.dto.OfficialPostListSort;
 import com.campusnavi.backend.official.post.dto.OfficialPostScrapFolderResponse;
+import com.campusnavi.backend.official.post.dto.RemindBulkDeleteRequest;
+import com.campusnavi.backend.official.post.dto.RemindBulkDeleteResponse;
+import com.campusnavi.backend.official.post.dto.RemindRestoreRequest;
 import com.campusnavi.backend.official.post.entity.ApplyMethodType;
 import com.campusnavi.backend.official.post.service.OfficialAttachmentDownloadService;
 import com.campusnavi.backend.official.post.service.OfficialPostNotificationService;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
 import com.campusnavi.backend.official.post.service.OfficialPostService;
 import com.campusnavi.backend.support.ControllerSliceTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -42,6 +47,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +57,8 @@ class OfficialPostControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
     private OfficialPostService officialPostService;
@@ -363,6 +371,79 @@ class OfficialPostControllerTest {
             mockMvc.perform(delete("/api/v1/official-posts/{id}/notification", 99L).with(authentication(AUTH)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("OFFICIAL_POST_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("알림 다중 제거")
+    class DeleteNotifications {
+
+        @Test
+        @DisplayName("정상 요청이면 200과 제거 건수를 반환한다")
+        void success() throws Exception {
+            given(officialPostNotificationService.deleteReminds(any(), any()))
+                    .willReturn(new RemindBulkDeleteResponse(2, List.of(11L, 12L)));
+
+            mockMvc.perform(delete("/api/v1/official-posts/notifications").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new RemindBulkDeleteRequest(List.of(11L, 12L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.deletedCount").value(2))
+                    .andExpect(jsonPath("$.data.deletedPostIds[0]").value(11L));
+        }
+
+        @Test
+        @DisplayName("postIds가 비어 있으면 400을 반환한다")
+        void emptyList() throws Exception {
+            mockMvc.perform(delete("/api/v1/official-posts/notifications").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new RemindBulkDeleteRequest(List.of()))))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("알림 복구")
+    class RestoreNotifications {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            willDoNothing().given(officialPostNotificationService)
+                    .restoreReminds(any(), any());
+
+            mockMvc.perform(post("/api/v1/official-posts/notifications/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new RemindRestoreRequest(List.of(11L, 12L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("동시 복구로 유니크 제약 위반이 나면 멱등하게 200을 반환한다")
+        void concurrentIdempotent() throws Exception {
+            willThrow(new DataIntegrityViolationException("duplicate"))
+                    .given(officialPostNotificationService).restoreReminds(any(), any());
+
+            mockMvc.perform(post("/api/v1/official-posts/notifications/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new RemindRestoreRequest(List.of(11L, 12L)))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("postIds가 비어 있으면 400을 반환한다")
+        void emptyList() throws Exception {
+            mockMvc.perform(post("/api/v1/official-posts/notifications/restore").with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new RemindRestoreRequest(List.of()))))
+                    .andExpect(status().isBadRequest());
         }
     }
 

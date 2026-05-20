@@ -47,10 +47,12 @@ public class NotificationQueryRepository {
                 .select(Projections.constructor(RemindNotice.class,
                         officialPost.id,
                         officialPost.title,
+                        tag.name,
                         officialPostAiMeta.endDate))
                 .from(officialPostNotification)
                 .join(officialPost).on(officialPost.id.eq(officialPostNotification.post.id))
                 .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
+                .join(officialPostAiMeta.tag, tag)
                 .where(officialPostNotification.memberId.eq(memberId)
                         .and(officialPostAiMeta.endDate.isNotNull())
                         .and(officialPostAiMeta.endDate.goe(LocalDate.now())))
