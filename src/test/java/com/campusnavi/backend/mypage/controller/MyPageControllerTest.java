@@ -8,7 +8,6 @@ import com.campusnavi.backend.mypage.dto.MyPageResponse;
 import com.campusnavi.backend.mypage.dto.MyScrapResponse;
 import com.campusnavi.backend.official.post.dto.RecentViewResponse;
 import com.campusnavi.backend.mypage.service.MyPageService;
-import com.campusnavi.backend.mypage.service.MyScrapService;
 import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
 import com.campusnavi.backend.support.ControllerSliceTest;
@@ -46,9 +45,6 @@ class MyPageControllerTest {
 
     @MockitoBean
     private MyPageService myPageService;
-
-    @MockitoBean
-    private MyScrapService myScrapService;
 
     private static final Long MEMBER_ID = 1L;
     private static final Long UNIVERSITY_ID = 10L;
@@ -91,7 +87,7 @@ class MyPageControllerTest {
     @Test
     @DisplayName("내 스크랩 화면 요청이면 200과 최근 스크랩·폴더 목록을 반환한다")
     void getMyScraps() throws Exception {
-        given(myScrapService.getMyScraps(MEMBER_ID)).willReturn(new MyScrapResponse(
+        given(myPageService.getMyScraps(MEMBER_ID)).willReturn(new MyScrapResponse(
                 List.of(new RecentScrapResponse(2L, "장학 공고", "장학", null, null)),
                 List.of(new ScrapFolderResponse(100L, "취업", null, 1L))));
 

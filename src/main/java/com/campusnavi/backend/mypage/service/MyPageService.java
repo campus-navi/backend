@@ -7,10 +7,15 @@ import com.campusnavi.backend.global.response.CursorPageResponse;
 import com.campusnavi.backend.member.dto.MemberProfile;
 import com.campusnavi.backend.member.service.MemberService;
 import com.campusnavi.backend.mypage.dto.MyPageResponse;
+import com.campusnavi.backend.mypage.dto.MyScrapResponse;
 import com.campusnavi.backend.notification.service.RemindNotificationService;
+import com.campusnavi.backend.official.post.dto.RecentScrapResponse;
 import com.campusnavi.backend.official.post.dto.RecentViewResponse;
 import com.campusnavi.backend.official.post.repository.OfficialPostViewRepository;
 import com.campusnavi.backend.official.post.service.OfficialPostScrapService;
+import com.campusnavi.backend.scrap.dto.ScrapFolderResponse;
+import com.campusnavi.backend.scrap.dto.ScrapFolderSort;
+import com.campusnavi.backend.scrap.service.ScrapFolderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -31,6 +36,7 @@ public class MyPageService {
     private final PostInteractionService postInteractionService;
     private final RemindNotificationService remindNotificationService;
     private final OfficialPostViewRepository officialPostViewRepository;
+    private final ScrapFolderService scrapFolderService;
 
     public MyPageResponse getMyPage(Long memberId) {
         MemberProfile profile = memberService.getMyProfile(memberId);
@@ -81,5 +87,12 @@ public class MyPageService {
     @Transactional
     public void deleteRecentView(Long memberId, Long postId) {
         officialPostViewRepository.deleteByMemberIdAndPostId(memberId, postId);
+    }
+
+    public MyScrapResponse getMyScraps(Long memberId) {
+        List<RecentScrapResponse> recentScraps = officialPostScrapService.getRecentScraps(memberId);
+        List<ScrapFolderResponse> folders =
+                scrapFolderService.getFolders(memberId, ScrapFolderSort.RECENT_SAVED);
+        return new MyScrapResponse(recentScraps, folders);
     }
 }
