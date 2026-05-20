@@ -251,4 +251,35 @@ class MemberServiceTest {
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
         }
     }
+
+    @Nested
+    @DisplayName("회원탈퇴")
+    class Withdraw {
+
+        @Test
+        @DisplayName("회원의 withdraw를 호출한다")
+        void success() {
+            // given
+            Member member = mock(Member.class);
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
+
+            // when
+            memberService.withdraw(MEMBER_ID);
+
+            // then
+            then(member).should().withdraw();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이면 MEMBER_NOT_FOUND 예외가 발생한다")
+        void memberNotFound() {
+            // given
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> memberService.withdraw(MEMBER_ID))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+        }
+    }
 }
