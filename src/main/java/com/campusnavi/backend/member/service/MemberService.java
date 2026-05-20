@@ -128,4 +128,12 @@ public class MemberService {
 
         member.changeGrade(request.grade());
     }
+
+    @Transactional
+    public void withdraw(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.withdraw();
+    }
 }
