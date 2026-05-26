@@ -15,6 +15,8 @@ public interface ScrapFolderRepository extends JpaRepository<ScrapFolder, Long> 
 
     boolean existsByMemberIdAndName(Long memberId, String name);
 
+    long countByMemberId(Long memberId);
+
     Optional<ScrapFolder> findByIdAndMemberId(Long id, Long memberId);
 
     List<ScrapFolder> findByMemberId(Long memberId, Sort sort);

@@ -76,7 +76,8 @@ public enum ErrorCode {
 
     //스크랩 폴더 관련
     SCRAP_FOLDER_NOT_FOUND(HttpStatus.NOT_FOUND),
-    SCRAP_FOLDER_NAME_DUPLICATE(HttpStatus.CONFLICT);
+    SCRAP_FOLDER_NAME_DUPLICATE(HttpStatus.CONFLICT),
+    SCRAP_FOLDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST);
 
     private final HttpStatus status;
 }

@@ -47,9 +47,11 @@ public class ScrapFolderController {
     private final ScrapFolderService scrapFolderService;
     private final OfficialPostScrapService officialPostScrapService;
 
-    @Operation(summary = "스크랩 폴더 생성", description = "회원 내 이름이 중복되면 409를 반환합니다.")
+    @Operation(summary = "스크랩 폴더 생성", description = "회원 내 이름이 중복되면 409, 폴더가 16개를 초과하면 400을 반환합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "폴더 개수 제한 초과",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이름 중복",
