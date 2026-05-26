@@ -3,19 +3,21 @@ package com.campusnavi.backend.notification.service;
 import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
-import com.campusnavi.backend.notification.dto.MissedNotice;
 import com.campusnavi.backend.notification.dto.MissedNoticeCard;
-import com.campusnavi.backend.notification.dto.MissedNoticeRaw;
 import com.campusnavi.backend.notification.entity.ActivityNotificationSnapshot;
 import com.campusnavi.backend.notification.repository.ActivityNotificationSnapshotRepository;
 import com.campusnavi.backend.notification.repository.NotificationQueryRepository;
+import com.campusnavi.backend.official.post.dto.OfficialPostCardRaw;
+import com.campusnavi.backend.official.post.dto.OfficialPostCardResponse;
 import com.campusnavi.backend.official.post.repository.OfficialPostViewRepository;
+import com.campusnavi.backend.official.post.service.OfficialPostCardResponseMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +33,7 @@ public class ActivityNotificationService {
     private final ActivityNotificationSnapshotRepository snapshotRepository;
     private final NotificationQueryRepository notificationQueryRepository;
     private final OfficialPostViewRepository officialPostViewRepository;
+    private final OfficialPostCardResponseMapper cardResponseMapper;
 
     public List<MissedNoticeCard> getActivityCards(AuthContext context) {
         List<ActivityNotificationSnapshot> snapshots =
@@ -42,9 +45,8 @@ public class ActivityNotificationService {
         Set<Long> allPostIds = snapshots.stream()
                 .flatMap(s -> s.getPostIds().stream())
                 .collect(Collectors.toSet());
-        Set<Long> validIds = notificationQueryRepository.findMissedNoticesByIds(allPostIds).stream()
-                .map(MissedNoticeRaw::postId)
-                .collect(Collectors.toSet());
+        Set<Long> validIds = new HashSet<>(
+                notificationQueryRepository.findValidPostIdsByIds(allPostIds));
         Set<Long> viewedIds = officialPostViewRepository
                 .findPostIdsByMemberIdAndPostIdIn(context.memberId(), allPostIds);
 
@@ -55,12 +57,14 @@ public class ActivityNotificationService {
                     .filter(validIds::contains)
                     .filter(pid -> !viewedIds.contains(pid))
                     .count();
-            cards.add(new MissedNoticeCard(snapshot.getMissedDate(), count));
+            if (count > 0) {
+                cards.add(new MissedNoticeCard(snapshot.getMissedDate(), count));
+            }
         }
         return cards;
     }
 
-    public List<MissedNotice> getActivityDetail(AuthContext context, LocalDate missedDate) {
+    public List<OfficialPostCardResponse> getActivityDetail(AuthContext context, LocalDate missedDate) {
         ActivityNotificationSnapshot snapshot = snapshotRepository
                 .findByMemberIdAndMissedDate(context.memberId(), missedDate)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ACTIVITY_NOTIFICATION_NOT_FOUND));
@@ -81,14 +85,13 @@ public class ActivityNotificationService {
             return List.of();
         }
 
-        Map<Long, MissedNoticeRaw> rawMap = notificationQueryRepository.findMissedNoticesByIds(missedIds).stream()
-                .collect(Collectors.toMap(MissedNoticeRaw::postId, Function.identity()));
+        Map<Long, OfficialPostCardRaw> rawMap = notificationQueryRepository.findMissedCardsByIds(missedIds).stream()
+                .collect(Collectors.toMap(OfficialPostCardRaw::postId, Function.identity()));
 
         return missedIds.stream()
                 .map(rawMap::get)
                 .filter(Objects::nonNull)
-                .map(r -> new MissedNotice(r.postId(), r.title(), r.tagName(),
-                        r.publishedAt(), r.endDate()))
+                .map(cardResponseMapper::toResponse)
                 .toList();
     }
 }

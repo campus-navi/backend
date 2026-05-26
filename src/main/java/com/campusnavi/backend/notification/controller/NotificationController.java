@@ -4,11 +4,11 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.notification.dto.MissedNotice;
 import com.campusnavi.backend.notification.dto.MissedNoticeCard;
 import com.campusnavi.backend.notification.dto.RemindNotice;
 import com.campusnavi.backend.notification.service.ActivityNotificationService;
 import com.campusnavi.backend.notification.service.RemindNotificationService;
+import com.campusnavi.backend.official.post.dto.OfficialPostCardResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,8 +36,8 @@ public class NotificationController {
     private final RemindNotificationService remindNotificationService;
 
     @Operation(summary = "지나친 추천 공지 목록 조회",
-            description = "최근 보관 기간(13일) 동안의 추천 공지를 missedDate(어제 09:00 ~ 오늘 09:00) 단위로 묶어 카드 목록으로 반환합니다. " +
-                    "count는 미열람 개수이며, 모두 열람한 missedDate도 count=0 카드로 함께 반환됩니다.")
+            description = "최근 보관 기간(30일) 동안의 추천 공지를 missedDate(어제 09:00 ~ 오늘 09:00) 단위로 묶어 카드 목록으로 반환합니다. " +
+                    "count는 미열람 개수이며, count가 0인 missedDate는 응답에서 제외됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
@@ -51,7 +51,7 @@ public class NotificationController {
     }
 
     @Operation(summary = "지나친 공지 상세 조회",
-            description = "특정 missedDate의 미열람 공지 목록을 반환합니다. snapshot.postIds 원본 순서를 유지하며, 응답 시점 view 상태로 미열람 항목만 차감됩니다.")
+            description = "특정 missedDate의 미열람 공지를 피드의 카드뉴스와 동일한 형태로 반환합니다. snapshot.postIds 원본 순서를 유지하며, 응답 시점 view 상태로 미열람 항목만 차감됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패",
@@ -60,7 +60,7 @@ public class NotificationController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/activity/{missedDate}")
-    public ResponseEntity<ApiResponse<List<MissedNotice>>> getActivityDetail(
+    public ResponseEntity<ApiResponse<List<OfficialPostCardResponse>>> getActivityDetail(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate missedDate,
             @AuthenticationPrincipal AuthMember authMember) {
         return ResponseEntity.ok(ApiResponse.ok(
