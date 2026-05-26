@@ -21,7 +21,7 @@ public class ActivityNotificationSnapshotScheduler {
     private final ActivityNotificationSnapshotWriter writer;
 
     private static final int CHUNK_SIZE = 500;
-    private static final int RETENTION_DAYS = 13;
+    private static final int RETENTION_DAYS = 30;
 
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void dispatch() {
