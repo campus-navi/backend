@@ -74,6 +74,20 @@ class ScrapFolderServiceTest {
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_NAME_DUPLICATE));
             then(scrapFolderRepository).should(never()).save(any());
         }
+
+        @Test
+        @DisplayName("폴더가 16개인 경우 폴더를 생성하면 SCRAP_FOLDER_LIMIT_EXCEEDED 예외가 발생한다")
+        void limitExceeded() {
+            // given
+            ScrapFolderCreateRequest request = new ScrapFolderCreateRequest("취업", null);
+            given(scrapFolderRepository.countByMemberId(MEMBER_ID)).willReturn(16L);
+
+            // when & then
+            assertThatThrownBy(() -> scrapFolderService.create(MEMBER_ID, request))
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCRAP_FOLDER_LIMIT_EXCEEDED));
+            then(scrapFolderRepository).should(never()).save(any());
+        }
     }
 
     @Nested
