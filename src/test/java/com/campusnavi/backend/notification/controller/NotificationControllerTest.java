@@ -4,11 +4,11 @@ import com.campusnavi.backend.global.common.AuthContext;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.notification.dto.MissedNotice;
 import com.campusnavi.backend.notification.dto.MissedNoticeCard;
 import com.campusnavi.backend.notification.dto.RemindNotice;
 import com.campusnavi.backend.notification.service.ActivityNotificationService;
 import com.campusnavi.backend.notification.service.RemindNotificationService;
+import com.campusnavi.backend.official.post.dto.OfficialPostCardResponse;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -86,15 +86,15 @@ class NotificationControllerTest {
     class GetDetail {
 
         @Test
-        @DisplayName("정상 요청이면 200과 미열람 공지 목록을 반환한다")
+        @DisplayName("정상 요청이면 200과 카드뉴스 형태의 미열람 공지 목록을 반환한다")
         void success() throws Exception {
             LocalDate missedDate = LocalDate.of(2026, 5, 13);
             given(activityNotificationService.getActivityDetail(CONTEXT, missedDate))
                     .willReturn(List.of(
-                            new MissedNotice(11L, "장학금 안내", "장학",
-                                    LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31)),
-                            new MissedNotice(12L, "축제 공지", "행사",
-                                    LocalDate.of(2026, 5, 2), null)));
+                            new OfficialPostCardResponse(11L, "장학금 안내", "장학",
+                                    "장학금 요약", "https://img/11.png", LocalDate.of(2026, 5, 1)),
+                            new OfficialPostCardResponse(12L, "축제 공지", "행사",
+                                    "축제 요약", null, LocalDate.of(2026, 5, 2))));
 
             mockMvc.perform(get("/api/v1/notifications/activity/{missedDate}", "2026-05-13")
                             .with(authentication(AUTH)))
@@ -104,10 +104,11 @@ class NotificationControllerTest {
                     .andExpect(jsonPath("$.data[0].postId").value(11L))
                     .andExpect(jsonPath("$.data[0].title").value("장학금 안내"))
                     .andExpect(jsonPath("$.data[0].tagName").value("장학"))
+                    .andExpect(jsonPath("$.data[0].summary").value("장학금 요약"))
+                    .andExpect(jsonPath("$.data[0].imageUrl").value("https://img/11.png"))
                     .andExpect(jsonPath("$.data[0].publishedAt").value("2026-05-01"))
-                    .andExpect(jsonPath("$.data[0].endDate").value("2026-05-31"))
                     .andExpect(jsonPath("$.data[1].postId").value(12L))
-                    .andExpect(jsonPath("$.data[1].endDate").doesNotExist());
+                    .andExpect(jsonPath("$.data[1].imageUrl").doesNotExist());
         }
 
         @Test
