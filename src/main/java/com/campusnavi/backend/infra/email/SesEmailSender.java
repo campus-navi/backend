@@ -33,7 +33,7 @@ public class SesEmailSender implements EmailSender{
                     .build();
             sesClient.sendEmail(request);
         } catch (SesException e) {
-            throw new BusinessException(ErrorCode.EMAIL_SEND_FAIL);
+            throw new BusinessException(ErrorCode.EMAIL_SEND_FAIL, e);
         }
     }
 }

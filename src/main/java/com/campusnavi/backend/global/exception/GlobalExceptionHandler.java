@@ -2,6 +2,7 @@ package com.campusnavi.backend.global.exception;
 
 import com.campusnavi.backend.global.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -17,12 +18,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e){
         ErrorCode code = e.getErrorCode();
+        if (code.getStatus().is5xxServerError()) {
+            log.error("서버 측 비즈니스 예외 발생: {}", code.name(), e);
+        }
         return ResponseEntity.status(code.getStatus())
                 .body(ErrorResponse.of(code.name()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e){
+        log.warn("입력 검증 실패: {}", e.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .toList());
         ErrorCode code = ErrorCode.INVALID_INPUT;
         return ResponseEntity.status(code.getStatus())
                 .body(ErrorResponse.of(code.name()));
@@ -45,6 +52,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e){
         ErrorCode code = ErrorCode.INVALID_PARAM;
+        return ResponseEntity.status(code.getStatus())
+                .body(ErrorResponse.of(code.name()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException e){
+        ErrorCode code = ErrorCode.CONFLICT;
+        log.warn("데이터 무결성 제약 위반", e);
         return ResponseEntity.status(code.getStatus())
                 .body(ErrorResponse.of(code.name()));
     }

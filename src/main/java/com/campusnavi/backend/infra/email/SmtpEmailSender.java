@@ -31,7 +31,7 @@ public class SmtpEmailSender implements EmailSender{
             helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException e) {
-            throw new BusinessException(ErrorCode.EMAIL_SEND_FAIL);
+            throw new BusinessException(ErrorCode.EMAIL_SEND_FAIL, e);
         }
     }
 }

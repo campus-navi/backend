@@ -42,7 +42,7 @@ public class S3StorageService {
         try (InputStream stream = inputStream) {
             s3Client.putObject(request, RequestBody.fromInputStream(stream, size));
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAIL);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAIL, e);
         }
         return key;
     }
