@@ -151,7 +151,7 @@ public class OfficialPostQueryRepository {
                 .join(officialPostAiMeta.tag, tag)
                 .leftJoin(att).on(att.post.id.eq(officialPost.id)
                         .and(att.isImage.isTrue())
-                        .and(att.sortOrder.eq((short) 1)))
+                        .and(att.sortOrder.eq((short) 0)))
                 .where(baseCondition(condition));
     }
 }
