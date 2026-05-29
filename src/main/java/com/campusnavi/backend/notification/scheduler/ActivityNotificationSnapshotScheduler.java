@@ -22,24 +22,42 @@ public class ActivityNotificationSnapshotScheduler {
 
     private static final int CHUNK_SIZE = 500;
     private static final int RETENTION_DAYS = 30;
+    private static final int MAX_CHUNK_RETRY = 2;
 
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void dispatch() {
         LocalDate missedDate = LocalDate.now().minusDays(1);
 
         long lastMemberId = 0L;
+        int processed = 0;
+        int failed = 0;
         while (true) {
             List<Member> chunk = memberRepository.findActiveAfterIdExcludingRole(
                     lastMemberId, MemberRole.ADMIN, PageRequest.of(0, CHUNK_SIZE));
             if (chunk.isEmpty()) break;
-            try {
-                writer.writeChunk(chunk, missedDate);
-            } catch (RuntimeException e) {
-                log.warn("활동 알림 스냅샷 청크 처리 실패. lastMemberId={}", lastMemberId, e);
+
+            if (writeChunkWithRetry(chunk, missedDate)) {
+                processed++;
+            } else {
+                failed++;
+                log.error("활동 알림 등록 영구 실패. lastMemberId={}, size={}", lastMemberId, chunk.size());
             }
             lastMemberId = chunk.getLast().getId();
         }
 
         writer.cleanupOlderThan(LocalDate.now().minusDays(RETENTION_DAYS));
+        log.info("활동 알림 등록 완료: 성공 청크 {}, 실패 청크 {}", processed, failed);
+    }
+
+    private boolean writeChunkWithRetry(List<Member> chunk, LocalDate missedDate) {
+        for (int attempt = 1; attempt <= MAX_CHUNK_RETRY; attempt++) {
+            try {
+                writer.writeChunk(chunk, missedDate);
+                return true;
+            } catch (RuntimeException e) {
+                log.warn("활동 알림 등록 실패(시도 {}/{})", attempt, MAX_CHUNK_RETRY, e);
+            }
+        }
+        return false;
     }
 }
