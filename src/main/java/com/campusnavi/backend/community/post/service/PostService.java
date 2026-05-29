@@ -182,15 +182,23 @@ public class PostService {
 
     private Long decodeCursorId(String cursor) {
         if (cursor == null) return null;
-        String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
-        return Long.parseLong(raw.split(":")[0]);
+        try {
+            String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
+            return Long.parseLong(raw.split(":")[0]);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_PARAM);
+        }
     }
 
     private Integer decodeCursorScrapCount(String cursor) {
         if (cursor == null) return null;
-        String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
-        String[] parts = raw.split(":");
-        return parts.length == 2 ? Integer.parseInt(parts[1]) : null;
+        try {
+            String raw = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
+            String[] parts = raw.split(":");
+            return parts.length == 2 ? Integer.parseInt(parts[1]) : null;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_PARAM);
+        }
     }
 
     public PresignedUrlResponse generatePostPresignedUrl(PostPresignedUrlRequest request) {
