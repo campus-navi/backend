@@ -55,7 +55,7 @@ public class RecommendQueryRepository {
                 .join(officialPostAiMeta.tag, tag)
                 .leftJoin(att).on(att.post.id.eq(officialPost.id)
                         .and(att.isImage.isTrue())
-                        .and(att.sortOrder.eq((short) 1)))
+                        .and(att.sortOrder.eq((short) 0)))
                 .leftJoin(view).on(view.postId.eq(officialPost.id)
                         .and(view.memberId.eq(memberId)))
                 .where(OfficialPostScopeConditions.baseCondition(condition))
@@ -87,7 +87,7 @@ public class RecommendQueryRepository {
                 .join(officialPostAiMeta.tag, tag)
                 .leftJoin(att).on(att.post.id.eq(officialPost.id)
                         .and(att.isImage.isTrue())
-                        .and(att.sortOrder.eq((short) 1)))
+                        .and(att.sortOrder.eq((short) 0)))
                 .where(officialPost.id.in(ids))
                 .fetch();
     }
