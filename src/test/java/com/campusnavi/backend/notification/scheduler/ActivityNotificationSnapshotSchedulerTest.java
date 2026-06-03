@@ -60,7 +60,7 @@ class ActivityNotificationSnapshotSchedulerTest {
         }
 
         @Test
-        @DisplayName("청크에서 예외가 발생해도 다음 청크를 계속 처리한다")
+        @DisplayName("청크 실패 시 재시도 후 다음 청크를 계속 처리한다")
         void chunkFailureContinues() {
             // given
             List<Member> chunkA = List.of(member(1L));
@@ -81,8 +81,8 @@ class ActivityNotificationSnapshotSchedulerTest {
             scheduler.dispatch();
 
             // then
-            then(writer).should().writeChunk(eq(chunkA), any(LocalDate.class));
-            then(writer).should().writeChunk(eq(chunkB), any(LocalDate.class));
+            then(writer).should(times(2)).writeChunk(eq(chunkA), any(LocalDate.class));
+            then(writer).should(times(1)).writeChunk(eq(chunkB), any(LocalDate.class));
             then(writer).should().cleanupOlderThan(any(LocalDate.class));
         }
     }
