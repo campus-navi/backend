@@ -15,6 +15,9 @@ java {
 }
 
 extra["netty.version"] = "4.2.13.Final"
+extra["tomcat.version"] = "11.0.22"
+extra["postgresql.version"] = "42.7.11"
+extra["commons-lang3.version"] = "3.20.0"
 
 repositories {
     mavenCentral()
