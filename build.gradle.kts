@@ -1,6 +1,6 @@
 plugins {
     java
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -13,6 +13,8 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+extra["netty.version"] = "4.2.13.Final"
 
 repositories {
     mavenCentral()
