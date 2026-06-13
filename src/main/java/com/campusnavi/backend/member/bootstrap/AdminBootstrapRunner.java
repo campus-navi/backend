@@ -1,6 +1,5 @@
-package com.campusnavi.backend.global.init;
+package com.campusnavi.backend.member.bootstrap;
 
-import com.campusnavi.backend.global.config.AdminBootstrapProperties;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberRole;
 import com.campusnavi.backend.member.repository.MemberRepository;
@@ -15,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class AdminInitializer implements ApplicationRunner {
+public class AdminBootstrapRunner implements ApplicationRunner {
 
     private final AdminBootstrapProperties properties;
     private final MemberRepository memberRepository;
@@ -26,7 +25,7 @@ public class AdminInitializer implements ApplicationRunner {
     @Transactional
     public void run(@NonNull ApplicationArguments args) {
         if (!properties.enabled()) return;
-        if (memberRepository.existsByRoleAndUniversityId(MemberRole.ADMIN,properties.universityId())) return;
+        if (memberRepository.existsByRoleAndUniversityId(MemberRole.ADMIN, properties.universityId())) return;
 
         if (!universityRepository.existsById(properties.universityId())) {
             throw new IllegalStateException("Admin 생성 실패: universityId=" + properties.universityId() + " 를 찾을 수 없음");
