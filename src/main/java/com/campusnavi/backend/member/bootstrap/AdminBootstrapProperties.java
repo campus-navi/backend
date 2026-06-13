@@ -1,4 +1,4 @@
-package com.campusnavi.backend.global.config;
+package com.campusnavi.backend.member.bootstrap;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
