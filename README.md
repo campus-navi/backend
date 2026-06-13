@@ -39,7 +39,7 @@
 ```
 src/main/java/com/campusnavi/backend/
 ├── auth/              - JWT 발급/검증, 로그인·로그아웃
-├── member/            - 회원 계정, 관심사, 학적 정보
+├── member/            - 회원 계정, 관심사, 학적 정보, 관리자 부트스트랩
 ├── university/        - 대학·캠퍼스·단과대·학부 계층
 ├── official/
 │   ├── source/        - 크롤링 대상 공식 소스 정의
@@ -54,7 +54,7 @@ src/main/java/com/campusnavi/backend/
 │   ├── storage/       - S3/MinIO 업로드·Presigned URL
 │   ├── email/         - SMTP/SES 메일 발송
 │   └── redis/         - Redis 설정
-└── global/            - 공통 설정, 보안, 예외, 응답, 초기화(Admin Bootstrap)
+└── global/            - 공통 설정, 보안, 예외, 응답
 ```
 
 데이터베이스 마이그레이션은 `src/main/resources/db/migration/` 에 Flyway 규칙으로 관리합니다.
@@ -78,7 +78,7 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 
 #### Admin 초기 계정 설정 (선택사항)
 
-애플리케이션 시작 시 자동으로 Admin 계정을 생성합니다.
+로컬/초기 환경 편의를 위해 애플리케이션 시작 시 Admin 계정을 자동 생성할 수 있습니다. 운영 환경에서는 기본적으로 비활성화됩니다.
 
 `.env` 파일에 다음 변수들을 설정하면 해당 정보로 Admin이 생성됩니다.
 
