@@ -72,7 +72,7 @@ public class AuthService {
 
         String encodedPassword = passwordEncoder.encode(request.password());
         Member member = Member.join(email, request.username(), encodedPassword, request.nickname(),
-                universityId, campus, request.admissionYear(), request.grade());
+                request.name(), request.studentNumber(), universityId, campus, request.admissionYear(), request.grade());
         member.addDepartment(department);
         memberRepository.save(member);
 
