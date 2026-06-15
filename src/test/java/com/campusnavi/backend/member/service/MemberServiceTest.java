@@ -262,7 +262,7 @@ class MemberServiceTest {
         void success() {
             // given
             Member member = Member.join("user@test.ac.kr", "username1", "encoded",
-                    "닉네임", 10L, null, 25, 1);
+                    "닉네임", "홍길동", "20260001", 10L, null, 25, 1);
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
 
             // when
@@ -274,6 +274,8 @@ class MemberServiceTest {
             assertThat(member.getUsername()).startsWith("[탈퇴된 회원");
             assertThat(member.getEmail()).endsWith("@withdrawn");
             assertThat(member.getNickname()).startsWith("[탈퇴된 회원");
+            assertThat(member.getName()).startsWith("[탈퇴된 회원");
+            assertThat(member.getStudentNumber()).isNull();
             assertThat(member.getPassword()).isNotEqualTo("encoded");
         }
 
