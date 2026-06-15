@@ -34,6 +34,12 @@ public class Member extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String nickname;
 
+    @Column(length = 30)
+    private String name;
+
+    @Column(length = 10)
+    private String studentNumber;
+
     @Column(nullable = false)
     private Long universityId;
 
@@ -61,12 +67,15 @@ public class Member extends BaseEntity {
     private LocalDateTime deletedAt;
 
     public static Member join(String email, String username, String password, String nickname,
-                              Long universityId, Campus campus, Integer admissionYear, Integer grade) {
+                              String name, String studentNumber, Long universityId, Campus campus,
+                              Integer admissionYear, Integer grade) {
         Member member = new Member();
         member.email = email;
         member.username = username;
         member.password = password;
         member.nickname = nickname;
+        member.name = name;
+        member.studentNumber = studentNumber;
         member.universityId = universityId;
         member.campus = campus;
         member.admissionYear = admissionYear;
@@ -74,6 +83,11 @@ public class Member extends BaseEntity {
         member.role = MemberRole.USER;
         member.status = MemberStatus.ACTIVE;
         return member;
+    }
+
+    public static Member join(String email, String username, String password, String nickname,
+                              Long universityId, Campus campus, Integer admissionYear, Integer grade) {
+        return join(email, username, password, nickname, null, null, universityId, campus, admissionYear, grade);
     }
 
     public static Member createAdmin(String email, String username, String password,
@@ -99,6 +113,8 @@ public class Member extends BaseEntity {
         this.username = withdrawn;
         this.email = withdrawn + "@withdrawn";
         this.nickname = withdrawn;
+        this.name = withdrawn;
+        this.studentNumber = null;
         this.password = UUID.randomUUID().toString();
         this.status = MemberStatus.WITHDRAWN;
         this.deletedAt = LocalDateTime.now();

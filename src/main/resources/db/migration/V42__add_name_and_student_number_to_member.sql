@@ -1,0 +1,2 @@
+ALTER TABLE member ADD COLUMN name VARCHAR(30);
+ALTER TABLE member ADD COLUMN student_number VARCHAR(10);

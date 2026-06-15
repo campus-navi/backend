@@ -19,6 +19,16 @@ public record SignUpRequest(
         @NotBlank
         String nickname,
 
+        @NotBlank
+        @Size(min = 2, max = 30, message = "이름은 2~30자 이내로 입력해주세요.")
+        @Pattern(regexp = "^[가-힣a-zA-Z]+$", message = "이름은 한글 또는 영문만 입력 가능합니다.")
+        String name,
+
+        @NotBlank
+        @Size(min = 6, max = 10, message = "학번은 6~10자 이내로 입력해주세요.")
+        @Pattern(regexp = "^\\d+$", message = "학번은 숫자만 입력 가능합니다.")
+        String studentNumber,
+
         @NotNull
         Long departmentId,
 
