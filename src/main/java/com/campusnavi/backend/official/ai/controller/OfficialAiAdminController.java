@@ -20,10 +20,12 @@ public class OfficialAiAdminController {
 
     private final AiMetaAdminService aiMetaAdminService;
 
-    @Operation(summary = "공식정보 AI 메타 일괄 생성", description = "PENDING 상태인 게시글을 최대 limit건 FastAPI로 배치 처리합니다. 시드 크롤링 후 초기 데이터 세팅 시 사용합니다.")
+    @Operation(summary = "공식정보 AI 메타 일괄 생성", description = "PENDING 상태인 게시글을 최신순으로 최대 limit건 FastAPI로 배치 처리합니다. campusId만 전달하면 학과 없는 해당 캠퍼스 공지, departmentId를 전달하면 해당 학과 공지를 처리합니다.")
     @PostMapping("/ai-meta/process-pending")
-    public ResponseEntity<ApiResponse<String>> processPending(@RequestParam(defaultValue = "100") int limit) {
-        BatchResult result = aiMetaAdminService.processPendingBatch(limit);
+    public ResponseEntity<ApiResponse<String>> processPending(@RequestParam(defaultValue = "100") int limit,
+                                                              @RequestParam(required = false) Long campusId,
+                                                              @RequestParam(required = false) Long departmentId) {
+        BatchResult result = aiMetaAdminService.processPendingBatch(limit, campusId, departmentId);
         return ResponseEntity.ok(
                 ApiResponse.ok("성공: " + result.success() + ", 실패: " + result.failure()));
     }

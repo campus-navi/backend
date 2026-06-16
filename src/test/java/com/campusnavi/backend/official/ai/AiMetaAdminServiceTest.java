@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
@@ -54,11 +53,11 @@ class AiMetaAdminServiceTest {
         @DisplayName("PENDING 항목이 없으면 AI 호출 없이 BatchResult(0, 0)을 반환한다")
         void noPending() {
             // given
-            given(metaRepository.findAllByStatus(eq(ProcessingStatus.PENDING), any(PageRequest.class)))
-                    .willReturn(new PageImpl<>(List.of()));
+            given(metaRepository.findPendingBatch(eq(ProcessingStatus.PENDING), isNull(), isNull(), any(PageRequest.class)))
+                    .willReturn(List.of());
 
             // when
-            BatchResult result = service.processPendingBatch(100);
+            BatchResult result = service.processPendingBatch(100, null, null);
 
             // then
             assertThat(result.success()).isZero();
@@ -79,8 +78,8 @@ class AiMetaAdminServiceTest {
             given(meta1.getOfficialPost()).willReturn(post1);
             given(meta2.getOfficialPost()).willReturn(post2);
 
-            given(metaRepository.findAllByStatus(eq(ProcessingStatus.PENDING), any(PageRequest.class)))
-                    .willReturn(new PageImpl<>(List.of(meta1, meta2)));
+            given(metaRepository.findPendingBatch(eq(ProcessingStatus.PENDING), isNull(), isNull(), any(PageRequest.class)))
+                    .willReturn(List.of(meta1, meta2));
             given(processor.buildRequests(anyList()))
                     .willReturn(List.of(
                             new OfficialAiRequest(1L, "본문1", List.of(), List.of()),
@@ -95,7 +94,7 @@ class AiMetaAdminServiceTest {
                     )));
 
             // when
-            BatchResult result = service.processPendingBatch(100);
+            BatchResult result = service.processPendingBatch(100, null, null);
 
             // then
             assertThat(result.success()).isEqualTo(1L);
@@ -112,8 +111,8 @@ class AiMetaAdminServiceTest {
             OfficialPostAiMeta meta = mock(OfficialPostAiMeta.class);
             given(meta.getOfficialPost()).willReturn(post);
 
-            given(metaRepository.findAllByStatus(eq(ProcessingStatus.PENDING), any(PageRequest.class)))
-                    .willReturn(new PageImpl<>(List.of(meta)));
+            given(metaRepository.findPendingBatch(eq(ProcessingStatus.PENDING), isNull(), isNull(), any(PageRequest.class)))
+                    .willReturn(List.of(meta));
             given(processor.buildRequests(anyList()))
                     .willReturn(List.of(new OfficialAiRequest(1L, "본문", List.of(), List.of())));
 
@@ -124,7 +123,7 @@ class AiMetaAdminServiceTest {
                     )));
 
             // when
-            BatchResult result = service.processPendingBatch(100);
+            BatchResult result = service.processPendingBatch(100, null, null);
 
             // then
             assertThat(result.success()).isEqualTo(1L);
@@ -140,8 +139,8 @@ class AiMetaAdminServiceTest {
             OfficialPostAiMeta meta = mock(OfficialPostAiMeta.class);
             given(meta.getOfficialPost()).willReturn(post);
 
-            given(metaRepository.findAllByStatus(eq(ProcessingStatus.PENDING), any(PageRequest.class)))
-                    .willReturn(new PageImpl<>(List.of(meta)));
+            given(metaRepository.findPendingBatch(eq(ProcessingStatus.PENDING), isNull(), isNull(), any(PageRequest.class)))
+                    .willReturn(List.of(meta));
             given(processor.buildRequests(anyList()))
                     .willReturn(List.of(new OfficialAiRequest(1L, "본문", List.of(), List.of())));
 
@@ -151,7 +150,7 @@ class AiMetaAdminServiceTest {
                     )));
 
             // when
-            BatchResult result = service.processPendingBatch(100);
+            BatchResult result = service.processPendingBatch(100, null, null);
 
             // then
             assertThat(result.success()).isZero();
@@ -160,17 +159,17 @@ class AiMetaAdminServiceTest {
         }
 
         @Test
-        @DisplayName("limit 파라미터가 Page 조회 크기로 전달된다")
+        @DisplayName("limit 파라미터가 조회 크기로 전달된다")
         void limitAsPageSize() {
             // given
-            given(metaRepository.findAllByStatus(eq(ProcessingStatus.PENDING), eq(PageRequest.of(0, 50))))
-                    .willReturn(new PageImpl<>(List.of()));
+            given(metaRepository.findPendingBatch(eq(ProcessingStatus.PENDING), isNull(), isNull(), eq(PageRequest.of(0, 50))))
+                    .willReturn(List.of());
 
             // when
-            service.processPendingBatch(50);
+            service.processPendingBatch(50, null, null);
 
             // then
-            then(metaRepository).should().findAllByStatus(ProcessingStatus.PENDING, PageRequest.of(0, 50));
+            then(metaRepository).should().findPendingBatch(ProcessingStatus.PENDING, null, null, PageRequest.of(0, 50));
         }
     }
 }
