@@ -24,9 +24,9 @@ public class AiMetaAdminService {
     private final AiMetaProcessor processor;
     private final AiMetaService aiMetaService;
 
-    public BatchResult processPendingBatch(int limit) {
-        List<OfficialPostAiMeta> target = metaRepository.findAllByStatus(ProcessingStatus.PENDING, PageRequest.of(0, limit))
-                .getContent();
+    public BatchResult processPendingBatch(int limit, Long campusId, Long departmentId) {
+        List<OfficialPostAiMeta> target = metaRepository.findPendingBatch(
+                ProcessingStatus.PENDING, campusId, departmentId, PageRequest.of(0, limit));
 
         if (target.isEmpty()) return new BatchResult(0, 0);
 
