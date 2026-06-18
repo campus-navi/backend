@@ -5,7 +5,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.tag.entity.Tag;
 import com.campusnavi.backend.tag.repository.TagRepository;
-import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.StudentNumberUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
@@ -188,33 +188,33 @@ class MemberServiceTest {
     }
 
     @Nested
-    @DisplayName("학번 변경")
-    class ChangeAdmissionYear {
+    @DisplayName("입학년도 및 학번 변경")
+    class ChangeStudentNumberWithAdmissionYear {
 
         @Test
-        @DisplayName("학번을 변경한다")
+        @DisplayName("입학년도와 학번을 함께 변경한다")
         void success() {
             // given
             Member member = mock(Member.class);
-            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(25);
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "20251234");
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
 
             // when
-            memberService.changeAdmissionYear(MEMBER_ID, request);
+            memberService.changeStudentNumber(MEMBER_ID, request);
 
             // then
-            then(member).should().changeAdmissionYear(25);
+            then(member).should().changeStudentNumber(2025, "20251234");
         }
 
         @Test
         @DisplayName("존재하지 않는 회원이면 MEMBER_NOT_FOUND 예외가 발생한다")
         void memberNotFound() {
             // given
-            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(25);
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "20251234");
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> memberService.changeAdmissionYear(MEMBER_ID, request))
+            assertThatThrownBy(() -> memberService.changeStudentNumber(MEMBER_ID, request))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -262,7 +262,7 @@ class MemberServiceTest {
         void success() {
             // given
             Member member = Member.join("user@test.ac.kr", "username1", "encoded",
-                    "닉네임", "홍길동", "20260001", 10L, null, 25, 1);
+                    "닉네임", "홍길동", "20260001", 10L, null, 2025, 1);
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
 
             // when

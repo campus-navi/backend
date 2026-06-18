@@ -47,9 +47,11 @@ public class MyPageService {
         long interestCount = memberService.countMyInterests(memberId);
 
         return new MyPageResponse(
+                profile.name(),
                 profile.nickname(),
                 profile.email(),
                 profile.campus(),
+                profile.studentNumber(),
                 profile.admissionYear(),
                 profile.grade(),
                 profile.departments(),

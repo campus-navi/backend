@@ -33,6 +33,8 @@ public record SignUpRequest(
         Long departmentId,
 
         @NotNull
+        @Min(value = 1900, message = "입학년도는 1900~2099 사이로 입력해주세요.")
+        @Max(value = 2099, message = "입학년도는 1900~2099 사이로 입력해주세요.")
         Integer admissionYear,
 
         @NotNull

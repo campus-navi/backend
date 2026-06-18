@@ -4,7 +4,7 @@ import com.campusnavi.backend.auth.service.AuthService;
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.util.cookie.RefreshTokenCookieProvider;
-import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.StudentNumberUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberMeResponse;
@@ -75,12 +75,12 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    @Operation(summary = "학번 변경", description = "학번(입학년도)을 변경한다.")
-    @PatchMapping("/me/admission-year")
-    public ResponseEntity<ApiResponse<Void>> changeAdmissionYear(
+    @Operation(summary = "입학년도 및 학번 변경", description = "입학년도와 학번을 변경한다.")
+    @PatchMapping("/me/student-number")
+    public ResponseEntity<ApiResponse<Void>> changeStudentNumber(
             @AuthenticationPrincipal AuthMember authMember,
-            @RequestBody @Valid AdmissionYearUpdateRequest request) {
-        memberService.changeAdmissionYear(authMember.memberId(), request);
+            @RequestBody @Valid StudentNumberUpdateRequest request) {
+        memberService.changeStudentNumber(authMember.memberId(), request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

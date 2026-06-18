@@ -5,7 +5,7 @@ import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.global.util.cookie.RefreshTokenCookieProvider;
-import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.StudentNumberUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.MemberInterestUpdateRequest;
 import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
@@ -227,18 +227,18 @@ class MemberControllerTest {
     }
 
     @Nested
-    @DisplayName("학번 변경")
-    class ChangeAdmissionYear {
+    @DisplayName("입학년도 및 학번 변경")
+    class ChangeStudentNumberWithAdmissionYear {
 
         @Test
-        @DisplayName("정상 요청이면 200을 반환한다")
+        @DisplayName("입학년도와 학번을 함께 전달하면 200을 반환한다")
         void success() throws Exception {
             // given
-            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(25);
-            willDoNothing().given(memberService).changeAdmissionYear(any(), any());
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "20251234");
+            willDoNothing().given(memberService).changeStudentNumber(any(), any());
 
             // when & then
-            mockMvc.perform(patch("/api/v1/members/me/admission-year")
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
                             .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -247,13 +247,141 @@ class MemberControllerTest {
         }
 
         @Test
-        @DisplayName("학번이 null이면 400을 반환한다")
-        void nullAdmissionYear() throws Exception {
+        @DisplayName("1900년대 입학년도도 정상 요청이면 200을 반환한다")
+        void successWithLate1900sAdmissionYear() throws Exception {
             // given
-            AdmissionYearUpdateRequest request = new AdmissionYearUpdateRequest(null);
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(1999, "19991234");
+            willDoNothing().given(memberService).changeStudentNumber(any(), any());
 
             // when & then
-            mockMvc.perform(patch("/api/v1/members/me/admission-year")
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("입학년도가 null이면 400을 반환한다")
+        void nullAdmissionYear() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(null, "20251234");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("입학년도가 1900년 미만이면 400을 반환한다")
+        void admissionYearTooSmall() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(1899, "20251234");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("입학년도가 2099년을 초과하면 400을 반환한다")
+        void admissionYearTooLarge() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2100, "20251234");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("학번이 null이면 400을 반환한다")
+        void nullStudentNumber() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, null);
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("학번이 비어 있으면 400을 반환한다")
+        void blankStudentNumber() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, " ");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("학번이 최소 길이 미만이면 400을 반환한다")
+        void studentNumberTooShort() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "12345");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("학번이 최대 길이를 초과하면 400을 반환한다")
+        void studentNumberTooLong() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "12345678901");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
+                            .with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("학번에 숫자 외 문자가 있으면 400을 반환한다")
+        void invalidStudentNumberPattern() throws Exception {
+            // given
+            StudentNumberUpdateRequest request = new StudentNumberUpdateRequest(2025, "2025A123");
+
+            // when & then
+            mockMvc.perform(patch("/api/v1/members/me/student-number")
                             .with(authentication(AUTH))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
