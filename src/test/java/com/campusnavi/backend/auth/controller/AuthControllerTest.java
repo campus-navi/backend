@@ -390,6 +390,32 @@ class AuthControllerTest {
         }
 
         @Test
+        @DisplayName("admissionYear가 1900년 미만이면 400을 반환한다")
+        void admissionYearTooSmall() throws Exception {
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, NAME, STUDENT_NUMBER, DEPT_ID, 1899, GRADE);
+
+            mockMvc.perform(post("/api/v1/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("admissionYear가 2099년을 초과하면 400을 반환한다")
+        void admissionYearTooLarge() throws Exception {
+            SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, NAME, STUDENT_NUMBER, DEPT_ID, 2100, GRADE);
+
+            mockMvc.perform(post("/api/v1/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
         @DisplayName("grade가 null이면 400을 반환한다")
         void nullGrade() throws Exception {
             SignUpRequest request = new SignUpRequest(VERIFIED_TOKEN, USERNAME, PASSWORD, NICKNAME, NAME, STUDENT_NUMBER, DEPT_ID, ADMISSION_YEAR, null);
