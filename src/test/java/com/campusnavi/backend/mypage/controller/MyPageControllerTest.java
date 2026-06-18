@@ -55,17 +55,19 @@ class MyPageControllerTest {
     @Test
     @DisplayName("정상 요청이면 200과 마이페이지 데이터를 반환한다")
     void success() throws Exception {
-        given(myPageService.getMyPage(MEMBER_ID)).willReturn(new MyPageResponse(
-                "testnick", "user@test.ac.kr", "테스트대학교(서울캠퍼스)", 25, 1,
+        given(myPageService.getMyPage(MEMBER_ID)).willReturn(new MyPageResponse("홍길동",
+                "testnick", "user@test.ac.kr", "테스트대학교(서울캠퍼스)", "20251234", 2025, 1,
                 List.of("컴퓨터공학과"), 5L, 4L, 3L));
 
         mockMvc.perform(get("/api/v1/mypage").with(authentication(AUTH)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.nickname").value("testnick"))
                 .andExpect(jsonPath("$.data.email").value("user@test.ac.kr"))
                 .andExpect(jsonPath("$.data.campus").value("테스트대학교(서울캠퍼스)"))
-                .andExpect(jsonPath("$.data.admissionYear").value(25))
+                .andExpect(jsonPath("$.data.studentNumber").value("20251234"))
+                .andExpect(jsonPath("$.data.admissionYear").value(2025))
                 .andExpect(jsonPath("$.data.grade").value(1))
                 .andExpect(jsonPath("$.data.departments[0]").value("컴퓨터공학과"))
                 .andExpect(jsonPath("$.data.scrapCount").value(5))

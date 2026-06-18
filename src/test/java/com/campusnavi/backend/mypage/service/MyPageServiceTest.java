@@ -71,8 +71,8 @@ class MyPageServiceTest {
         @Test
         @DisplayName("프로필과 스크랩 합계, 활성 리마인드 수를 조립해 반환한다")
         void success() {
-            MemberProfile profile = new MemberProfile("testnick", "user@test.ac.kr",
-                    "테스트대학교(서울캠퍼스)", 25, 1, List.of("컴퓨터공학과"));
+            MemberProfile profile = new MemberProfile("홍길동", "testnick", "user@test.ac.kr",
+                    "테스트대학교(서울캠퍼스)", "20251234", 2025, 1, List.of("컴퓨터공학과"));
             given(memberService.getMyProfile(MEMBER_ID)).willReturn(profile);
             given(officialPostScrapService.countScrappedPosts(MEMBER_ID)).willReturn(3L);
             given(postInteractionService.countScraps(MEMBER_ID)).willReturn(2L);
@@ -81,10 +81,12 @@ class MyPageServiceTest {
 
             MyPageResponse result = service.getMyPage(MEMBER_ID);
 
+            assertThat(result.name()).isEqualTo("홍길동");
             assertThat(result.nickname()).isEqualTo("testnick");
             assertThat(result.email()).isEqualTo("user@test.ac.kr");
             assertThat(result.campus()).isEqualTo("테스트대학교(서울캠퍼스)");
-            assertThat(result.admissionYear()).isEqualTo(25);
+            assertThat(result.studentNumber()).isEqualTo("20251234");
+            assertThat(result.admissionYear()).isEqualTo(2025);
             assertThat(result.grade()).isEqualTo(1);
             assertThat(result.departments()).containsExactly("컴퓨터공학과");
             assertThat(result.scrapCount()).isEqualTo(5L);
@@ -95,8 +97,8 @@ class MyPageServiceTest {
         @Test
         @DisplayName("스크랩과 리마인드가 없으면 0을 반환한다")
         void zeroCounts() {
-            MemberProfile profile = new MemberProfile("testnick", "user@test.ac.kr",
-                    "테스트대학교(서울캠퍼스)", 25, 1, List.of());
+            MemberProfile profile = new MemberProfile("홍길동", "testnick", "user@test.ac.kr",
+                    "테스트대학교(서울캠퍼스)", "20251234", 2025, 1, List.of());
             given(memberService.getMyProfile(MEMBER_ID)).willReturn(profile);
             given(officialPostScrapService.countScrappedPosts(MEMBER_ID)).willReturn(0L);
             given(postInteractionService.countScraps(MEMBER_ID)).willReturn(0L);
