@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface CampusRepository extends JpaRepository<Campus,Long> {
     List<Campus> findAllByOrderByNameAsc();
+    List<Campus> findByUniversityIdOrderByNameAsc(Long universityId);
     boolean existsById(@NonNull Long id);
 }
