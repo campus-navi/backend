@@ -128,8 +128,9 @@ public class Member extends BaseEntity {
         this.password = encodedPassword;
     }
 
-    public void changeAdmissionYear(Integer admissionYear) {
+    public void changeStudentNumber(Integer admissionYear, String studentNumber) {
         this.admissionYear = admissionYear;
+        this.studentNumber = studentNumber;
     }
 
     public void changeGrade(Integer grade) {

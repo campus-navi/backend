@@ -11,7 +11,7 @@ import com.campusnavi.backend.member.dto.MemberProfile;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberInterest;
 import com.campusnavi.backend.member.entity.MemberRole;
-import com.campusnavi.backend.member.dto.AdmissionYearUpdateRequest;
+import com.campusnavi.backend.member.dto.StudentNumberUpdateRequest;
 import com.campusnavi.backend.member.dto.GradeUpdateRequest;
 import com.campusnavi.backend.member.dto.PasswordUpdateRequest;
 import com.campusnavi.backend.member.dto.UsernameUpdateRequest;
@@ -47,8 +47,8 @@ public class MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (member.getRole() == MemberRole.ADMIN) {
-            return new MemberProfile(member.getNickname(), member.getEmail(),
-                    null, null, null, List.of());
+            return new MemberProfile(null, member.getNickname(), member.getEmail(),
+                    null, null, null, null, List.of());
         }
 
         List<String> departments = member.getMemberDepartments().stream()
@@ -56,9 +56,11 @@ public class MemberService {
                 .toList();
 
         return new MemberProfile(
+                member.getName(),
                 member.getNickname(),
                 member.getEmail(),
                 member.getCampus().getName(),
+                member.getStudentNumber(),
                 member.getAdmissionYear(),
                 member.getGrade(),
                 departments);
@@ -114,11 +116,11 @@ public class MemberService {
     }
 
     @Transactional
-    public void changeAdmissionYear(Long memberId, AdmissionYearUpdateRequest request) {
+    public void changeStudentNumber(Long memberId, StudentNumberUpdateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        member.changeAdmissionYear(request.admissionYear());
+        member.changeStudentNumber(request.admissionYear(), request.studentNumber());
     }
 
     @Transactional
