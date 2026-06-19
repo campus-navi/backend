@@ -1,9 +1,8 @@
 package com.campusnavi.backend.studio.academicplan.controller;
 
-import com.campusnavi.backend.studio.academicplan.api.AcademicPlanTargetController;
-import com.campusnavi.backend.studio.academicplan.api.dto.TargetCampusResponse;
-import com.campusnavi.backend.studio.academicplan.api.dto.TargetDepartmentResponse;
-import com.campusnavi.backend.studio.academicplan.api.dto.TargetMajorResponse;
+import com.campusnavi.backend.studio.academicplan.controller.dto.TargetCampusResponse;
+import com.campusnavi.backend.studio.academicplan.controller.dto.TargetDepartmentResponse;
+import com.campusnavi.backend.studio.academicplan.controller.dto.TargetMajorResponse;
 import com.campusnavi.backend.studio.academicplan.service.AcademicPlanTargetService;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;

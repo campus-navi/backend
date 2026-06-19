@@ -1,6 +1,5 @@
 package com.campusnavi.backend.studio.academicplan.entity;
 
-import com.campusnavi.backend.studio.academicplan.MajorType;
 import com.campusnavi.backend.university.entity.Campus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

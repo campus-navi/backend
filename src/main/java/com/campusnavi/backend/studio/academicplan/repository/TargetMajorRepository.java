@@ -1,6 +1,6 @@
 package com.campusnavi.backend.studio.academicplan.repository;
 
-import com.campusnavi.backend.studio.academicplan.MajorType;
+import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.academicplan.entity.TargetMajor;
 import org.springframework.data.jpa.repository.JpaRepository;
 
