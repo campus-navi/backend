@@ -49,8 +49,15 @@ public class AuthController {
     })
     @PostMapping("/email/send")
     public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody @Valid EmailSendRequest sendRequest, HttpServletRequest request) {
-        // TODO: 배포 환경 확정 후 X-Forwarded-For, X-Real-IP 헤더 처리 추가
-        String ip = request.getRemoteAddr();
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isBlank()) {
+            ip = request.getRemoteAddr();
+        } else {
+            ip = ip.split(",")[0].trim();
+        }
         emailVerificationService.sendEmailVerification(sendRequest, ip);
         return ResponseEntity.ok(ApiResponse.ok());
     }
