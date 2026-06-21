@@ -66,6 +66,7 @@ public class OfficialPostQueryService {
                 raw.publisher(),
                 raw.publishedAt(),
                 raw.endDate(),
+                raw.endTime(),
                 raw.isNotificationOn()
         );
     }
