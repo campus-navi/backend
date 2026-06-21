@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -78,7 +79,7 @@ class FeedControllerTest {
         @DisplayName("정상 요청이면 200과 마감임박 미리보기 목록을 반환한다")
         void success() throws Exception {
             DeadlinePostResponse post = new DeadlinePostResponse(
-                    1L, "프로젝트 신청 안내", "수강", "학사팀", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 7), false);
+                    1L, "프로젝트 신청 안내", "수강", "학사팀", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 7), LocalTime.of(18, 0), false);
             given(feedService.getDeadlinePostsForFeed(any())).willReturn(new DeadlineListResponse(List.of(post)));
 
             mockMvc.perform(get("/api/v1/feed/deadlines/preview").with(authentication(AUTH)))
@@ -87,7 +88,20 @@ class FeedControllerTest {
                     .andExpect(jsonPath("$.data.posts[0].postId").value(1L))
                     .andExpect(jsonPath("$.data.posts[0].title").value("프로젝트 신청 안내"))
                     .andExpect(jsonPath("$.data.posts[0].endDate").value("2026-04-07"))
+                    .andExpect(jsonPath("$.data.posts[0].endTime").value("18:00:00"))
                     .andExpect(jsonPath("$.data.posts[0].isNotificationOn").value(false));
+        }
+
+        @Test
+        @DisplayName("endTime이 null이면 응답에 필드를 포함하지 않는다")
+        void endTime_null() throws Exception {
+            DeadlinePostResponse post = new DeadlinePostResponse(
+                    1L, "프로젝트 신청 안내", "수강", "학사팀", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 7), null, false);
+            given(feedService.getDeadlinePostsForFeed(any())).willReturn(new DeadlineListResponse(List.of(post)));
+
+            mockMvc.perform(get("/api/v1/feed/deadlines/preview").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.posts[0].endTime").doesNotExist());
         }
 
         @Test
@@ -109,14 +123,27 @@ class FeedControllerTest {
         @DisplayName("정상 요청이면 200과 전체 마감임박 목록을 반환한다")
         void success() throws Exception {
             DeadlinePostResponse post = new DeadlinePostResponse(
-                    2L, "장학금 신청", "장학금", "장학팀", LocalDate.of(2026, 4, 2), LocalDate.of(2026, 4, 5), false);
+                    2L, "장학금 신청", "장학금", "장학팀", LocalDate.of(2026, 4, 2), LocalDate.of(2026, 4, 5), LocalTime.of(18, 0), false);
             given(feedService.getAllDeadlinePosts(any())).willReturn(new DeadlineListResponse(List.of(post)));
 
             mockMvc.perform(get("/api/v1/feed/deadlines").with(authentication(AUTH)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.posts[0].postId").value(2L))
-                    .andExpect(jsonPath("$.data.posts[0].endDate").value("2026-04-05"));
+                    .andExpect(jsonPath("$.data.posts[0].endDate").value("2026-04-05"))
+                    .andExpect(jsonPath("$.data.posts[0].endTime").value("18:00:00"));
+        }
+
+        @Test
+        @DisplayName("endTime이 null이면 응답에 필드를 포함하지 않는다")
+        void endTime_null() throws Exception {
+            DeadlinePostResponse post = new DeadlinePostResponse(
+                    2L, "장학금 신청", "장학금", "장학팀", LocalDate.of(2026, 4, 2), LocalDate.of(2026, 4, 5), null, false);
+            given(feedService.getAllDeadlinePosts(any())).willReturn(new DeadlineListResponse(List.of(post)));
+
+            mockMvc.perform(get("/api/v1/feed/deadlines").with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.posts[0].endTime").doesNotExist());
         }
 
         @Test

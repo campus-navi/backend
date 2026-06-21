@@ -122,6 +122,7 @@ public class OfficialPostQueryRepository {
                         officialPost.publisher,
                         officialPost.publishedAt,
                         officialPostAiMeta.endDate,
+                        officialPostAiMeta.endTime,
                         noti.id.isNotNull()))
                 .from(officialPost)
                 .join(officialPostAiMeta).on(officialPostAiMeta.officialPost.id.eq(officialPost.id))
