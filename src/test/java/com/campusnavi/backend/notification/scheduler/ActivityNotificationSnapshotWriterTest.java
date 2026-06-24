@@ -4,7 +4,7 @@ import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.notification.entity.ActivityNotificationSnapshot;
 import com.campusnavi.backend.notification.repository.ActivityNotificationSnapshotRepository;
 import com.campusnavi.backend.official.post.entity.OfficialPostView;
-import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotRepository;
+import com.campusnavi.backend.official.post.recommend.service.RecommendCandidateReader;
 import com.campusnavi.backend.official.post.repository.OfficialPostViewRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,8 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.never;
 class ActivityNotificationSnapshotWriterTest {
 
     @Mock
-    private FeedRecommendSnapshotRepository recommendSnapshotRepository;
+    private RecommendCandidateReader recommendCandidateReader;
 
     @Mock
     private OfficialPostViewRepository viewRepository;
@@ -45,8 +45,6 @@ class ActivityNotificationSnapshotWriterTest {
     private ActivityNotificationSnapshotWriter writer;
 
     private static final LocalDate MISSED_DATE = LocalDate.of(2026, 5, 13);
-    private static final LocalDateTime WINDOW_START = MISSED_DATE.atTime(9, 0);
-    private static final LocalDateTime WINDOW_END = WINDOW_START.plusDays(1);
 
     @Nested
     @DisplayName("writeChunk")
@@ -60,12 +58,9 @@ class ActivityNotificationSnapshotWriterTest {
             given(snapshotRepository.findMemberIdsByMissedDateAndMemberIdIn(
                     eq(MISSED_DATE), eq(List.of(1L))))
                     .willReturn(Set.of());
-            given(recommendSnapshotRepository.findRawByMemberIdsAndSlotRange(
-                    eq(List.of(1L)), eq(WINDOW_START), eq(WINDOW_END)))
-                    .willReturn(List.of(
-                            row(1L, 10L),
-                            row(1L, 11L),
-                            row(1L, 12L)));
+            given(recommendCandidateReader.findCandidatesByMemberIdsAndDate(
+                    eq(List.of(1L)), eq(MISSED_DATE)))
+                    .willReturn(Map.of(1L, Set.of(10L, 11L, 12L)));
             given(viewRepository.findByMemberIdInAndPostIdIn(eq(List.of(1L)), anyCollection()))
                     .willReturn(List.of(view(1L, 11L)));
 
@@ -90,9 +85,9 @@ class ActivityNotificationSnapshotWriterTest {
             given(snapshotRepository.findMemberIdsByMissedDateAndMemberIdIn(
                     eq(MISSED_DATE), eq(List.of(1L))))
                     .willReturn(Set.of());
-            given(recommendSnapshotRepository.findRawByMemberIdsAndSlotRange(
-                    eq(List.of(1L)), eq(WINDOW_START), eq(WINDOW_END)))
-                    .willReturn(List.of());
+            given(recommendCandidateReader.findCandidatesByMemberIdsAndDate(
+                    eq(List.of(1L)), eq(MISSED_DATE)))
+                    .willReturn(Map.of());
 
             // when
             writer.writeChunk(List.of(m1), MISSED_DATE);
@@ -111,12 +106,11 @@ class ActivityNotificationSnapshotWriterTest {
             given(snapshotRepository.findMemberIdsByMissedDateAndMemberIdIn(
                     eq(MISSED_DATE), eq(List.of(1L, 2L))))
                     .willReturn(Set.of());
-            given(recommendSnapshotRepository.findRawByMemberIdsAndSlotRange(
-                    eq(List.of(1L, 2L)), eq(WINDOW_START), eq(WINDOW_END)))
-                    .willReturn(List.of(
-                            row(1L, 10L),
-                            row(2L, 20L),
-                            row(2L, 21L)));
+            given(recommendCandidateReader.findCandidatesByMemberIdsAndDate(
+                    eq(List.of(1L, 2L)), eq(MISSED_DATE)))
+                    .willReturn(Map.of(
+                            1L, Set.of(10L),
+                            2L, Set.of(20L, 21L)));
             given(viewRepository.findByMemberIdInAndPostIdIn(eq(List.of(1L, 2L)), anyCollection()))
                     .willReturn(List.of(view(1L, 10L)));
 
@@ -141,9 +135,9 @@ class ActivityNotificationSnapshotWriterTest {
             given(snapshotRepository.findMemberIdsByMissedDateAndMemberIdIn(
                     eq(MISSED_DATE), eq(List.of(1L, 2L))))
                     .willReturn(Set.of(1L));
-            given(recommendSnapshotRepository.findRawByMemberIdsAndSlotRange(
-                    eq(List.of(2L)), eq(WINDOW_START), eq(WINDOW_END)))
-                    .willReturn(List.<Object[]>of(row(2L, 20L)));
+            given(recommendCandidateReader.findCandidatesByMemberIdsAndDate(
+                    eq(List.of(2L)), eq(MISSED_DATE)))
+                    .willReturn(Map.of(2L, Set.of(20L)));
             given(viewRepository.findByMemberIdInAndPostIdIn(eq(List.of(2L)), anyCollection()))
                     .willReturn(List.of());
 
@@ -171,7 +165,7 @@ class ActivityNotificationSnapshotWriterTest {
             writer.writeChunk(List.of(m1), MISSED_DATE);
 
             // then
-            then(recommendSnapshotRepository).shouldHaveNoInteractions();
+            then(recommendCandidateReader).shouldHaveNoInteractions();
             then(viewRepository).shouldHaveNoInteractions();
             then(snapshotRepository).should(never()).saveAll(any());
         }
@@ -180,10 +174,6 @@ class ActivityNotificationSnapshotWriterTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static ArgumentCaptor<List<ActivityNotificationSnapshot>> captor() {
         return (ArgumentCaptor) ArgumentCaptor.forClass(List.class);
-    }
-
-    private static Object[] row(long memberId, long postId) {
-        return new Object[]{memberId, postId};
     }
 
     private static OfficialPostView view(long memberId, long postId) {
