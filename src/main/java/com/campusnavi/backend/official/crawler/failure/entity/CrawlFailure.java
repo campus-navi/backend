@@ -41,7 +41,7 @@ public class CrawlFailure {
     private LocalDate publishedAt;
 
     @Column(nullable = false)
-    private short retryCount = 0;
+    private int retryCount = 0;
 
     @Column(length = MAX_ERROR_LENGTH)
     private String lastError;

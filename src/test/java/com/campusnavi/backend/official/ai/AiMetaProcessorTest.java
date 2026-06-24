@@ -61,8 +61,8 @@ class AiMetaProcessorTest {
             given(post.getId()).willReturn(POST_ID);
             given(post.getStructuredText()).willReturn(STRUCTURED_TEXT);
 
-            OfficialAttachment image = OfficialAttachment.create(post, "image.png", "img/a.png", "image/png", true, (short) 0);
-            OfficialAttachment file = OfficialAttachment.create(post, "file.pdf", "file/b.pdf", "application/pdf", false, (short) 1);
+            OfficialAttachment image = OfficialAttachment.create(post, "image.png", "img/a.png", "image/png", true, 0);
+            OfficialAttachment file = OfficialAttachment.create(post, "file.pdf", "file/b.pdf", "application/pdf", false, 1);
 
             given(attachmentRepository.findByPostId(POST_ID)).willReturn(List.of(image, file));
             given(s3StorageService.generateGetPresignedUrl(eq("img/a.png"), eq("image.png"), any(Duration.class)))
@@ -141,8 +141,8 @@ class AiMetaProcessorTest {
             given(post1.getStructuredText()).willReturn("본문1");
             given(post2.getStructuredText()).willReturn("본문2");
 
-            OfficialAttachment img1 = OfficialAttachment.create(post1, "img1.png", "img/1.png", "image/png", true, (short) 0);
-            OfficialAttachment file2 = OfficialAttachment.create(post2, "file2.pdf", "file/2.pdf", "application/pdf", false, (short) 0);
+            OfficialAttachment img1 = OfficialAttachment.create(post1, "img1.png", "img/1.png", "image/png", true, 0);
+            OfficialAttachment file2 = OfficialAttachment.create(post2, "file2.pdf", "file/2.pdf", "application/pdf", false, 0);
 
             given(attachmentRepository.findByPostIdIn(List.of(1L, 2L))).willReturn(List.of(img1, file2));
             given(s3StorageService.generateGetPresignedUrl(eq("img/1.png"), eq("img1.png"), any(Duration.class)))
