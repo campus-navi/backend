@@ -86,7 +86,7 @@ class CrawlFailureServiceTest {
             service.record(source, post, new RuntimeException("새 오류"));
 
             // then
-            assertThat(existing.getRetryCount()).isEqualTo((short) 0);
+            assertThat(existing.getRetryCount()).isEqualTo(0);
             assertThat(existing.getLastError()).contains("새 오류");
             assertThat(existing.getLastRetriedAt()).isNotNull();
             then(repository).should(never()).save(any(CrawlFailure.class));

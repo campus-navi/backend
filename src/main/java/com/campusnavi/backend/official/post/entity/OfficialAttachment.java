@@ -32,10 +32,10 @@ public class OfficialAttachment extends BaseCreatedAtEntity {
     private boolean isImage;
 
     @Column(nullable = false)
-    private short sortOrder;
+    private int sortOrder;
 
     public static OfficialAttachment create(OfficialPost post, String originalName, String s3Key,
-                                            String contentType, boolean isImage, short sortOrder) {
+                                            String contentType, boolean isImage, int sortOrder) {
         OfficialAttachment attachment = new OfficialAttachment();
         attachment.post = post;
         attachment.originalName = originalName;

@@ -212,7 +212,7 @@ public class PostService {
         if (imageKeys == null || imageKeys.isEmpty()) return;
         List<PostImage> images = new ArrayList<>();
         for (int i = 0; i < imageKeys.size(); i++) {
-            images.add(PostImage.create(post, imageKeys.get(i), (short) i));
+            images.add(PostImage.create(post, imageKeys.get(i), i));
         }
         imageRepository.saveAll(images);
     }

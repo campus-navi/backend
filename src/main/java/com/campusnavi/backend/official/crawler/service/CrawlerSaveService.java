@@ -67,11 +67,11 @@ public class CrawlerSaveService {
         List<OfficialAttachment> allAttachments = new ArrayList<>();
         for (int i = 0; i < images.size(); i++) {
             UploadedFile f = images.get(i);
-            allAttachments.add(OfficialAttachment.create(post, f.originalName(), f.s3Key(), f.contentType(), true, (short) i));
+            allAttachments.add(OfficialAttachment.create(post, f.originalName(), f.s3Key(), f.contentType(), true, i));
         }
         for (int i = 0; i < attachments.size(); i++) {
             UploadedFile f = attachments.get(i);
-            allAttachments.add(OfficialAttachment.create(post, f.originalName(), f.s3Key(), f.contentType(), false, (short) i));
+            allAttachments.add(OfficialAttachment.create(post, f.originalName(), f.s3Key(), f.contentType(), false, i));
         }
         if (!allAttachments.isEmpty()) {
             attachmentRepository.saveAll(allAttachments);

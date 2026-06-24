@@ -22,9 +22,9 @@ public class PostImage{
     private String imageKey;
 
     @Column(nullable = false)
-    private short sortOrder = 0;
+    private int sortOrder = 0;
 
-    public static PostImage create(Post post, String imageKey, short sortOrder) {
+    public static PostImage create(Post post, String imageKey, int sortOrder) {
         PostImage image = new PostImage();
         image.post = post;
         image.imageKey = imageKey;
