@@ -4,15 +4,13 @@ import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.notification.entity.ActivityNotificationSnapshot;
 import com.campusnavi.backend.notification.repository.ActivityNotificationSnapshotRepository;
 import com.campusnavi.backend.official.post.entity.OfficialPostView;
-import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotRepository;
+import com.campusnavi.backend.official.post.recommend.service.RecommendCandidateReader;
 import com.campusnavi.backend.official.post.repository.OfficialPostViewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +24,7 @@ import static java.util.stream.Collectors.toSet;
 @RequiredArgsConstructor
 public class ActivityNotificationSnapshotWriter {
 
-    private static final LocalTime WINDOW_START_TIME = LocalTime.of(9, 0);
-
-    private final FeedRecommendSnapshotRepository recommendSnapshotRepository;
+    private final RecommendCandidateReader recommendCandidateReader;
     private final OfficialPostViewRepository viewRepository;
     private final ActivityNotificationSnapshotRepository snapshotRepository;
 
@@ -43,13 +39,8 @@ public class ActivityNotificationSnapshotWriter {
                 .toList();
         if (targetMemberIds.isEmpty()) return;
 
-        LocalDateTime windowStart = missedDate.atTime(WINDOW_START_TIME);
-        LocalDateTime windowEnd = windowStart.plusDays(1);
-
-        Map<Long, Set<Long>> candidateByMember = recommendSnapshotRepository
-                .findRawByMemberIdsAndSlotRange(targetMemberIds, windowStart, windowEnd).stream()
-                .collect(groupingBy(row -> ((Number) row[0]).longValue(),
-                        mapping(row -> ((Number) row[1]).longValue(), toSet())));
+        Map<Long, Set<Long>> candidateByMember =
+                recommendCandidateReader.findCandidatesByMemberIdsAndDate(targetMemberIds, missedDate);
         if (candidateByMember.isEmpty()) return;
 
         Set<Long> allPostIds = candidateByMember.values().stream()

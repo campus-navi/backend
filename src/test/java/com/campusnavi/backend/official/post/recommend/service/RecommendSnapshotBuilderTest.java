@@ -5,20 +5,24 @@ import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.repository.MemberInterestRepository;
 import com.campusnavi.backend.member.repository.MemberQueryRepository;
 import com.campusnavi.backend.official.post.dto.OfficialPostRecommendCandidateRaw;
+import com.campusnavi.backend.official.post.recommend.entity.FeedRecommendSnapshot;
+import com.campusnavi.backend.official.post.recommend.entity.FeedRecommendSnapshotItem;
+import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotItemRepository;
 import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotRepository;
 import com.campusnavi.backend.official.post.recommend.repository.RecommendQueryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +52,9 @@ class RecommendSnapshotBuilderTest {
     @Mock
     private FeedRecommendSnapshotRepository snapshotRepository;
 
+    @Mock
+    private FeedRecommendSnapshotItemRepository itemRepository;
+
     @InjectMocks
     private RecommendSnapshotBuilder builder;
 
@@ -59,7 +67,7 @@ class RecommendSnapshotBuilderTest {
     class ComputeAndUpsert {
 
         @Test
-        @DisplayName("후보가 있으면 ranked를 JSON 배열로 직렬화해 upsert 한다")
+        @DisplayName("후보가 있으면 snapshot을 저장하고 items를 순서대로 저장한다")
         void upsertWithCandidates() {
             // given
             Member requester = activeMember();
@@ -76,18 +84,27 @@ class RecommendSnapshotBuilderTest {
             given(scoringService.rank(
                     eq(List.of(candidate)), any(), eq(Set.of(100L)), eq(10L)))
                     .willReturn(List.of(candidate));
+            FeedRecommendSnapshot snapshot = mock(FeedRecommendSnapshot.class);
+            given(snapshotRepository.findByMemberIdAndSlotAt(eq(MEMBER_ID), any())).willReturn(Optional.of(snapshot));
 
             // when
             List<Long> ranked = builder.computeAndUpsert(requester);
 
             // then
             assertThat(ranked).containsExactly(7L);
-            then(snapshotRepository).should()
-                    .upsertSlot(eq(MEMBER_ID), any(LocalDateTime.class), eq("[7]"));
+            then(itemRepository).should().deleteBySnapshot(snapshot);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArgumentCaptor<List<FeedRecommendSnapshotItem>> captor =
+                    (ArgumentCaptor) ArgumentCaptor.forClass(List.class);
+            then(itemRepository).should().saveAll(captor.capture());
+            List<FeedRecommendSnapshotItem> items = captor.getValue();
+            assertThat(items).hasSize(1);
+            assertThat(items.get(0).getPostId()).isEqualTo(7L);
+            assertThat(items.get(0).getSortOrder()).isEqualTo(0);
         }
 
         @Test
-        @DisplayName("ranked가 여러 건이면 순서대로 직렬화된다")
+        @DisplayName("ranked가 여러 건이면 순서대로 sortOrder가 부여된다")
         void upsertPreservesOrder() {
             // given
             Member requester = activeMember();
@@ -103,19 +120,26 @@ class RecommendSnapshotBuilderTest {
             given(memberQueryRepository.countActiveMembersInDepartments(any())).willReturn(0L);
             given(scoringService.rank(any(), any(), any(), eq(0L)))
                     .willReturn(List.of(c1, c2, c3));
+            FeedRecommendSnapshot snapshot = mock(FeedRecommendSnapshot.class);
+            given(snapshotRepository.findByMemberIdAndSlotAt(eq(MEMBER_ID), any())).willReturn(Optional.of(snapshot));
 
             // when
             builder.computeAndUpsert(requester);
 
             // then
-            then(snapshotRepository).should()
-                    .upsertSlot(eq(MEMBER_ID), any(LocalDateTime.class), eq("[3,1,2]"));
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArgumentCaptor<List<FeedRecommendSnapshotItem>> captor =
+                    (ArgumentCaptor) ArgumentCaptor.forClass(List.class);
+            then(itemRepository).should().saveAll(captor.capture());
+            List<FeedRecommendSnapshotItem> items = captor.getValue();
+            assertThat(items).extracting(FeedRecommendSnapshotItem::getPostId).containsExactly(3L, 1L, 2L);
+            assertThat(items).extracting(i -> (int) i.getSortOrder()).containsExactly(0, 1, 2);
         }
 
         @Test
-        @DisplayName("후보가 비면 upsert 를 호출하지 않고 빈 결과를 그대로 반환한다")
+        @DisplayName("후보가 비면 snapshot/items 저장 없이 빈 결과를 반환한다")
         void skipUpsertWhenEmpty() {
-            // given — 빈 결과를 캐싱하면 다음 정각까지 사용자가 빈 응답에 락인되므로 skip
+            // given
             Member requester = activeMember();
             stubScope();
             given(recommendQueryRepository.findRecommendCandidates(any(), any(), eq(MEMBER_ID)))
@@ -130,7 +154,8 @@ class RecommendSnapshotBuilderTest {
                     .findStatsByPostIds(any(), anyInt(), anyInt(), any());
             then(interestRepository).shouldHaveNoInteractions();
             then(scoringService).shouldHaveNoInteractions();
-            then(snapshotRepository).should(never()).upsertSlot(any(), any(), any());
+            then(snapshotRepository).should(never()).insertIfAbsent(any(), any());
+            then(itemRepository).shouldHaveNoInteractions();
         }
     }
 

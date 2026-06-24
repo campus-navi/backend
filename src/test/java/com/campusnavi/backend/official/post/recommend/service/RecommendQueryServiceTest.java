@@ -61,7 +61,7 @@ class RecommendQueryServiceTest {
             Member requester = activeMember();
             FeedRecommendSnapshot snapshot = mock(FeedRecommendSnapshot.class);
             given(snapshot.getPostIds()).willReturn(List.of(2L, 1L));
-            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID))
+            given(snapshotRepository.findLatestByMemberId(MEMBER_ID))
                     .willReturn(Optional.of(snapshot));
 
             OfficialPostCardRaw card1 = card(1L);
@@ -88,7 +88,7 @@ class RecommendQueryServiceTest {
             Member requester = activeMember();
             FeedRecommendSnapshot emptySnapshot = mock(FeedRecommendSnapshot.class);
             given(emptySnapshot.getPostIds()).willReturn(List.of());
-            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID))
+            given(snapshotRepository.findLatestByMemberId(MEMBER_ID))
                     .willReturn(Optional.of(emptySnapshot));
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of(7L));
 
@@ -111,7 +111,7 @@ class RecommendQueryServiceTest {
         void snapshotMiss() {
             // given
             Member requester = activeMember();
-            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID)).willReturn(Optional.empty());
+            given(snapshotRepository.findLatestByMemberId(MEMBER_ID)).willReturn(Optional.empty());
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of(7L));
 
             OfficialPostCardRaw card = card(7L);
@@ -133,7 +133,7 @@ class RecommendQueryServiceTest {
         void emptyAfterBuilder() {
             // given
             Member requester = activeMember();
-            given(snapshotRepository.findFirstByMemberIdOrderBySlotAtDesc(MEMBER_ID)).willReturn(Optional.empty());
+            given(snapshotRepository.findLatestByMemberId(MEMBER_ID)).willReturn(Optional.empty());
             given(snapshotBuilder.computeAndUpsert(requester)).willReturn(List.of());
 
             // when
