@@ -1,20 +1,22 @@
 package com.campusnavi.backend.official.post.recommend.entity;
 
 import com.campusnavi.backend.global.common.BaseCreatedAtEntity;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -37,7 +39,13 @@ public class FeedRecommendSnapshot extends BaseCreatedAtEntity {
     @Column(name = "slot_at", nullable = false)
     private LocalDateTime slotAt;
 
-    @Type(JsonBinaryType.class)
-    @Column(name = "post_ids", nullable = false, columnDefinition = "jsonb")
-    private List<Long> postIds;
+    @OneToMany(mappedBy = "snapshot", fetch = FetchType.LAZY)
+    @OrderBy("sortOrder ASC")
+    private List<FeedRecommendSnapshotItem> items = new ArrayList<>();
+
+    public List<Long> getPostIds() {
+        return items.stream()
+                .map(FeedRecommendSnapshotItem::getPostId)
+                .toList();
+    }
 }

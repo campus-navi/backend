@@ -7,6 +7,9 @@ import com.campusnavi.backend.member.repository.MemberQueryRepository;
 import com.campusnavi.backend.official.post.dto.OfficialPostRecommendCandidateRaw;
 import com.campusnavi.backend.official.post.dto.OfficialPostScopeCondition;
 import com.campusnavi.backend.official.post.dto.OfficialPostStatsRaw;
+import com.campusnavi.backend.official.post.recommend.entity.FeedRecommendSnapshot;
+import com.campusnavi.backend.official.post.recommend.entity.FeedRecommendSnapshotItem;
+import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotItemRepository;
 import com.campusnavi.backend.official.post.recommend.repository.FeedRecommendSnapshotRepository;
 import com.campusnavi.backend.official.post.recommend.repository.RecommendQueryRepository;
 import com.campusnavi.backend.official.post.recommend.util.RecommendSlot;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +35,7 @@ public class RecommendSnapshotBuilder {
     private final RecommendationScoringService scoringService;
     private final RecommendQueryRepository recommendQueryRepository;
     private final FeedRecommendSnapshotRepository snapshotRepository;
+    private final FeedRecommendSnapshotItemRepository itemRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<Long> computeAndUpsert(Member requester) {
@@ -44,7 +49,19 @@ public class RecommendSnapshotBuilder {
             return ranked;
         }
 
-        snapshotRepository.upsertSlot(memberId, slotAt, toJsonArray(ranked));
+        snapshotRepository.insertIfAbsent(memberId, slotAt);
+        FeedRecommendSnapshot snapshot = snapshotRepository
+                .findByMemberIdAndSlotAt(memberId, slotAt)
+                .orElseThrow();
+
+        itemRepository.deleteBySnapshot(snapshot);
+
+        List<FeedRecommendSnapshotItem> items = new ArrayList<>();
+        for (int i = 0; i < ranked.size(); i++) {
+            items.add(FeedRecommendSnapshotItem.of(snapshot, ranked.get(i), i));
+        }
+        itemRepository.saveAll(items);
+
         return ranked;
     }
 
@@ -83,9 +100,4 @@ public class RecommendSnapshotBuilder {
     }
 
 
-    private static String toJsonArray(List<Long> ids) {
-        return ids.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(",", "[", "]"));
-    }
 }

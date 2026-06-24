@@ -14,23 +14,21 @@ import java.util.Optional;
 public interface FeedRecommendSnapshotRepository
         extends JpaRepository<FeedRecommendSnapshot, Long> {
 
-    Optional<FeedRecommendSnapshot> findFirstByMemberIdOrderBySlotAtDesc(Long memberId);
+    @Query("SELECT s FROM FeedRecommendSnapshot s JOIN FETCH s.items WHERE s.memberId = :memberId ORDER BY s.slotAt DESC LIMIT 1")
+    Optional<FeedRecommendSnapshot> findLatestByMemberId(@Param("memberId") Long memberId);
+
+    Optional<FeedRecommendSnapshot> findByMemberIdAndSlotAt(Long memberId, LocalDateTime slotAt);
 
     @Modifying
-    @Query(value = """
-            INSERT INTO feed_recommend_snapshot (member_id, slot_at, post_ids)
-            VALUES (:memberId, :slotAt, CAST(:postIdsJson AS jsonb))
-            ON CONFLICT (member_id, slot_at) DO UPDATE
-            SET post_ids = EXCLUDED.post_ids
-            """, nativeQuery = true)
-    void upsertSlot(@Param("memberId") Long memberId,
-                    @Param("slotAt") LocalDateTime slotAt,
-                    @Param("postIdsJson") String postIdsJson);
+    @Query(value = "INSERT INTO feed_recommend_snapshot (member_id, slot_at, created_at) " +
+                   "VALUES (:memberId, :slotAt, now()) ON CONFLICT (member_id, slot_at) DO NOTHING",
+           nativeQuery = true)
+    void insertIfAbsent(@Param("memberId") Long memberId, @Param("slotAt") LocalDateTime slotAt);
 
     @Query(value = """
-            SELECT s.member_id, pid::bigint
-            FROM feed_recommend_snapshot s,
-                 jsonb_array_elements_text(s.post_ids) AS pid
+            SELECT s.member_id, i.post_id
+            FROM feed_recommend_snapshot s
+            JOIN feed_recommend_snapshot_item i ON i.snapshot_id = s.id
             WHERE s.member_id IN (:memberIds)
               AND s.slot_at >= :start
               AND s.slot_at < :end
