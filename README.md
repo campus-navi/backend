@@ -7,7 +7,7 @@
 | 분류 | 기술 |
 |------|------|
 | Language | Java 21 |
-| Framework | Spring Boot 4.0.5 |
+| Framework | Spring Boot 4.0.6 |
 | Build | Gradle (Kotlin DSL) |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
@@ -29,10 +29,14 @@
 - **피드**: 메인화면 카드뉴스(최신 9 + 추천 5), 마감임박 공지 미리보기/전체 조회
 - **추천**: 회원 관심사·학적 기반 스코어링, 추천 스냅샷 사전 계산 스케줄러
 - **공식정보 상세**: 본문/첨부 이미지 리스트, 스크랩, 첨부파일 다운로드 추적, 알림 토글
-- **회원 관리**: JWT 인증, Admin 자동 부트스트랩, 내 정보 조회
+- **회원 관리**: JWT 인증, Admin 자동 부트스트랩, 내 정보 조회·수정, 회원탈퇴
 - **커뮤니티**: 게시판, 댓글, 좋아요, 스크랩
 - **태그**: 회원 관심사·공식정보·커뮤니티 공통 태깅, FastAPI 내부용 조회 API
 - **대학 정보**: 대학·캠퍼스·단과대·학부 계층 관리
+- **스크랩**: 공식정보 스크랩 폴더 CRUD, 폴더별 스크랩 다중 제거·복구
+- **마이페이지**: 기본정보 조회·수정, 최근 본 게시물 조회·삭제
+- **알림**: 스케줄 기반 활동 알림 스냅샷, 리마인드 탭, 알림 다중 제거·복구
+- **스튜디오**: 학업계획서 (개발 중)
 
 ## 프로젝트 구조
 
@@ -49,6 +53,10 @@ src/main/java/com/campusnavi/backend/
 ├── feed/              - 메인 카드뉴스·마감임박 공지 피드
 ├── community/         - 커뮤니티 게시판, 댓글
 ├── tag/               - 태그 관리, FastAPI 내부용 API
+├── scrap/             - 스크랩 폴더 CRUD, 공식정보 스크랩
+├── mypage/            - 마이페이지 조회·수정, 최근 본 게시물
+├── notification/      - 활동 알림, 리마인드 탭, 재시도 스케줄러
+├── studio/            - 학업계획서 (개발 중)
 ├── infra/
 │   ├── ai/            - FastAPI HTTP 클라이언트, 헬스체크
 │   ├── storage/       - S3/MinIO 업로드·Presigned URL
@@ -58,6 +66,26 @@ src/main/java/com/campusnavi/backend/
 ```
 
 데이터베이스 마이그레이션은 `src/main/resources/db/migration/` 에 Flyway 규칙으로 관리합니다.
+
+## ERD
+
+> ERD는 패키지가 아닌 도메인 경계 기준으로 구성했습니다. scrap·mypage·notification 패키지는 전용 테이블 없이 다른 도메인 테이블을 참조합니다.
+> 커뮤니티 도메인은 기획 변경 확정 후 구조 변경 예정, 스튜디오 도메인은 개발 중입니다.
+
+![Overview](docs/erd/Overview.png)
+
+| 도메인 | 다이어그램 |
+|--------|-----------|
+| 대학 계층 | [University.png](docs/erd/University.png) |
+| 회원 | [Member.png](docs/erd/Member.png) |
+| 커뮤니티 | [Community.png](docs/erd/Community.png) |
+| 공식정보 핵심 | [OfficialPostCore.png](docs/erd/OfficialPostCore.png) |
+| 공식정보 사용자 행동 | [OfficialPostActivity.png](docs/erd/OfficialPostActivity.png) |
+| 스튜디오 | [Studio.png](docs/erd/Studio.png) |
+
+## 문서
+
+- [아키텍처 상세](docs/architecture.md)
 
 ## 로컬 환경 실행
 
@@ -143,7 +171,7 @@ recommend:
   feed:
     w1: 0.30             # 학과 평균 조회수 가중치
     w2: 0.30             # 조회자 중 학번/학년 매칭 가중치
-    w3: 0.40             # 관심새(태그) 매칭 가중치
+    w3: 0.40             # 관심사(태그) 매칭 가중치
     w2-admission: 0.4    # 학적 매칭 중 소속 비중
     w2-grade: 0.6        # 학적 매칭 중 학년 비중
     view-cap: 30         # w1계산시 최대 조회수
