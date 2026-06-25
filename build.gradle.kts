@@ -47,11 +47,8 @@ dependencies {
     //Cache
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
-    //Mail (SMTP - local)
+    //Mail
     implementation("org.springframework.boot:spring-boot-starter-mail")
-
-    //Mail (SES - dev/prod)
-    implementation("software.amazon.awssdk:ses:2.31.19")
 
     //Storage (S3 - dev/prod)
     implementation("software.amazon.awssdk:s3:2.31.19")
