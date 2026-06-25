@@ -27,7 +27,7 @@ public class FeedController {
 
     private final FeedService feedService;
 
-    @Operation(summary = "카드뉴스 조회", description = "최신 공지 9건과 관심사 기반 추천 공지 8건을 반환합니다.")
+    @Operation(summary = "카드뉴스 조회", description = "최신 공지 9건과 추천 알고리즘 기반 추천 공지 5건을 반환합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증되지 않은 사용자",
