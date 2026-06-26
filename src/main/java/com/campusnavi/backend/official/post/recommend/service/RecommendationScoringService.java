@@ -27,8 +27,7 @@ public class RecommendationScoringService {
 
         Comparator<Scored> byScoreThenLatestThenId =
                 Comparator.comparingDouble(Scored::score).reversed()
-                        .thenComparing(s -> s.c().publishedAt(),
-                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(s -> s.c().publishedAt(), Comparator.reverseOrder())
                         .thenComparing(s -> s.c().postId(), Comparator.reverseOrder());
 
         return candidates.stream()

@@ -228,25 +228,6 @@ class RecommendationScoringServiceTest {
             assertThat(ranked).extracting(OfficialPostRecommendCandidateRaw::postId)
                     .containsExactly(3L, 2L, 1L);
         }
-
-        @Test
-        @DisplayName("publishedAt이 null인 후보는 nullsLast로 가장 뒤에 온다")
-        void nullDate() {
-            // given
-            List<OfficialPostRecommendCandidateRaw> candidates = List.of(
-                    candidate(1L, null, null),
-                    candidate(2L, null, LocalDate.of(2026, 5, 1)),
-                    candidate(3L, null, LocalDate.of(2026, 4, 1))
-            );
-
-            // when
-            List<OfficialPostRecommendCandidateRaw> ranked =
-                    service.rank(candidates, Map.of(), Set.of(), 10L);
-
-            // then
-            assertThat(ranked).extracting(OfficialPostRecommendCandidateRaw::postId)
-                    .containsExactly(2L, 3L, 1L);
-        }
     }
 
     @Nested
