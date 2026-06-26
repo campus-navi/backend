@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "document_section")
+@Table(name = "document_section",
+        uniqueConstraints = @UniqueConstraint(name = "uq_ds_document_section",
+                columnNames = {"document_id", "section_key"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DocumentSection extends BaseEntity {
 
@@ -36,5 +38,9 @@ public class DocumentSection extends BaseEntity {
         section.sortOrder = sortOrder;
         section.content = content;
         return section;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
     }
 }

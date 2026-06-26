@@ -43,4 +43,9 @@ public class StudioDocument extends BaseEntity {
         doc.metadata = metadata;
         return doc;
     }
+
+    // 자식 섹션만 변경되면 부모는 변경 감지에서 잡히지 않아 updatedAt이 갱신되지 않으므로, 수정시각을 직접 건드려 UPDATE를 유발
+    public void touch() {
+        renewUpdatedAt();
+    }
 }

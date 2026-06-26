@@ -1,5 +1,6 @@
 package com.campusnavi.backend.studio.academicplan.document.dto;
 
+import com.campusnavi.backend.studio.document.dto.SectionContent;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
@@ -9,5 +10,5 @@ public record SectionInput(
                 example = "application_motive")
         @NotBlank String sectionKey,
         @NotBlank String content
-) {
+) implements SectionContent {
 }
