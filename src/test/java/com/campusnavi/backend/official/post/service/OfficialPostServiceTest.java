@@ -426,18 +426,6 @@ class OfficialPostServiceTest {
             }
 
             @Test
-            @DisplayName("페이지 마지막 row의 publishedAt이 null이면 nextCursor는 Base64(\"null:id\") 형태이다")
-            void nextCursorWhenPublishedAtNull() {
-                givenScopes();
-                stubFindList(IntStream.rangeClosed(1, 21).mapToObj(i -> summaryRaw(i, null, null)).toList());
-
-                CursorPageResponse<OfficialPostSummaryResponse> result =
-                        officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, null);
-
-                assertThat(result.nextCursor()).isEqualTo(encodeCursor("null:20"));
-            }
-
-            @Test
             @DisplayName("결과가 size 이하이면 hasNext=false이고 nextCursor는 null이다")
             void hasNextFalse() {
                 givenScopes();
@@ -461,18 +449,6 @@ class OfficialPostServiceTest {
 
                 then(officialPostQueryRepository).should().findList(any(), isNull(), isNull(), eq(OfficialPostListSort.LATEST),
                         eq(cursorDate), eq(100L), isNull(), isNull(), eq(21));
-            }
-
-            @Test
-            @DisplayName("Base64(\"null:id\") cursor를 전달하면 publishedAt=null로 파싱해 리포지토리에 전달한다")
-            void withCursorWhenPublishedAtNull() {
-                givenScopes();
-                stubFindList(List.of());
-
-                officialPostService.getList(CONTEXT, null, null, OfficialPostListSort.LATEST, encodeCursor("null:50"));
-
-                then(officialPostQueryRepository).should().findList(any(), isNull(), isNull(), eq(OfficialPostListSort.LATEST),
-                        isNull(), eq(50L), isNull(), isNull(), eq(21));
             }
 
             @Test

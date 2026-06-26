@@ -27,7 +27,7 @@ public interface OfficialPostAiMetaRepository extends JpaRepository<OfficialPost
                                          OR (:departmentId IS NULL AND :campusId IS NOT NULL AND p.campusId = :campusId AND p.departmentId IS NULL)
                                          OR (:departmentId IS NULL AND :campusId IS NULL)
                                       )
-                                    ORDER BY p.publishedAt DESC NULLS LAST, p.id DESC
+                                    ORDER BY p.publishedAt DESC, p.id DESC
                     """
     )
     List<OfficialPostAiMeta> findPendingBatch(@Param("status") ProcessingStatus status,

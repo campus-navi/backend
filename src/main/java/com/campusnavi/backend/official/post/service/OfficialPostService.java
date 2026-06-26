@@ -142,7 +142,7 @@ public class OfficialPostService {
             if (sort == OfficialPostListSort.LATEST) {
                 try {
                     String[] parts = raw.split(":", 2);
-                    latestCursorPublishedAt = "null".equals(parts[0]) ? null : LocalDate.parse(parts[0]);
+                    latestCursorPublishedAt = LocalDate.parse(parts[0]);
                     latestCursorId = Long.parseLong(parts[1]);
                 } catch (Exception e) {
                     throw new BusinessException(ErrorCode.INVALID_PARAM);

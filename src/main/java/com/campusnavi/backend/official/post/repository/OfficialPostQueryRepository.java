@@ -29,7 +29,7 @@ public class OfficialPostQueryRepository {
     public List<OfficialPostCardRaw> findRecentPosts(OfficialPostScopeCondition condition, LocalDateTime slotAt) {
         return cardBaseQuery(condition)
                 .where(officialPost.crawledAt.loe(slotAt))
-                .orderBy(officialPost.publishedAt.desc().nullsLast(), officialPost.crawledAt.desc(), officialPost.id.desc())
+                .orderBy(officialPost.publishedAt.desc(), officialPost.crawledAt.desc(), officialPost.id.desc())
                 .limit(9)
                 .fetch();
     }
@@ -77,7 +77,7 @@ public class OfficialPostQueryRepository {
             query.orderBy(officialPostAiMeta.endDate.asc(), officialPost.id.asc());
         } else {
             query.where(latestCursorFilter(latestCursorPublishedAt, latestCursorId));
-            query.orderBy(officialPost.publishedAt.desc().nullsLast(), officialPost.id.desc());
+            query.orderBy(officialPost.publishedAt.desc(), officialPost.id.desc());
         }
 
         return query.limit(limit).fetch();
@@ -96,13 +96,9 @@ public class OfficialPostQueryRepository {
     }
 
     private BooleanExpression latestCursorFilter(LocalDate cursorPublishedAt, Long cursorId) {
-        if (cursorId == null) return null;
-        if (cursorPublishedAt == null) {
-            return officialPost.publishedAt.isNull().and(officialPost.id.lt(cursorId));
-        }
+        if (cursorId == null || cursorPublishedAt == null) return null;
         return officialPost.publishedAt.lt(cursorPublishedAt)
-                .or(officialPost.publishedAt.eq(cursorPublishedAt).and(officialPost.id.lt(cursorId)))
-                .or(officialPost.publishedAt.isNull());
+                .or(officialPost.publishedAt.eq(cursorPublishedAt).and(officialPost.id.lt(cursorId)));
     }
 
     private BooleanExpression deadlineCursorFilter(LocalDate cursorDate, Long cursorId) {

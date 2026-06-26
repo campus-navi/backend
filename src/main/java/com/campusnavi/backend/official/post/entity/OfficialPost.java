@@ -50,6 +50,7 @@ public class OfficialPost extends BaseEntity {
     @Column(nullable = false, length = 500)
     private String sourceUrl;
 
+    @Column(nullable = false)
     private LocalDate publishedAt;
 
     @Column(nullable = false)
