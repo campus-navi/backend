@@ -9,6 +9,7 @@ import com.campusnavi.backend.studio.academicplan.document.dto.SectionInput;
 import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
 import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.academicplan.service.AcademicPlanTargetService;
+import com.campusnavi.backend.studio.academicplan.service.ResolvedTarget;
 import com.campusnavi.backend.studio.document.entity.DocumentSection;
 import com.campusnavi.backend.studio.document.entity.DocumentStatus;
 import com.campusnavi.backend.studio.document.entity.DocumentType;
@@ -75,8 +76,8 @@ class AcademicPlanDocumentServiceTest {
         @DisplayName("정상 생성 시 자격 검증한 대상명으로 문서와 섹션을 저장한다")
         void success() {
             given(memberRepository.findProfileById(MEMBER_ID)).willReturn(Optional.of(mock(Member.class)));
-            given(academicPlanTargetService.resolveAllowedTargetName(any(Member.class), eq(MajorType.DOUBLE_MAJOR), eq(TARGET_ID)))
-                    .willReturn("경제학과");
+            given(academicPlanTargetService.resolveAllowedTarget(any(Member.class), eq(MajorType.DOUBLE_MAJOR), eq(TARGET_ID)))
+                    .willReturn(new ResolvedTarget("서울캠퍼스", "경제학과"));
             given(studioDocumentRepository.save(any(StudioDocument.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
 
@@ -89,6 +90,7 @@ class AcademicPlanDocumentServiceTest {
             assertThat(saved.getStatus()).isEqualTo(DocumentStatus.DRAFT);
             AcademicPlanMetadata metadata = (AcademicPlanMetadata) saved.getMetadata();
             assertThat(metadata.majorType()).isEqualTo(MajorType.DOUBLE_MAJOR);
+            assertThat(metadata.campusName()).isEqualTo("서울캠퍼스");
             assertThat(metadata.targetName()).isEqualTo("경제학과");
 
             then(documentSectionRepository).should().saveAll(sectionsCaptor.capture());

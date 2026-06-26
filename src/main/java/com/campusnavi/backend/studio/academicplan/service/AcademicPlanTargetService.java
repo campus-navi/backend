@@ -64,14 +64,14 @@ public class AcademicPlanTargetService {
                 .toList();
     }
 
-    public String resolveAllowedTargetName(Member member, MajorType majorType, Long targetId) {
+    public ResolvedTarget resolveAllowedTarget(Member member, MajorType majorType, Long targetId) {
         return switch (majorType) {
-            case DOUBLE_MAJOR, COMPLEX_MAJOR -> allowedDepartmentName(member, majorType, targetId);
-            case CONVERGENCE_MAJOR, STUDENT_DESIGN -> allowedMajorName(member, majorType, targetId);
+            case DOUBLE_MAJOR, COMPLEX_MAJOR -> allowedDepartment(member, majorType, targetId);
+            case CONVERGENCE_MAJOR, STUDENT_DESIGN -> allowedMajor(member, majorType, targetId);
         };
     }
 
-    private String allowedDepartmentName(Member member, MajorType majorType, Long targetId) {
+    private ResolvedTarget allowedDepartment(Member member, MajorType majorType, Long targetId) {
         Department department = departmentRepository.findById(targetId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STUDIO_TARGET_NOT_FOUND));
         if (!department.getCampus().getUniversity().getId().equals(member.getUniversityId())) {
@@ -80,17 +80,17 @@ public class AcademicPlanTargetService {
         if (restrictedDepartmentIds(member, majorType).contains(targetId)) {
             throw new BusinessException(ErrorCode.STUDIO_TARGET_NOT_ALLOWED);
         }
-        return department.getName();
+        return new ResolvedTarget(department.getCampus().getName(), department.getName());
     }
 
-    private String allowedMajorName(Member member, MajorType majorType, Long targetId) {
+    private ResolvedTarget allowedMajor(Member member, MajorType majorType, Long targetId) {
         TargetMajor major = targetMajorRepository.findById(targetId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STUDIO_TARGET_NOT_FOUND));
         if (major.getMajorType() != majorType
                 || !major.getCampus().getUniversity().getId().equals(member.getUniversityId())) {
             throw new BusinessException(ErrorCode.STUDIO_TARGET_NOT_ALLOWED);
         }
-        return major.getName();
+        return new ResolvedTarget(major.getCampus().getName(), major.getName());
     }
 
     private Set<Long> restrictedDepartmentIds(Member member, MajorType type) {
