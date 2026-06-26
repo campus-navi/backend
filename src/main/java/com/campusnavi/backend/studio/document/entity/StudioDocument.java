@@ -33,9 +33,9 @@ public class StudioDocument extends BaseEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "JSONB")
-    private Object metadata;
+    private DocumentMetadata metadata;
 
-    public static StudioDocument create(Member member, DocumentType documentType, Object metadata) {
+    public static StudioDocument create(Member member, DocumentType documentType, DocumentMetadata metadata) {
         StudioDocument doc = new StudioDocument();
         doc.member = member;
         doc.documentType = documentType;

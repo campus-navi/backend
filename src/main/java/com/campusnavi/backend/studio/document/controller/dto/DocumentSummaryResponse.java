@@ -1,5 +1,6 @@
 package com.campusnavi.backend.studio.document.controller.dto;
 
+import com.campusnavi.backend.studio.document.entity.DocumentMetadata;
 import com.campusnavi.backend.studio.document.entity.DocumentStatus;
 import com.campusnavi.backend.studio.document.entity.DocumentType;
 import com.campusnavi.backend.studio.document.entity.StudioDocument;
@@ -10,7 +11,7 @@ public record DocumentSummaryResponse(
         Long id,
         DocumentType documentType,
         DocumentStatus status,
-        Object metadata,
+        DocumentMetadata metadata,
         LocalDateTime updatedAt
 ) {
     public static DocumentSummaryResponse from(StudioDocument document) {

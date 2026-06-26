@@ -3,12 +3,15 @@ package com.campusnavi.backend.studio.document.service;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.member.entity.Member;
+import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
+import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentDetailResponse;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentSummaryResponse;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentUpdateRequest;
 import com.campusnavi.backend.studio.document.controller.dto.SectionResponse;
 import com.campusnavi.backend.studio.document.controller.dto.UpdateSectionInput;
 import com.campusnavi.backend.studio.document.dto.ResolvedSection;
+import com.campusnavi.backend.studio.document.entity.DocumentMetadata;
 import com.campusnavi.backend.studio.document.entity.DocumentSection;
 import com.campusnavi.backend.studio.document.entity.DocumentStatus;
 import com.campusnavi.backend.studio.document.entity.DocumentType;
@@ -28,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,7 +69,7 @@ class StudioDocumentServiceTest {
         @Test
         @DisplayName("내 문서를 요약 목록으로 반환한다")
         void success() {
-            Object metadata = Map.of("majorType", "DOUBLE_MAJOR", "targetName", "경제학과");
+            DocumentMetadata metadata = new AcademicPlanMetadata(MajorType.DOUBLE_MAJOR, "서울캠퍼스", "경제학과");
             LocalDateTime updatedAt = LocalDateTime.now();
             StudioDocument document = mock(StudioDocument.class);
             given(document.getId()).willReturn(DOCUMENT_ID);

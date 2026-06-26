@@ -3,6 +3,8 @@ package com.campusnavi.backend.studio.document.controller;
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
+import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
+import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentDetailResponse;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentSummaryResponse;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentUpdateRequest;
@@ -25,7 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,7 +65,7 @@ class StudioDocumentControllerTest {
         void success() throws Exception {
             DocumentSummaryResponse summary = new DocumentSummaryResponse(
                     DOCUMENT_ID, DocumentType.ACADEMIC_PLAN, DocumentStatus.DRAFT,
-                    Map.of("majorType", "DOUBLE_MAJOR", "targetName", "경제학과"), LocalDateTime.now());
+                    new AcademicPlanMetadata(MajorType.DOUBLE_MAJOR, "서울캠퍼스", "경제학과"), LocalDateTime.now());
             given(studioDocumentService.getDocuments(MEMBER_ID)).willReturn(List.of(summary));
 
             mockMvc.perform(get("/api/v1/studio/documents").with(authentication(AUTH)))
