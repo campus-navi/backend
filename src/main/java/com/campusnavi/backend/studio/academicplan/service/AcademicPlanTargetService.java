@@ -1,6 +1,7 @@
 package com.campusnavi.backend.studio.academicplan.service;
 
 import com.campusnavi.backend.studio.academicplan.entity.MajorType;
+import com.campusnavi.backend.studio.academicplan.entity.TargetMajor;
 import com.campusnavi.backend.studio.academicplan.controller.dto.TargetCampusResponse;
 import com.campusnavi.backend.studio.academicplan.controller.dto.TargetDepartmentResponse;
 import com.campusnavi.backend.studio.academicplan.controller.dto.TargetMajorResponse;
@@ -11,6 +12,7 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.entity.MemberDepartment;
 import com.campusnavi.backend.member.repository.MemberRepository;
+import com.campusnavi.backend.university.entity.Department;
 import com.campusnavi.backend.university.repository.CampusRepository;
 import com.campusnavi.backend.university.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,12 +45,7 @@ public class AcademicPlanTargetService {
         Member member = memberRepository.findProfileById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Set<Long> restrictedIds = new HashSet<>(
-                restrictedIdsByFromCampus(member.getCampus().getId(), type)
-        );
-        for (MemberDepartment md : member.getMemberDepartments()) {
-            restrictedIds.addAll(restrictedIdsByFromDepartment(md.getDepartment().getId(), type));
-        }
+        Set<Long> restrictedIds = restrictedDepartmentIds(member, type);
 
         return departmentRepository.findByCampusIdOrderByNameAsc(campusId)
                 .stream()
@@ -65,6 +62,43 @@ public class AcademicPlanTargetService {
                 .stream()
                 .map(TargetMajorResponse::from)
                 .toList();
+    }
+
+    public String resolveAllowedTargetName(Member member, MajorType majorType, Long targetId) {
+        return switch (majorType) {
+            case DOUBLE_MAJOR, COMPLEX_MAJOR -> allowedDepartmentName(member, majorType, targetId);
+            case CONVERGENCE_MAJOR, STUDENT_DESIGN -> allowedMajorName(member, majorType, targetId);
+        };
+    }
+
+    private String allowedDepartmentName(Member member, MajorType majorType, Long targetId) {
+        Department department = departmentRepository.findById(targetId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STUDIO_TARGET_NOT_FOUND));
+        if (!department.getCampus().getUniversity().getId().equals(member.getUniversityId())) {
+            throw new BusinessException(ErrorCode.STUDIO_TARGET_NOT_ALLOWED);
+        }
+        if (restrictedDepartmentIds(member, majorType).contains(targetId)) {
+            throw new BusinessException(ErrorCode.STUDIO_TARGET_NOT_ALLOWED);
+        }
+        return department.getName();
+    }
+
+    private String allowedMajorName(Member member, MajorType majorType, Long targetId) {
+        TargetMajor major = targetMajorRepository.findById(targetId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STUDIO_TARGET_NOT_FOUND));
+        if (major.getMajorType() != majorType
+                || !major.getCampus().getUniversity().getId().equals(member.getUniversityId())) {
+            throw new BusinessException(ErrorCode.STUDIO_TARGET_NOT_ALLOWED);
+        }
+        return major.getName();
+    }
+
+    private Set<Long> restrictedDepartmentIds(Member member, MajorType type) {
+        Set<Long> restrictedIds = new HashSet<>(restrictedIdsByFromCampus(member.getCampus().getId(), type));
+        for (MemberDepartment md : member.getMemberDepartments()) {
+            restrictedIds.addAll(restrictedIdsByFromDepartment(md.getDepartment().getId(), type));
+        }
+        return restrictedIds;
     }
 
     private List<Long> restrictedIdsByFromCampus(Long campusId, MajorType type) {
