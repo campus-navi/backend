@@ -302,12 +302,12 @@ class AcademicPlanTargetServiceTest {
 
     @Nested
     @DisplayName("대상 허용 검증")
-    class ResolveAllowedTargetName {
+    class ResolveAllowedTarget {
 
         private static final Long TARGET_ID = 100L;
 
         @Test
-        @DisplayName("제한되지 않은 같은 대학 학과면 학과명을 반환한다")
+        @DisplayName("제한되지 않은 같은 대학 학과면 캠퍼스·학과명을 반환한다")
         void allowedDepartment() {
             Campus myCampus = mock(Campus.class);
             given(myCampus.getId()).willReturn(MY_CAMPUS_ID);
@@ -320,6 +320,7 @@ class AcademicPlanTargetServiceTest {
             given(university.getId()).willReturn(UNIVERSITY_ID);
             Campus deptCampus = mock(Campus.class);
             given(deptCampus.getUniversity()).willReturn(university);
+            given(deptCampus.getName()).willReturn("서울캠퍼스");
             Department department = mock(Department.class);
             given(department.getCampus()).willReturn(deptCampus);
             given(department.getName()).willReturn("경제학과");
@@ -327,9 +328,10 @@ class AcademicPlanTargetServiceTest {
             given(departmentRestrictionRepository.findDoubleRestrictedIdsByFromCampus(MY_CAMPUS_ID))
                     .willReturn(List.of());
 
-            String name = academicPlanTargetService.resolveAllowedTargetName(member, MajorType.DOUBLE_MAJOR, TARGET_ID);
+            ResolvedTarget result = academicPlanTargetService.resolveAllowedTarget(member, MajorType.DOUBLE_MAJOR, TARGET_ID);
 
-            assertThat(name).isEqualTo("경제학과");
+            assertThat(result.campusName()).isEqualTo("서울캠퍼스");
+            assertThat(result.targetName()).isEqualTo("경제학과");
         }
 
         @Test
@@ -347,7 +349,7 @@ class AcademicPlanTargetServiceTest {
             given(departmentRepository.findById(TARGET_ID)).willReturn(Optional.of(department));
 
             assertThatThrownBy(() ->
-                    academicPlanTargetService.resolveAllowedTargetName(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
+                    academicPlanTargetService.resolveAllowedTarget(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.STUDIO_TARGET_NOT_ALLOWED));
         }
@@ -373,7 +375,7 @@ class AcademicPlanTargetServiceTest {
                     .willReturn(List.of(TARGET_ID));
 
             assertThatThrownBy(() ->
-                    academicPlanTargetService.resolveAllowedTargetName(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
+                    academicPlanTargetService.resolveAllowedTarget(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.STUDIO_TARGET_NOT_ALLOWED));
         }
@@ -385,13 +387,13 @@ class AcademicPlanTargetServiceTest {
             given(departmentRepository.findById(TARGET_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() ->
-                    academicPlanTargetService.resolveAllowedTargetName(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
+                    academicPlanTargetService.resolveAllowedTarget(member, MajorType.DOUBLE_MAJOR, TARGET_ID))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.STUDIO_TARGET_NOT_FOUND));
         }
 
         @Test
-        @DisplayName("타입이 맞는 같은 대학 전공이면 전공명을 반환한다")
+        @DisplayName("타입이 맞는 같은 대학 전공이면 캠퍼스·전공명을 반환한다")
         void allowedMajor() {
             Member member = mock(Member.class);
             given(member.getUniversityId()).willReturn(UNIVERSITY_ID);
@@ -400,15 +402,17 @@ class AcademicPlanTargetServiceTest {
             given(university.getId()).willReturn(UNIVERSITY_ID);
             Campus majorCampus = mock(Campus.class);
             given(majorCampus.getUniversity()).willReturn(university);
+            given(majorCampus.getName()).willReturn("세종캠퍼스");
             TargetMajor major = mock(TargetMajor.class);
             given(major.getMajorType()).willReturn(MajorType.CONVERGENCE_MAJOR);
             given(major.getCampus()).willReturn(majorCampus);
             given(major.getName()).willReturn("AI융합전공");
             given(targetMajorRepository.findById(TARGET_ID)).willReturn(Optional.of(major));
 
-            String name = academicPlanTargetService.resolveAllowedTargetName(member, MajorType.CONVERGENCE_MAJOR, TARGET_ID);
+            ResolvedTarget result = academicPlanTargetService.resolveAllowedTarget(member, MajorType.CONVERGENCE_MAJOR, TARGET_ID);
 
-            assertThat(name).isEqualTo("AI융합전공");
+            assertThat(result.campusName()).isEqualTo("세종캠퍼스");
+            assertThat(result.targetName()).isEqualTo("AI융합전공");
         }
 
         @Test
@@ -420,7 +424,7 @@ class AcademicPlanTargetServiceTest {
             given(targetMajorRepository.findById(TARGET_ID)).willReturn(Optional.of(major));
 
             assertThatThrownBy(() ->
-                    academicPlanTargetService.resolveAllowedTargetName(member, MajorType.CONVERGENCE_MAJOR, TARGET_ID))
+                    academicPlanTargetService.resolveAllowedTarget(member, MajorType.CONVERGENCE_MAJOR, TARGET_ID))
                     .isInstanceOfSatisfying(BusinessException.class, e ->
                             assertThat(e.getErrorCode()).isEqualTo(ErrorCode.STUDIO_TARGET_NOT_ALLOWED));
         }

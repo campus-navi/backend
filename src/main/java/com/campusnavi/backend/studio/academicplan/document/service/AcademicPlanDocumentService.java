@@ -8,6 +8,7 @@ import com.campusnavi.backend.studio.academicplan.document.dto.DocumentCreateReq
 import com.campusnavi.backend.studio.academicplan.document.dto.SectionInput;
 import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
 import com.campusnavi.backend.studio.academicplan.service.AcademicPlanTargetService;
+import com.campusnavi.backend.studio.academicplan.service.ResolvedTarget;
 import com.campusnavi.backend.studio.document.entity.DocumentSection;
 import com.campusnavi.backend.studio.document.entity.DocumentType;
 import com.campusnavi.backend.studio.document.entity.SectionSpec;
@@ -38,9 +39,10 @@ public class AcademicPlanDocumentService {
 
         Member member = memberRepository.findProfileById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-        String targetName = academicPlanTargetService.resolveAllowedTargetName(
+        ResolvedTarget target = academicPlanTargetService.resolveAllowedTarget(
                 member, request.majorType(), request.targetId());
-        AcademicPlanMetadata metadata = new AcademicPlanMetadata(request.majorType(), targetName);
+        AcademicPlanMetadata metadata = new AcademicPlanMetadata(
+                request.majorType(), target.campusName(), target.targetName());
 
         StudioDocument document = studioDocumentRepository.save(
                 StudioDocument.create(member, DocumentType.ACADEMIC_PLAN, metadata));
