@@ -18,11 +18,15 @@ graph TB
     SpringBoot["Spring Boot 서버\n:8080"]
     PostgreSQL["PostgreSQL 16\n주 데이터베이스"]
     Redis["Redis 7\n토큰·상태관리·Rate Limit"]
+    Storage["S3 / MinIO\n이미지·첨부파일 저장"]
+    Mail["SMTP Mail Server\n이메일 인증"]
     FastAPI["FastAPI AI 서버\n요약·태그·날짜 추출"]
 
     Client -->|"JWT (Bearer)"| SpringBoot
     SpringBoot -->|"JPA / QueryDSL"| PostgreSQL
     SpringBoot -->|"StringRedisTemplate"| Redis
+    SpringBoot -->|"AWS SDK S3 / Presigned URL"| Storage
+    SpringBoot -->|"JavaMailSender"| Mail
     SpringBoot -->|"RestClient (HTTP)"| FastAPI
 ```
 
@@ -133,7 +137,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     A["RecommendSnapshotScheduler\n(09:00 / 18:00)"] -->|"500명 청크"| B["RecommendationScoringService"]
-    B -->|"S1: 학과 평균 조회수\nS2: 학번/학년 유사도\nS3: 관심 태그 매칭"| C["FeedRecommendSnapshot\n+ feed_recommend_snapshot_item\n(sort_order 순위 보존)"]
+    B -->|"S1: 학과 평균 조회수\nS2: 입학년도/학년 유사도\nS3: 관심 태그 매칭"| C["FeedRecommendSnapshot\n+ feed_recommend_snapshot_item\n(sort_order 순위 보존)"]
     D["FeedController"] -->|"피드 조회"| E["RecommendQueryService"]
     E -->|"스냅샷 읽기 (JOIN FETCH)"| C
 ```
@@ -143,8 +147,8 @@ flowchart LR
 | 요소 | 가중치 | 산출 기준                       |
 |------|--------|-----------------------------|
 | 학과 평균 조회수 (S1) | 0.30 | 동일 학과 회원 조회 평균, max 30회 cap |
-| 학번/학년 유사도 (S2) | 0.30 | 동일 학번 40% + 동일 학년 60%       |
-| 관심 태그 매칭 (S3) | 0.40 | 공지 태그와 회원 관심사 교집합 비율        |
+| 입학년도/학년 유사도 (S2) | 0.30 | 열람자 중 동일 입학년도 비율 40% + 동일 학년 비율 60% |
+| 관심 태그 매칭 (S3) | 0.40 | 공지 태그가 회원 관심사에 포함되면 1.0, 아니면 0 |
 
 ---
 
@@ -175,14 +179,31 @@ sequenceDiagram
 
 ## 성능 · 확장성 고려사항
 
+### 스케줄러 구성과 스레드풀
+주기 작업은 목적과 실패 영향 범위가 다르므로 개별 스케줄러·서비스로 분리한다.
+
+| 작업 | 주기 | 역할 |
+|------|------|------|
+| 크롤링 | 08:30 / 17:30 | 공식 공지 수집·상세 조회·파일 업로드·저장 |
+| 크롤링 실패 재시도 | 09:00 / 18:00 | 실패 기록 기준 재시도 |
+| 추천 스냅샷 | 09:00 / 18:00 | 회원별 추천 결과 사전 계산·캐싱 |
+| 활동 알림 스냅샷 | 09:00 | 전날 추천됐으나 미열람한 공지 저장 |
+| AI 실패 재시도 | 30분 fixedDelay | FAILED 상태 AI 메타 재처리 |
+
+Spring 기본 스케줄러는 단일 스레드라 같은 시간대 작업이 직렬로 밀릴 수 있다.
+`SchedulingConfig`에서 `ThreadPoolTaskScheduler` pool size를 5로 설정해 09:00에 몰리는
+작업(크롤링 재시도·추천 스냅샷·활동 알림)이 서로 블로킹하지 않도록 분리했다.
+AI 메타 처리는 이 스케줄러 풀과 별개로 `aiMetaExecutor`에서 처리한다.
+
 ### 추천 배치 스냅샷
 기획 요구사항에 따라 하루 2회(09:00, 18:00) 배치로 추천을 갱신한다. 각 회원의 추천 공지 ID
 목록을 `feed_recommend_snapshot_item` 자식 테이블에 `sort_order`와 함께 사전 계산해 저장한다.
 피드 조회 시 스냅샷을 읽기만 하므로, 매 요청마다 전체 회원 × 전체 공지 스코어링(O(N×M))을 수행하지 않아도 된다.
+신규·캐시 미스 회원은 조회 시점에 `computeAndUpsert`로 1회 계산해 같은 스냅샷 테이블에 저장하고 이후 요청부터 재사용한다.
 
 ### 비동기 AI 처리
 FastAPI AI 서버의 응답 시간이 가변적(최대 300초 타임아웃 설정)이므로, 크롤링 트랜잭션
-완료 후 별도 스레드 풀(`aiMetaExecutor`: core=2, max=5)에서 처리한다. 실패 시
+완료 후 별도 스레드 풀(`aiMetaExecutor`: core=2, max=5, queue=100)에서 처리한다. 실패 시
 `ProcessingStatus.FAILED`로 기록하고 `AiMetaRetryScheduler`(30분 주기, 최대 3회)가
 재시도한다.
 
@@ -216,3 +237,27 @@ PostgreSQL에 영향을 주지 않는다.
 - **BCrypt**: 비밀번호 단방향 해시
 - **이메일 인증 Rate Limiting**: IP·이메일별 발송 제한, 인증 실패 횟수 제한 (구현 상세 → 성능 섹션)
 - **CORS**: 허용 오리진 환경변수로 분리, credentials 허용
+
+### Redis 토큰 키
+- **블랙리스트**: `auth:blacklist:{jti}` = `"logout"`, TTL = Access Token 잔여 만료시간(ms) — 자연 만료 시 Redis에서도 자동 삭제
+- **RTR**: `auth:refresh:{jti}` = Refresh Token 문자열, TTL 14일 — 저장값과 요청 토큰이 다르면 탈취로 간주하고 거부
+- JTI는 토큰별로 `UUID.randomUUID()`로 별도 생성한다
+
+---
+
+## DB 설계 트레이드오프
+
+배치가 사전 계산한 공지 ID 목록을 저장하는 스냅샷 테이블이 둘 있다. 역할은 "계산된 post ID 목록 저장"으로
+같지만, 소비 방식이 달라 정규화 방식을 다르게 설계했다.
+
+### feed_recommend_snapshot / _item — 자식 테이블 정규화
+추천 결과 캐시. `feed_recommend_snapshot`(헤더)와 `feed_recommend_snapshot_item`(`post_id`, `sort_order`)로 분리했다.
+- `official_post_view`와 item 레벨에서 직접 JOIN — "추천됐으나 안 본 공지"를 DB 안에서 계산
+- `sort_order`로 추천 순위를 명시적으로 보존 (`@OrderBy("sortOrder ASC")`)
+- 갱신 시 items만 삭제·재삽입하고 헤더는 UPSERT로 재사용
+
+### activity_notification_snapshot — 의도적 1NF 위반
+"놓친 공지" 캐시. `post_ids`를 `jsonb` 배열 단일 컬럼에 저장한다(1NF 위반). 접근이 항상
+`(member_id, missed_date)` 단위로 전체를 읽고, 저장 후 불변이며, 항목별 조회나 JOIN이 없기 때문이다.
+미열람 여부는 조회 시점에 `official_post_view`와 차집합으로 계산한다. item 테이블로 쪼개면
+JOIN·개별 DELETE 비용만 늘어난다.
