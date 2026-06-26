@@ -78,7 +78,13 @@ public enum ErrorCode {
     //스크랩 폴더 관련
     SCRAP_FOLDER_NOT_FOUND(HttpStatus.NOT_FOUND),
     SCRAP_FOLDER_NAME_DUPLICATE(HttpStatus.CONFLICT),
-    SCRAP_FOLDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST);
+    SCRAP_FOLDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST),
+
+    //스튜디오 관련
+    STUDIO_SECTION_KEY_INVALID(HttpStatus.BAD_REQUEST),
+    STUDIO_SECTION_TOO_LONG(HttpStatus.BAD_REQUEST),
+    STUDIO_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND),
+    STUDIO_TARGET_NOT_ALLOWED(HttpStatus.BAD_REQUEST);
 
     private final HttpStatus status;
 }
