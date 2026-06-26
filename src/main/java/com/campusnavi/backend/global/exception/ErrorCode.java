@@ -84,7 +84,8 @@ public enum ErrorCode {
     STUDIO_SECTION_KEY_INVALID(HttpStatus.BAD_REQUEST),
     STUDIO_SECTION_TOO_LONG(HttpStatus.BAD_REQUEST),
     STUDIO_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND),
-    STUDIO_TARGET_NOT_ALLOWED(HttpStatus.BAD_REQUEST);
+    STUDIO_TARGET_NOT_ALLOWED(HttpStatus.BAD_REQUEST),
+    STUDIO_DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 }
