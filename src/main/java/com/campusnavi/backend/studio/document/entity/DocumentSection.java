@@ -39,4 +39,8 @@ public class DocumentSection extends BaseEntity {
         section.content = content;
         return section;
     }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }

@@ -5,15 +5,19 @@ import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentDetailResponse;
 import com.campusnavi.backend.studio.document.controller.dto.DocumentSummaryResponse;
+import com.campusnavi.backend.studio.document.controller.dto.DocumentUpdateRequest;
 import com.campusnavi.backend.studio.document.controller.dto.SectionResponse;
+import com.campusnavi.backend.studio.document.controller.dto.UpdateSectionInput;
 import com.campusnavi.backend.studio.document.entity.DocumentStatus;
 import com.campusnavi.backend.studio.document.entity.DocumentType;
 import com.campusnavi.backend.studio.document.service.StudioDocumentService;
 import com.campusnavi.backend.support.ControllerSliceTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,10 +27,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,6 +43,8 @@ class StudioDocumentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
     private StudioDocumentService studioDocumentService;
@@ -93,6 +103,53 @@ class StudioDocumentControllerTest {
                     .willThrow(new BusinessException(ErrorCode.STUDIO_DOCUMENT_NOT_FOUND));
 
             mockMvc.perform(get("/api/v1/studio/documents/{documentId}/sections", DOCUMENT_ID).with(authentication(AUTH)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.STUDIO_DOCUMENT_NOT_FOUND.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("섹션 이어쓰기")
+    class UpdateSections {
+
+        @Test
+        @DisplayName("정상 요청이면 200을 반환한다")
+        void success() throws Exception {
+            DocumentUpdateRequest request = new DocumentUpdateRequest(
+                    List.of(new UpdateSectionInput("study_plan", "내용")));
+            willDoNothing().given(studioDocumentService).updateSections(eq(MEMBER_ID), eq(DOCUMENT_ID), any());
+
+            mockMvc.perform(patch("/api/v1/studio/documents/{documentId}", DOCUMENT_ID).with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("content가 비면 400을 반환한다")
+        void blankContent() throws Exception {
+            DocumentUpdateRequest request = new DocumentUpdateRequest(
+                    List.of(new UpdateSectionInput("study_plan", " ")));
+
+            mockMvc.perform(patch("/api/v1/studio/documents/{documentId}", DOCUMENT_ID).with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT.name()));
+        }
+
+        @Test
+        @DisplayName("본인 문서가 아니면 404를 반환한다")
+        void notFound() throws Exception {
+            DocumentUpdateRequest request = new DocumentUpdateRequest(
+                    List.of(new UpdateSectionInput("study_plan", "내용")));
+            willThrow(new BusinessException(ErrorCode.STUDIO_DOCUMENT_NOT_FOUND))
+                    .given(studioDocumentService).updateSections(eq(MEMBER_ID), eq(DOCUMENT_ID), any());
+
+            mockMvc.perform(patch("/api/v1/studio/documents/{documentId}", DOCUMENT_ID).with(authentication(AUTH))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(ErrorCode.STUDIO_DOCUMENT_NOT_FOUND.name()));
         }
