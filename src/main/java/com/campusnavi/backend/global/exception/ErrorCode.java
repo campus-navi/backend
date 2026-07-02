@@ -65,6 +65,7 @@ public enum ErrorCode {
 
     //크롤링 관련
     INVALID_PARSER_TYPE(HttpStatus.BAD_REQUEST),
+    CRAWL_ALREADY_RUNNING(HttpStatus.CONFLICT),
 
     //공식정보 관련
     OFFICIAL_POST_NOT_FOUND(HttpStatus.NOT_FOUND),
