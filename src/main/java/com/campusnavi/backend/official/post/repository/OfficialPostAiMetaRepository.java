@@ -37,6 +37,8 @@ public interface OfficialPostAiMetaRepository extends JpaRepository<OfficialPost
 
     Optional<OfficialPostAiMeta> findByOfficialPostId(Long postId);
 
+    long countByStatus(ProcessingStatus status);
+
     @EntityGraph(attributePaths = "officialPost")
     List<OfficialPostAiMeta> findAllByStatusAndRetryCountLessThan(ProcessingStatus status, int retryCountIsLessThan);
 
