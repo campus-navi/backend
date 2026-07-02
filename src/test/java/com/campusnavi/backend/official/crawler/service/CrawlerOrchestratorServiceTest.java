@@ -1,5 +1,7 @@
 package com.campusnavi.backend.official.crawler.service;
 
+import com.campusnavi.backend.global.exception.BusinessException;
+import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.official.crawler.dto.PostList;
 import com.campusnavi.backend.official.crawler.failure.entity.CrawlFailure;
 import com.campusnavi.backend.official.crawler.failure.service.CrawlFailureService;
@@ -25,14 +27,17 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -55,6 +60,9 @@ class CrawlerOrchestratorServiceTest {
     @Mock
     private CrawlFailureService crawlFailureService;
 
+    @Mock
+    private Executor adminTaskExecutor;
+
     @InjectMocks
     private CrawlerOrchestratorService orchestratorService;
 
@@ -70,6 +78,13 @@ class CrawlerOrchestratorServiceTest {
         source.updateLastCrawledAt(LocalDate.of(2024, 1, 1));
     }
 
+    private void runsInline() {
+        willAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).given(adminTaskExecutor).execute(any());
+    }
+
     @Nested
     @DisplayName("전체 소스 크롤링")
     class RunAll {
@@ -81,7 +96,7 @@ class CrawlerOrchestratorServiceTest {
             given(sourceRepository.findAllByIsActiveTrue()).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).shouldHaveNoInteractions();
@@ -97,7 +112,7 @@ class CrawlerOrchestratorServiceTest {
             given(parserFactory.getParser(any())).willThrow(new RuntimeException("파서 오류"));
 
             // when & then
-            assertThatCode(() -> orchestratorService.runAll()).doesNotThrowAnyException();
+            assertThatCode(() -> orchestratorService.runAllScheduled()).doesNotThrowAnyException();
         }
     }
 
@@ -119,7 +134,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), anyInt())).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).shouldHaveNoInteractions();
@@ -135,7 +150,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(1))).willReturn(List.of(oldPost));
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(parser).should(times(1)).fetchList(any(), anyInt());
@@ -152,7 +167,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(2))).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(parser).should(times(2)).fetchList(any(), anyInt());
@@ -179,7 +194,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(1))).willReturn(List.of(oldPost));
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(never()).crawlAndSave(any(), eq(oldPost), any());
@@ -195,7 +210,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(2))).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(times(1)).crawlAndSave(eq(source), eq(newPost), eq(parser));
@@ -209,7 +224,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(1))).willReturn(List.of(nullDatePost));
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(never()).crawlAndSave(any(), eq(nullDatePost), any());
@@ -225,7 +240,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(1))).willReturn(List.of(duplicatePost));
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(never()).crawlAndSave(any(), eq(duplicatePost), any());
@@ -240,7 +255,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(2))).willReturn(List.of(post));
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(times(1)).crawlAndSave(any(), eq(post), any());
@@ -257,7 +272,7 @@ class CrawlerOrchestratorServiceTest {
             willThrow(new RuntimeException("크롤링 오류")).given(crawlerPostService).crawlAndSave(any(), eq(post1), any());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should(times(1)).crawlAndSave(any(), eq(post2), any());
@@ -279,6 +294,7 @@ class CrawlerOrchestratorServiceTest {
         @DisplayName("Seed 크롤링은 crawlAndSaveSeed를 호출한다")
         void savesSeed() throws Exception {
             // given
+            runsInline();
             given(postRepository.findOriginalIdsBySourceId(any())).willReturn(new HashSet<>());
             PostList newPost = new PostList("1", "새 게시물", null, "https://test.com/1",
                     LocalDate.of(2024, 1, 15));
@@ -286,7 +302,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(2))).willReturn(List.of());
 
             // when
-            orchestratorService.runSeed();
+            orchestratorService.startSeedAsync();
 
             // then
             then(crawlerPostService).should().crawlAndSaveSeed(eq(source), eq(newPost), eq(parser));
@@ -304,7 +320,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), eq(2))).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             then(crawlerPostService).should().crawlAndSave(eq(source), eq(newPost), eq(parser));
@@ -315,10 +331,102 @@ class CrawlerOrchestratorServiceTest {
         @DisplayName("Seed 크롤링 중 예외가 발생해도 나머지 소스는 계속 처리한다")
         void sourceFailure() {
             // given
+            runsInline();
             given(parserFactory.getParser(any())).willThrow(new RuntimeException("파서 오류"));
 
             // when & then
-            assertThatCode(() -> orchestratorService.runSeed()).doesNotThrowAnyException();
+            assertThatCode(() -> orchestratorService.startSeedAsync()).doesNotThrowAnyException();
+        }
+    }
+
+    @Nested
+    @DisplayName("비동기 실행 가드")
+    class AsyncGuard {
+
+        @Test
+        @DisplayName("실행 중 재요청이면 예외가 발생한다")
+        void alreadyRunning() {
+            // given
+            orchestratorService.startSeedAsync();
+
+            // when & then
+            assertThatThrownBy(() -> orchestratorService.startSeedAsync())
+                    .isInstanceOfSatisfying(BusinessException.class, e ->
+                            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CRAWL_ALREADY_RUNNING));
+        }
+
+        @Test
+        @DisplayName("작업 완료 후에는 다시 실행할 수 있다")
+        void guardReleased() {
+            // given
+            given(sourceRepository.findAllByIsActiveTrue()).willReturn(List.of());
+            orchestratorService.startSeedAsync();
+            assertThat(orchestratorService.status().running()).isTrue();
+
+            ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+            then(adminTaskExecutor).should().execute(captor.capture());
+
+            // when
+            captor.getValue().run();
+
+            // then
+            assertThat(orchestratorService.status().running()).isFalse();
+            assertThat(orchestratorService.status().finishedAt()).isNotNull();
+            assertThatCode(() -> orchestratorService.startSeedAsync()).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("크롤링 본체가 예외를 던져도 가드가 해제된다")
+        void guardReleasedOnFailure() {
+            // given
+            given(sourceRepository.findAllByIsActiveTrue()).willThrow(new RuntimeException("DB 오류"));
+            orchestratorService.startSeedAsync();
+
+            ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+            then(adminTaskExecutor).should().execute(captor.capture());
+
+            // when
+            assertThatCode(() -> captor.getValue().run()).doesNotThrowAnyException();
+
+            // then
+            assertThat(orchestratorService.status().running()).isFalse();
+        }
+
+        @Test
+        @DisplayName("시드 크롤링 실행 중이면 스케줄 크롤링은 skip 한다")
+        void scheduledSkipped() {
+            // given
+            orchestratorService.startSeedAsync();
+
+            // when
+            orchestratorService.runAllScheduled();
+
+            // then
+            then(sourceRepository).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("시드 크롤링 실행 중이면 재시도 스케줄은 skip 한다")
+        void retrySkipped() {
+            // given
+            orchestratorService.startSeedAsync();
+
+            // when
+            orchestratorService.retryAll();
+
+            // then
+            then(crawlFailureService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("재시도 스케줄 완료 후 가드가 해제된다")
+        void guardReleasedAfterRetry() {
+            // given
+            given(crawlFailureService.findRetryTargets()).willReturn(List.of());
+            orchestratorService.retryAll();
+
+            // when & then
+            assertThatCode(() -> orchestratorService.startSeedAsync()).doesNotThrowAnyException();
         }
     }
 
@@ -336,7 +444,7 @@ class CrawlerOrchestratorServiceTest {
             given(parser.fetchList(any(), anyInt())).willReturn(List.of());
 
             // when
-            orchestratorService.runAll();
+            orchestratorService.runAllScheduled();
 
             // then
             assertThat(source.getLastCrawledAt()).isEqualTo(LocalDate.now());
