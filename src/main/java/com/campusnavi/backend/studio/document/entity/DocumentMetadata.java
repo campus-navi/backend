@@ -1,6 +1,6 @@
 package com.campusnavi.backend.studio.document.entity;
 
-import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
+import com.campusnavi.backend.studio.academicplan.entity.AcademicPlanMetadata;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 

@@ -1,13 +1,12 @@
-package com.campusnavi.backend.studio.academicplan.document.service;
+package com.campusnavi.backend.studio.academicplan.service;
 
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.member.entity.Member;
 import com.campusnavi.backend.member.repository.MemberRepository;
-import com.campusnavi.backend.studio.academicplan.document.dto.DocumentCreateRequest;
-import com.campusnavi.backend.studio.academicplan.document.entity.AcademicPlanMetadata;
-import com.campusnavi.backend.studio.academicplan.service.AcademicPlanTargetService;
-import com.campusnavi.backend.studio.academicplan.service.ResolvedTarget;
+import com.campusnavi.backend.studio.academicplan.dto.DocumentCreateRequest;
+import com.campusnavi.backend.studio.academicplan.dto.ResolvedTarget;
+import com.campusnavi.backend.studio.academicplan.entity.AcademicPlanMetadata;
 import com.campusnavi.backend.studio.document.dto.ResolvedSection;
 import com.campusnavi.backend.studio.document.entity.DocumentSection;
 import com.campusnavi.backend.studio.document.entity.DocumentType;

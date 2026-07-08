@@ -1,10 +1,10 @@
-package com.campusnavi.backend.studio.academicplan.document.controller;
+package com.campusnavi.backend.studio.academicplan.controller;
 
 import com.campusnavi.backend.global.exception.ErrorCode;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.studio.academicplan.document.dto.DocumentCreateRequest;
-import com.campusnavi.backend.studio.academicplan.document.dto.SectionInput;
-import com.campusnavi.backend.studio.academicplan.document.service.AcademicPlanDocumentService;
+import com.campusnavi.backend.studio.academicplan.dto.DocumentCreateRequest;
+import com.campusnavi.backend.studio.academicplan.dto.SectionInput;
+import com.campusnavi.backend.studio.academicplan.service.AcademicPlanDocumentService;
 import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.support.ControllerSliceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;

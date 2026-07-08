@@ -1,10 +1,10 @@
-package com.campusnavi.backend.studio.academicplan.document.controller;
+package com.campusnavi.backend.studio.academicplan.controller;
 
 import com.campusnavi.backend.global.response.ApiResponse;
 import com.campusnavi.backend.global.response.ErrorResponse;
 import com.campusnavi.backend.global.security.AuthMember;
-import com.campusnavi.backend.studio.academicplan.document.dto.DocumentCreateRequest;
-import com.campusnavi.backend.studio.academicplan.document.service.AcademicPlanDocumentService;
+import com.campusnavi.backend.studio.academicplan.dto.DocumentCreateRequest;
+import com.campusnavi.backend.studio.academicplan.service.AcademicPlanDocumentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

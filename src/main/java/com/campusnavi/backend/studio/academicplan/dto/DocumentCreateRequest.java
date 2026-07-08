@@ -1,4 +1,4 @@
-package com.campusnavi.backend.studio.academicplan.document.dto;
+package com.campusnavi.backend.studio.academicplan.dto;
 
 import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import jakarta.validation.Valid;
