@@ -1,4 +1,4 @@
-package com.campusnavi.backend.studio.document.controller.dto;
+package com.campusnavi.backend.studio.document.dto;
 
 import com.campusnavi.backend.studio.document.entity.DocumentMetadata;
 import com.campusnavi.backend.studio.document.entity.DocumentStatus;

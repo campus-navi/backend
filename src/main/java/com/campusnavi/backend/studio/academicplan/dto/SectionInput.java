@@ -1,4 +1,4 @@
-package com.campusnavi.backend.studio.academicplan.document.dto;
+package com.campusnavi.backend.studio.academicplan.dto;
 
 import com.campusnavi.backend.studio.document.dto.SectionContent;
 import io.swagger.v3.oas.annotations.media.Schema;

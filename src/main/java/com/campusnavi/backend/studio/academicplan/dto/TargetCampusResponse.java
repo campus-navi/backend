@@ -1,4 +1,4 @@
-package com.campusnavi.backend.studio.academicplan.controller.dto;
+package com.campusnavi.backend.studio.academicplan.dto;
 
 import com.campusnavi.backend.university.entity.Campus;
 

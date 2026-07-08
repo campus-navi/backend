@@ -2,9 +2,9 @@ package com.campusnavi.backend.studio.document.service;
 
 import com.campusnavi.backend.global.exception.BusinessException;
 import com.campusnavi.backend.global.exception.ErrorCode;
-import com.campusnavi.backend.studio.document.controller.dto.DocumentDetailResponse;
-import com.campusnavi.backend.studio.document.controller.dto.DocumentSummaryResponse;
-import com.campusnavi.backend.studio.document.controller.dto.DocumentUpdateRequest;
+import com.campusnavi.backend.studio.document.dto.DocumentDetailResponse;
+import com.campusnavi.backend.studio.document.dto.DocumentSummaryResponse;
+import com.campusnavi.backend.studio.document.dto.DocumentUpdateRequest;
 import com.campusnavi.backend.studio.document.dto.ResolvedSection;
 import com.campusnavi.backend.studio.document.entity.DocumentSection;
 import com.campusnavi.backend.studio.document.entity.StudioDocument;

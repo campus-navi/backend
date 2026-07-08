@@ -1,10 +1,11 @@
 package com.campusnavi.backend.studio.academicplan.service;
 
+import com.campusnavi.backend.studio.academicplan.dto.ResolvedTarget;
 import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.academicplan.entity.TargetMajor;
-import com.campusnavi.backend.studio.academicplan.controller.dto.TargetCampusResponse;
-import com.campusnavi.backend.studio.academicplan.controller.dto.TargetDepartmentResponse;
-import com.campusnavi.backend.studio.academicplan.controller.dto.TargetMajorResponse;
+import com.campusnavi.backend.studio.academicplan.dto.TargetCampusResponse;
+import com.campusnavi.backend.studio.academicplan.dto.TargetDepartmentResponse;
+import com.campusnavi.backend.studio.academicplan.dto.TargetMajorResponse;
 import com.campusnavi.backend.studio.academicplan.repository.DepartmentRestrictionRepository;
 import com.campusnavi.backend.studio.academicplan.repository.TargetMajorRepository;
 import com.campusnavi.backend.global.exception.BusinessException;

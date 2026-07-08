@@ -1,4 +1,4 @@
-package com.campusnavi.backend.studio.document.controller.dto;
+package com.campusnavi.backend.studio.document.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;

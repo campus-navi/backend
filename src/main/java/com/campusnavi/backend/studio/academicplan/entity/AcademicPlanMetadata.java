@@ -1,6 +1,5 @@
-package com.campusnavi.backend.studio.academicplan.document.entity;
+package com.campusnavi.backend.studio.academicplan.entity;
 
-import com.campusnavi.backend.studio.academicplan.entity.MajorType;
 import com.campusnavi.backend.studio.document.entity.DocumentMetadata;
 
 public record AcademicPlanMetadata(
