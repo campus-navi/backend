@@ -1,9 +1,7 @@
 package com.campusnavi.backend.global.config;
 
-import com.campusnavi.backend.global.security.CustomAccessDeniedHandler;
-import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
-import com.campusnavi.backend.global.security.jwt.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +17,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.campusnavi.backend.global.security.CustomAccessDeniedHandler;
+import com.campusnavi.backend.global.security.CustomAuthenticationEntryPoint;
+import com.campusnavi.backend.global.security.jwt.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +34,7 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
 
     private static final String[] AUTH_WHITELIST = {
-            "/api/v1/auth/**", "/api/swagger-ui/**", "/api/api-docs/**", "/api/v1/campuses/**"
+            "/api/v1/auth/**", "/api/swagger-ui/**", "/api/api-docs/**", "/api/v1/campuses/**" ,"/actuator/health", "/actuator/prometheus"
     };
 
     @Bean
