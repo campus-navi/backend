@@ -29,6 +29,21 @@ springdoc:
   swagger-ui:
     enabled: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 app:
   crawl:
     enabled: false

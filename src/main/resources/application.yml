@@ -10,6 +10,21 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 recommend:
   feed:
     w1: 0.30
