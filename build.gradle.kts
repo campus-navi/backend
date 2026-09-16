@@ -55,7 +55,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3:2.31.19")
 
     //Crawling
-    implementation("org.jsoup:jsoup:1.18.1")
+    implementation("org.jsoup:jsoup:1.23.1")
 
     //HTTP Client
     implementation("org.apache.httpcomponents.client5:httpclient5")
